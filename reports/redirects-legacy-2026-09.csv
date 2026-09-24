@@ -1,0 +1,792 @@
+# approved-by: josh (auto-approve directive in session, 2026-09-23)
+# Legacy-URL 301 map. Built 2026-09-23 from Ahrefs (pages-by-backlinks, backlinks-to-legacy, Googlebot status audit), prod not_found_log (hits>=20, scanner noise dropped), and prod gsc_query_metrics pages (2026-01-24..2026-09-21). Every from_path was probed live as Googlebot: only 404s are listed. applied=yes rows were inserted by scripts/consolidation/legacy-redirects.ts --apply; DEFERRED rows wait on the url-hygiene PR deploy.
+from_path,to_path,previous_to_path,status_code,previous_status_code,match_method,confidence,sources,referring_domains,gsc_impressions,gsc_clicks,nf_hits,applied,reason
+/start,/,,,,structural,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks+gsc+not_found_log,4,2758,106,1158,yes,old WP landing page -> homepage (directive)
+/secondary-topic/chronic-kidney-disease,/blog/is-hydrogen-water-good-for-kidneys,,,,curated-same-topic-article,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks+gsc+not_found_log,4,1295,10,337,yes,article published 2026-09-23 for this topic (coordinator directive): legacy anchor 'Hydrogen water and kidney disease' (4 RDs); URL ranks ~#27.6 for 'is hydrogen water good for kidneys'
+/topics,/explore-by-condition,,,,structural,high,ahrefs-404-audit+ahrefs-pages-by-backlinks+gsc+not_found_log,3,818,13,923,yes,old topic index -> condition index (directive)
+/home19127410,/,,,,structural,high,ahrefs-404-audit+ahrefs-pages-by-backlinks+not_found_log,2,,,2273,yes,old WP homepage variant (directive /home<digits>)
+/study/can-hydrogen-water-enhance-oxygen-saturation-in-patients-with-chronic-lung-disease-a-non-randomized-observational-pilot-study,/study/can-hydrogen-water-enhance-oxygen-saturation-in-patients-with-chronic-lung-disease-a-non-randomized-observational-pilot-study-1775650467171,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks+echowater-link,3,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/effects-of-hydrogen-rich-water-on-attenuating-fatigue-induced-by-daily-activities-or-mental-tasks,/study/effects-of-hydrogen-rich-water-on-attenuating-fatigue-induced-by-daily-activities-or-mental-tasks-1775650467164,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks,3,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/hydrogen-vs-caffeine-for-improved-alertness-in-sleep-deprived-humans,/study/hydrogen-vs-caffeine-for-improved-alertness-in-sleep-deprived-humans-1775650467137,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks+echowater-link,3,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/alleviation-of-the-chronic-stress-response-attributed-to-the-antioxidant-and-anti-inflammatory-effects-of-electrolyzed-hydrogen-water,/study/alleviation-of-the-chronic-stress-response-attributed-to-the-antioxidant-and-anti-inflammatory-effects-of-electrolyzed-hydrogen-water-1775650467133,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks+echowater-link,2,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/antioxidant-effects-of-continuous-intake-of-electrolyzed-hydrogen-water-in-healthy-adults,/study/antioxidant-effects-of-continuous-intake-of-electrolyzed-hydrogen-water-in-healthy-adults-1775650467168,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks+echowater-link,2,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/assessment-of-antibacterial-effect-of-hydrogen-water-on-plaque-from-patients-with-chronic-periodontitis,/study/assessment-of-antibacterial-effect-of-hydrogen-water-on-plaque-from-patients-with-chronic-periodontitis-1775650467162,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks+echowater-link,2,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/different-effects-of-hydrogen-rich-water-intake-and-hydrogen-gas-inhalation-on-gut-microbiome-and-plasma-metabolites-of-rats-in-health-status,/study/different-effects-of-hydrogen-rich-water-intake-and-hydrogen-gas-inhalation-on-gut-microbiome-and-plasma-metabolites-of-rats-in-health-status-1775650467166,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks+echowater-link,2,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/drinking-hydrogen-water-enhances-endurance-and-relieves-psychometric-fatigue-a-randomized-double-blind-placebo-controlled-study,/study/drinking-hydrogen-water-enhances-endurance-and-relieves-psychometric-fatigue-a-randomized-double-blind-placebo-controlled-study-1775650467139,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-pages-by-backlinks,2,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/drinking-molecular-hydrogen-water-is-beneficial-to-cardiovascular-function-in-diet-induced-obesity-mice,/study/drinking-molecular-hydrogen-water-is-beneficial-to-cardiovascular-function-in-diet-induced-obesity-mice-1775650467133,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks+echowater-link,2,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/effects-of-alkaline-reduced-water-on-exercise-induced-oxidative-stress-and-fatigue-in-young-male-healthy-adults,/study/effects-of-alkaline-reduced-water-on-exercise-induced-oxidative-stress-and-fatigue-in-young-male-healthy-adults-1775650467168,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks+echowater-link,2,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/effects-of-hydrogen-gas-inhalation-on-endometriosis-in-rats,/study/effects-of-hydrogen-gas-inhalation-on-endometriosis-in-rats-1775650467147,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks+echowater-link,2,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/effects-of-molecular-hydrogen-intervention-on-the-gut-microbiome-in-methamphetamine-abusers-with-mental-disorder,/study/effects-of-molecular-hydrogen-intervention-on-the-gut-microbiome-in-methamphetamine-abusers-with-mental-disorder-1775650467168,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks+echowater-link,2,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/hydrogen-gas-treatment-improves-postoperative-delirium-and-cognitive-dysfunction-in-elderly-noncardiac-patients,/study/hydrogen-gas-treatment-improves-postoperative-delirium-and-cognitive-dysfunction-in-elderly-noncardiac-patients-1775650467169,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks+echowater-link,2,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/hydrogen-improves-neurological-function-through-attenuation-of-blood-brain-barrier-disruption-in-spontaneously-hypertensive-stroke-prone-rats,/study/hydrogen-improves-neurological-function-through-attenuation-of-blood-brain-barrier-disruption-in-spontaneously-hypertensive-stroke-prone-rats-1775650467150,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks+echowater-link,2,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/hydrogen-inhalation-ameliorates-hepatic-inflammation-and-modulates-gut-microbiota-in-rats-with-high-fat-diet-induced-non-alcoholic-fatty-liver-disease,/study/hydrogen-inhalation-ameliorates-hepatic-inflammation-and-modulates-gut-microbiota-in-rats-with-high-fat-diet-induced-non-alcoholic-fatty-liver-disease-1775650467168,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks+echowater-link,2,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/hydrogen-rich-water-alleviates-inflammation-and-fatigue-in-covid-19-a-pilot-study,/study/hydrogen-rich-water-alleviates-inflammation-and-fatigue-in-covid-19-a-pilot-study-1775650467167,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks+echowater-link,2,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/magnesium-based-micromotors-for-enhanced-active-and-synergistic-hydrogen-chemotherapy,/study/magnesium-based-micromotors-for-enhanced-active-and-synergistic-hydrogen-chemotherapy-1775650467164,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks+echowater-link,2,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/molecular-hydrogen-improves-obesity-and-diabetes-by-inducing-hepatic-fgf21-and-stimulating-energy-metabolism-in-db-db-mice,/study/molecular-hydrogen-improves-obesity-and-diabetes-by-inducing-hepatic-fgf21-and-stimulating-energy-metabolism-in-dbdb-mice-1775650467157,,,,slug-compact-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks+echowater-link,2,,,,yes,"identical letters/digits; differs only in punctuation (e.g. db/db, NF-kB)"
+/study/molecular-hydrogen-mitigates-performance-decrement-during-repeated-sprints-in-professional-soccer-players,/study/molecular-hydrogen-mitigates-performance-decrement-during-repeated-sprints-in-professional-soccer-players-1775650467166,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks+echowater-link,2,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/molecular-hydrogen-reduces-electromagnetic-pulse-induced-male-rat-reproductive-system-damage-in-a-rodent-model,/study/molecular-hydrogen-reduces-electromagnetic-pulse-induced-male-rat-reproductive-system-damage-in-a-rodent-model-1775650467167,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks+echowater-link,2,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/protective-effects-of-hydrogen-rich-saline-against-erectile-dysfunction-in-a-streptozotocin-induced-diabetic-rat-model,/study/protective-effects-of-hydrogen-rich-saline-against-erectile-dysfunction-in-a-streptozotocin-induced-diabetic-rat-model-1775650467153,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks+echowater-link,2,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/revealing-the-antibacterial-power-of-hydrogen-releasing-pdh-nanohydride-against-drug-resistant-staphylococcus-aureus-an-in-depth-mechanism-study,/study/revealing-the-antibacterial-power-of-hydrogen-releasing-pdh-nanohydride-against-drug-resistant-staphylococcus-aureus-an-in-depth-mechanism-study-1775650467169,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks+echowater-link,2,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/short-term-h2-inhalation-improves-running-performance-and-torso-strength-in-healthy-adults,/study/short-term-h2-inhalation-improves-running-performance-and-torso-strength-in-healthy-adults-1775650467139,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks+echowater-link,2,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/the-therapeutic-effects-of-oral-intake-of-hydrogen-rich-water-on-cutaneous-wound-healing-in-dogs,/study/the-therapeutic-effects-of-oral-intake-of-hydrogen-rich-water-on-cutaneous-wound-healing-in-dogs-1775650467165,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks+echowater-link,2,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/two-weeks-of-hydrogen-inhalation-can-significantly-reverse-adaptive-and-innate-immune-system-senescence-patients-with-advanced-non-small-cell-lung-cancer-a-self-controlled-study,/study/two-weeks-of-hydrogen-inhalation-can-significantly-reverse-adaptive-and-innate-immune-system-senescence-patients-with-advanced-non-small-cell-lung-cancer-a-self-controlled-study-1775650467134,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks+echowater-link,2,,,,yes,current slug = <old-slug>-<13-digit id>
+/tools/hydrogen-research,/,,,,structural,high,not_found_log,,,,1256,yes,Echo app-proxy base path hit on this host -> homepage
+/study,/studies,,,,structural,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks+gsc,1,53,,,yes,bare /study (and /study?id=N) -> studies directory (directive)
+/hydrogen-water,/studies,,,,structural,high,ahrefs-404-audit+ahrefs-pages-by-backlinks+not_found_log,1,,,45,yes,old overview page -> studies directory (directive)
+/secondary-topic/kidney-stones,/explore-by-condition/kidney-health,,,,curated-parent-hub,high,gsc+not_found_log,,451,6,254,yes,kidney condition -> Kidney Health hub (parent topic)
+/study/a-randomized-double-blind-multi-center-trial-of-hydrogen-water-for-parkinsons-disease-protocol-and-baseline-characteristics,/study/a-randomized-double-blind-multi-center-trial-of-hydrogen-water-for-parkinsons-disease-protocol-and-baseline-characteristics-1775650467148,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-pages-by-backlinks,1,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/daily-ingestion-of-alkaline-electrolyzed-water-containing-hydrogen-influences-human-health-including-gastrointestinal-symptoms,/study/daily-ingestion-of-alkaline-electrolyzed-water-containing-hydrogen-influences-human-health-including-gastrointestinal-symptoms-1775650467139,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-pages-by-backlinks,1,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/effect-of-hydrogen-water-drinking-on-dementia-patient-through-mechanism-of-oxidative-stress-and-immune-redox-balance,/study/effect-of-hydrogen-water-drinking-on-dementia-patient-through-mechanism-of-oxidative-stress-and-immune-redox-balance-1775650467137,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-pages-by-backlinks,1,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/effects-of-hydrogen-rich-water-and-ascorbic-acid-treatment-on-spontaneously-hypertensive-rats,/study/effects-of-hydrogen-rich-water-and-ascorbic-acid-treatment-on-spontaneously-hypertensive-rats-1775650467166,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-pages-by-backlinks,1,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/hydrogen-attenuates-thyroid-hormone-induced-cardiac-hypertrophy-in-rats-by-regulating-angiotensin-ii-type-1-receptor-and-nadph-oxidase-2-mediated-oxidative-stress,/study/hydrogen-attenuates-thyroid-hormone-induced-cardiac-hypertrophy-in-rats-by-regulating-angiotensin-ii-type-1-receptor-and-nadph-oxidase-2-mediated-oxidative-stress-1775650467166,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-pages-by-backlinks,1,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/hydrogen-h-2-alleviates-osteoarthritis-by-inhibiting-apoptosis-and-inflammation-via-the-jnk-signaling-pathway,/study/hydrogen-h-2-alleviates-osteoarthritis-by-inhibiting-apoptosis-and-inflammation-via-the-jnk-signaling-pathway-1775650467133,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-pages-by-backlinks,1,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/hydrogen-regulates-mitochondrial-quality-to-protect-glial-cells-and-alleviates-sepsis-associated-encephalopathy-by-nrf2-yy1-complex-promoting-ho-1-expression,/study/hydrogen-regulates-mitochondrial-quality-to-protect-glial-cells-and-alleviates-sepsis-associated-encephalopathy-by-nrf2yy1-complex-promoting-ho-1-expression-1775650467169,,,,slug-compact-exact,high,ahrefs-404-audit+ahrefs-pages-by-backlinks,1,,,,yes,"identical letters/digits; differs only in punctuation (e.g. db/db, NF-kB)"
+/study/hydrogen-rich-saline-improves-non%e2%80%91alcoholic-fatty-liver-disease-by-alleviating-oxidative-stress-and-activating-hepatic-ppar%ce%b1-and-ppar%ce%b3,/study/hydrogen-rich-saline-improves-nonalcoholic-fatty-liver-disease-by-alleviating-oxidative-stress-and-activating-hepatic-ppara-and-pparg-1775650467146,,,,title-exact,high,ahrefs-404-audit+ahrefs-pages-by-backlinks,1,,,,yes,normalized title equals old slug
+/study/hydrogen-rich-water-ameliorates-metabolic-disorder-via-modifying-gut-microbiota-in-impaired-fasting-glucose-patients-a-randomized-controlled-study,/study/hydrogen-rich-water-ameliorates-metabolic-disorder-via-modifying-gut-microbiota-in-impaired-fasting-glucose-patients-a-randomized-controlled-study-1775650467170,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-pages-by-backlinks,1,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/hydrogen-rich-water-and-caffeine-for-alertness-and-brain-metabolism-in-sleep-deprived-habitual-coffee-drinkers,/study/hydrogen-rich-water-and-caffeine-for-alertness-and-brain-metabolism-in-sleep-deprived-habitual-coffee-drinkers-1775650467164,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks,1,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/hydrogen-rich-water-consumption-positively-affects-muscle-performance-lactate-response-and-alleviates-delayed-onset-of-muscle-soreness-after-resistance-training,/study/hydrogen-rich-water-consumption-positively-affects-muscle-performance-lactate-response-and-alleviates-delayed-onset-of-muscle-soreness-after-resistance-training-1775650467133,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-pages-by-backlinks,1,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/hydrogen-rich-water-for-improvements-of-mood-anxiety-and-autonomic-nerve-function-in-daily-life,/study/hydrogen-rich-water-for-improvements-of-mood-anxiety-and-autonomic-nerve-function-in-daily-life-1775650467142,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks,1,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/hydrogen-rich-water-intake-accelerates-oral-palatal-wound-healing-via-activation-of-the-nrf2-antioxidant-defense-pathways-in-a-rat-model,/study/hydrogen-rich-water-intake-accelerates-oral-palatal-wound-healing-via-activation-of-the-nrf2antioxidant-defense-pathways-in-a-rat-model-1775650467148,,,,slug-compact-exact,high,ahrefs-404-audit+ahrefs-pages-by-backlinks,1,,,,yes,"identical letters/digits; differs only in punctuation (e.g. db/db, NF-kB)"
+/study/hydrogen-rich-water-reduces-inflammatory-responses-and-prevents-apoptosis-of-peripheral-blood-cells-in-healthy-adults-a-randomized-double-blind-controlled-trial,/study/hydrogen-rich-water-reduces-inflammatory-responses-and-prevents-apoptosis-of-peripheral-blood-cells-in-healthy-adults-a-randomized-double-blind-controlled-trial-1775650467136,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-pages-by-backlinks,1,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/hydrogen-rich-water-upregulates-fecal-propionic-acid-levels-in-overweight-adults,/study/hydrogen-rich-water-upregulates-fecal-propionic-acid-levels-in-overweight-adults-1775650467170,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks,1,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/hydrogen-treatment-protects-against-cell-death-and-senescence-induced-by-oxidative-damage,/study/hydrogen-treatment-protects-against-cell-death-and-senescence-induced-by-oxidative-damage-1775650467144,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-pages-by-backlinks,1,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/immunological-effect-of-hydrogen-gas-hydrogen-gas-improves-clinical-outcomes-of-cancer-patients,/study/immunological-effect-of-hydrogen-gas-hydrogen-gas-improves-clinical-outcomes-of-cancer-patients-1775650467140,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-pages-by-backlinks,1,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/molecular-hydrogen-improves-type-2-diabetes-through-inhibiting-oxidative-stress,/study/retracted-molecular-hydrogen-improves-type-2-diabetes-through-inhibiting-oxidative-stress-1775650467136,,,,title-exact,high,ahrefs-404-audit+ahrefs-pages-by-backlinks,1,,,,yes,normalized title equals old slug
+/study/molecular-hydrogen-suppresses-glioblastoma-growth-via-inducing-the-glioma-stem-like-cell-differentiation,/study/molecular-hydrogen-suppresses-glioblastoma-growth-via-inducing-the-glioma-stem-like-cell-differentiation-1775650467139,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-pages-by-backlinks,1,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/peripheral-endothelial-function-can-be-improved-by-daily-consumption-of-water-containing-over-7-ppm-of-dissolved-hydrogen-a-randomized-controlled-trial,/study/peripheral-endothelial-function-can-be-improved-by-daily-consumption-of-water-containing-over-7-ppm-of-dissolved-hydrogen-a-randomized-controlled-trial-1775650467135,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-pages-by-backlinks,1,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/pilot-study-effects-of-drinking-hydrogen-rich-water-on-muscle-fatigue-caused-by-acute-exercise-in-elite-athletes,/study/pilot-study-effects-of-drinking-hydrogen-rich-water-on-muscle-fatigue-caused-by-acute-exercise-in-elite-athletes-1775650467155,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks,1,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/pilot-study-of-h-2-therapy-in-parkinsons-disease-a-randomized-double-blind-placebo-controlled-trial,/study/pilot-study-of-h-2-therapy-in-parkinsons-disease-a-randomized-double-blind-placebo-controlled-trial-1775650467154,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks,1,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/positive-effects-of-hydrogen-water-bathing-in-patients-of-psoriasis-and-parapsoriasis-en-plaques,/study/positive-effects-of-hydrogen-water-bathing-in-patients-of-psoriasis-and-parapsoriasis-en-plaques-1775650467143,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-pages-by-backlinks,1,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/protective-effects-of-hydrogen-rich-water-against-cartilage-damage-in-a-rat-model-of-osteoarthritis-by-inhibiting-oxidative-stress-matrix-catabolism-and-apoptosis,/study/protective-effects-of-hydrogen-rich-water-against-cartilage-damage-in-a-rat-model-of-osteoarthritis-by-inhibiting-oxidative-stress-matrix-catabolism-and-apoptosis-1775650467134,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-pages-by-backlinks,1,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/safety-of-prolonged-inhalation-of-hydrogen-gas-in-air-in-healthy-adults,/study/safety-of-prolonged-inhalation-of-hydrogen-gas-in-air-in-healthy-adults-1775650467164,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks,1,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/short-term-h2-inhalation-improves-cognitive-function-in-older-women-a-pilot-study,/study/short-term-h2-inhalation-improves-cognitive-function-in-older-women-a-pilot-study-1775650467135,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-pages-by-backlinks,1,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/supersaturated-hydrogen-rich-water-hydrotherapy-for-recovery-of-acute-injury-to-the-proximal-phalanges-on-the-5th-toe-a-case-report,/study/supersaturated-hydrogen-rich-water-hydrotherapy-for-recovery-of-acute-injury-to-the-proximal-phalanges-on-the-5th-toe-a-case-report-1775650467164,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-pages-by-backlinks,1,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/the-acute-effects-of-a-single-dose-of-molecular-hydrogen-supplements-on-responses-to-ergogenic-adjustments-during-high-intensity-intermittent-exercise-in-humans,/study/the-acute-effects-of-a-single-dose-of-molecular-hydrogen-supplements-on-responses-to-ergogenic-adjustments-during-high-intensity-intermittent-exercise-in-humans-1775650467167,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-pages-by-backlinks,1,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/the-antioxidative-effect-of-hydrogen-water-drinking-in-blood,/study/the-antioxidative-effect-of-hydrogen-water-drinking-in-blood-1775650467147,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks,1,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/the-clinical-research-on-the-effect-of-hydrogen-rich-water-on-primary-retinitis-pigmentosa,/study/the-clinical-research-on-the-effect-of-hydrogen-rich-water-on-primary-retinitis-pigmentosa-1775650467171,,,,slug-prefix-exact,high,ahrefs-404-audit+ahrefs-backlinks+ahrefs-pages-by-backlinks,1,,,,yes,current slug = <old-slug>-<13-digit id>
+/study/the-effects-of-24-week-high-concentration-hydrogen-rich-water-on-body-composition-blood-lipid-profiles-and-inflammation-biomarkers-in-men-and-women-with-metabolic-syndrome-a-randomized-controlled-t,/study/the-effects-of-24-week-high-concentration-hydrogen-rich-water-on-body-composition-blood-lipid-profiles-and-inflammation-biomarkers-in-men-and-women-with-metabolic-syndrome-a-randomized-controlled-trial-1775650467136,,,,slug-prefix-truncated,high,ahrefs-404-audit+ahrefs-pages-by-backlinks,1,,,,yes,old slug is a truncated prefix of exactly one current slug
+/home_page,/,,,,structural,high,gsc+not_found_log,,327,1,309,yes,old WP homepage variant
+/secondary-topic/obesity,/explore-by-condition/weight-loss-metabolism,,,,curated-parent-hub,high,gsc+not_found_log,,36,,561,yes,obesity -> 'Weight Loss & Metabolism' hub (parent topic)
+/feed,/rss.xml,,,,structural,high,not_found_log,,,,583,yes,WP feed URL -> site RSS feed
+/secondary-topic/heart-failure,/explore-by-body-system/cardiovascular,,,,curated-parent-hub,high,gsc+not_found_log,,94,2,206,yes,cardiac disease -> Cardiovascular hub (parent system)
+/secondary-topic/inflammation,/explore-by-condition/inflammation,,,,hub-slug-exact,high,not_found_log,,,,258,yes,condition hub 'Inflammation'
+/secondary-topic/kidney-failure,/explore-by-condition/kidney-health,,,,curated-parent-hub,high,gsc+not_found_log,,1,,247,yes,kidney disease -> Kidney Health hub (parent topic)
+/tertiary-topic/postoperative-ileus,/explore-by-condition/gut-health,,,,curated-parent-hub,high,gsc+not_found_log,,162,,77,yes,intestinal condition -> Gut Health hub (parent topic)
+/secondary-topic/irritable-bowel-syndrome-ibs,/explore-by-condition/gut-health,,,,curated-parent-hub,high,gsc+not_found_log,,1,,217,yes,GI disease -> Gut Health hub (parent topic)
+/secondary-topic/metabolic-syndrome,/explore-by-condition/metabolic-syndrome,,,,hub-slug-exact,high,not_found_log,,,,215,yes,condition hub 'Metabolic Syndrome'
+/secondary-topic/diabetes-type-ii,/explore-by-condition/type-2-diabetes,,,,hub-synonym,high,not_found_log,,,,203,yes,same topic as condition hub 'Type 2 Diabetes'
+/secondary-topic/enteropathy,/explore-by-condition/gut-health,,,,curated-parent-hub,high,gsc+not_found_log,,50,,153,yes,intestinal disease -> Gut Health hub (parent topic)
+/secondary-topic/testicular-injury,/explore-by-body-system/reproductive,,,,curated-parent-hub,high,gsc+not_found_log,,8,,190,yes,-> Reproductive hub (parent system)
+/secondary-topic/muscular-dystrophy,/explore-by-body-system/musculoskeletal,,,,curated-parent-hub,high,gsc+not_found_log,,13,,173,yes,muscle disease -> Musculoskeletal hub (parent system)
+/secondary-topic/polycystic-kidney-disease,/explore-by-condition/kidney-health,,,,curated-parent-hub,high,gsc+not_found_log,,47,,128,yes,kidney disease -> Kidney Health hub (parent topic)
+/tertiary-topic/ventilator-induced-lung-injury,/explore-by-body-system/respiratory,,,,curated-parent-hub,high,gsc+not_found_log,,10,,159,yes,lung injury -> Respiratory hub (parent system)
+/tools/hydrogen-research/condition/parkinsons-disease,/explore-by-condition/parkinsons-disease,,,,hub-slug-exact,high,not_found_log,,,,169,yes,condition hub 'Parkinson's Disease'
+/secondary-topic/fatty-liver-disease-nonalcoholic,/explore-by-condition/fatty-liver-nafld,,,,hub-synonym,high,not_found_log,,,,165,yes,same topic as condition hub 'Fatty Liver (NAFLD)'
+/secondary-topic/anxiety,/explore-by-condition/anxiety-stress,,,,curated-parent-hub,high,gsc+not_found_log,,36,,128,yes,hub is 'Anxiety & Stress'
+/secondary-topic/rheumatoid-arthritis-ra,/explore-by-condition/rheumatoid-arthritis,,,,hub-synonym,high,not_found_log,,,,162,yes,same topic as condition hub 'Rheumatoid Arthritis'
+/tertiary-topic/sprain,/explore-by-body-system/musculoskeletal,,,,curated-parent-hub,high,gsc+not_found_log,,1,,157,yes,ligament injury -> Musculoskeletal hub (parent system)
+/blog/how-to-use-hydrogen-water-for-weight-loss-a-science-backed-guide-469291,/blog/hydrogen-water-weight-loss,/blog/how-to-use-hydrogen-water-for-weight-loss-a-science-backed-guide-010693,,,repoint-301-chain-to-410,high,gsc,,98,1,,yes,existing 301 -> /blog/how-to-use-hydrogen-water-for-weight-loss-a-science-backed-guide-010693 (410); repointed to live same-topic page: weight-loss guide -> 'Can Hydrogen Water Help with Weight Loss?'
+/rss,/rss.xml,,,,structural,high,not_found_log,,,,142,yes,feed URL -> site RSS feed
+/blog/how-to-use-hydrogen-water-for-better-gut-health-a-science-backed-guide-300380,/blog/how-to-use-hydrogen-water-for-gut-health-a-science-backed-guide-646080,/blog/how-to-use-hydrogen-water-for-better-gut-health-a-science-backed-guide-561442,,,repoint-301-chain-to-410,high,gsc,,87,1,,yes,existing 301 -> /blog/how-to-use-hydrogen-water-for-better-gut-health-a-science-backed-guide-561442 (410); repointed to live same-topic page: gut-health guide -> the kept gut-health guide
+/secondary-topic/myalgic-encephalomyelitis,/explore-by-condition/chronic-fatigue,,,,hub-synonym,high,not_found_log,,,,136,yes,same topic as condition hub 'Chronic Fatigue'
+/tertiary-topic/cognitive-impairment,/explore-by-condition/cognitive-function,,,,hub-synonym,high,not_found_log,,,,134,yes,same topic as condition hub 'Cognitive Function'
+/feed/atom,/rss.xml,,,,structural,high,not_found_log,,,,120,yes,WP feed URL -> site RSS feed
+/secondary-topic/endometriosis,/explore-by-body-system/reproductive,,,,curated-parent-hub,high,gsc+not_found_log,,1,,119,yes,-> Reproductive hub (parent system)
+/tools/hydrogen-research/methodology,/methodology,,,,structural,high,not_found_log,,,,114,yes,app-proxy path -> same page
+/secondary-topic/gut-microbiome,/explore-by-condition/gut-health,,,,hub-synonym,high,not_found_log,,,,104,yes,same topic as condition hub 'Gut Health'
+/tools/hydrogen-research/condition/cognitive-function,/explore-by-condition/cognitive-function,,,,hub-slug-exact,high,not_found_log,,,,99,yes,condition hub 'Cognitive Function'
+/secondary-topic/metabolic-syndrome/page/2,/explore-by-condition/metabolic-syndrome,,,,hub-slug-exact,high,not_found_log,,,,89,yes,condition hub 'Metabolic Syndrome'
+/tools/hydrogen-research/study/comprehensive-brain-tissue-metabolomics-and-biological-network-technology-to-decipher-the-mechanism-of-hydrogen-rich-water-on-radiation-induced-cognitive-impairment-in-rats,/study/comprehensive-brain-tissue-metabolomics-and-biological-network-technology-to-decipher-the-mechanism-of-hydrogen-rich-water-on-radiation-induced-cognitive-impairment-in-rats-1775650467171,,,,proxy-path+slug-prefix-exact,high,not_found_log,,,,88,yes,current slug = <old-slug>-<13-digit id>
+/tools/hydrogen-research/study/can-hydrogen-water-enhance-oxygen-saturation-in-patients-with-chronic-lung-disease-a-non-randomized-observational-pilot-study,/study/can-hydrogen-water-enhance-oxygen-saturation-in-patients-with-chronic-lung-disease-a-non-randomized-observational-pilot-study-1775650467171,,,,proxy-path+slug-prefix-exact,high,not_found_log,,,,86,yes,current slug = <old-slug>-<13-digit id>
+/tools/hydrogen-research/study/evaluation-of-the-safety-and-potential-lipid-lowering-effects-of-oral-hydrogen-rich-coral-calcium-hrcc-capsules-in-patients-with-metabolic-syndrome-a-prospective-case-series-study,/study/evaluation-of-the-safety-and-potential-lipid-lowering-effects-of-oral-hydrogen-rich-coral-calcium-hrcc-capsules-in-patients-with-metabolic-syndrome-a-prospective-case-series-study-1775650467170,,,,proxy-path+slug-prefix-exact,high,not_found_log,,,,86,yes,current slug = <old-slug>-<13-digit id>
+/tools/hydrogen-research/study/hydrogen-attenuates-endothelial-glycocalyx-damage-associated-with-partial-cardiopulmonary-bypass-in-rats,/study/hydrogen-attenuates-endothelial-glycocalyx-damage-associated-with-partial-cardiopulmonary-bypass-in-rats-1775650467171,,,,proxy-path+slug-prefix-exact,high,not_found_log,,,,86,yes,current slug = <old-slug>-<13-digit id>
+/tools/hydrogen-research/study/hydrogen-prevents-lipopolysaccharide-induced-pulmonary-microvascular-endothelial-cell-injury-by-inhibiting-store-operated-ca2-entry-regulated-by-stim1-orai1,/study/hydrogen-prevents-lipopolysaccharide-induced-pulmonary-microvascular-endothelial-cell-injury-by-inhibiting-store-operated-ca2-entry-regulated-by-stim1orai1-1775650467171,,,,proxy-path+slug-compact-exact,high,not_found_log,,,,86,yes,"identical letters/digits; differs only in punctuation (e.g. db/db, NF-kB)"
+/tools/hydrogen-research/study/hydrogen-rich-saline-promotes-neuronal-recovery-in-mice-with-cerebral-ischemia-through-the-ampk-mtor-signal-mediated-autophagy-pathway,/study/hydrogenrich-saline-promotes-neuronal-recovery-in-mice-with-cerebral-ischemia-through-the-ampkmtor-signalmediated-autophagy-pathway-1775650467171,,,,proxy-path+slug-compact-exact,high,not_found_log,,,,86,yes,"identical letters/digits; differs only in punctuation (e.g. db/db, NF-kB)"
+/tools/hydrogen-research/study/hydrogen-rich-water-upregulates-fecal-propionic-acid-levels-in-overweight-adults,/study/hydrogen-rich-water-upregulates-fecal-propionic-acid-levels-in-overweight-adults-1775650467170,,,,proxy-path+slug-prefix-exact,high,not_found_log,,,,86,yes,current slug = <old-slug>-<13-digit id>
+/tools/hydrogen-research/study/inhibition-of-retinal-ischemia-reperfusion-injury-in-rats-by-inhalation-of-low-concentration-hydrogen-gas,/study/inhibition-of-retinal-ischemia-reperfusion-injury-in-rats-by-inhalation-of-low-concentration-hydrogen-gas-1775650467171,,,,proxy-path+slug-prefix-exact,high,not_found_log,,,,86,yes,current slug = <old-slug>-<13-digit id>
+/blog/how-to-use-hydrogen-water-for-weight-loss-a-science-backed-guide-908643,/blog/hydrogen-water-weight-loss,/blog/how-to-use-hydrogen-water-for-weight-loss-a-science-backed-guide-010693,,,repoint-301-chain-to-410,high,gsc,,35,1,,yes,existing 301 -> /blog/how-to-use-hydrogen-water-for-weight-loss-a-science-backed-guide-010693 (410); repointed to live same-topic page: weight-loss guide -> 'Can Hydrogen Water Help with Weight Loss?'
+/tools/hydrogen-research/study/efficacy-and-safety-of-hydrogen-therapy-in-patients-with-early-stage-interstitial-lung-disease-a-single-center-randomized-parallel-group-controlled-trial,/study/efficacy-and-safety-of-hydrogen-therapy-in-patients-with-early-stage-interstitial-lung-disease-a-single-center-randomized-parallel-group-controlled-trial-1775650467171,,,,proxy-path+slug-prefix-exact,high,not_found_log,,,,85,yes,current slug = <old-slug>-<13-digit id>
+/tools/hydrogen-research/study/fructooligosaccharide-feeding-during-gestation-to-pregnant-mice-provided-excessive-folic-acid-decreases-maternal-and-female-fetal-oxidative-stress-by-increasing-intestinal-microbe-derived-hydrogen-gas,/study/fructooligosaccharide-feeding-during-gestation-to-pregnant-mice-provided-excessive-folic-acid-decreases-maternal-and-female-fetal-oxidative-stress-by-increasing-intestinal-microbe-derived-hydrogen-gas-1775650467171,,,,proxy-path+slug-prefix-exact,high,not_found_log,,,,85,yes,current slug = <old-slug>-<13-digit id>
+/secondary-topic/hypertension,/explore-by-condition/blood-pressure,,,,hub-synonym,high,not_found_log,,,,84,yes,same topic as condition hub 'Blood Pressure'
+/tools/hydrogen-research/study/molecular-hydrogen-reduces-the-degree-of-endothelial-alteration-under-conditions-of-chronic-heart-failure,/study/molecular-hydrogen-reduces-the-degree-of-endothelial-alteration-under-conditions-of-chronic-heart-failure-1775650467170,,,,proxy-path+slug-prefix-exact,high,not_found_log,,,,79,yes,current slug = <old-slug>-<13-digit id>
+/tools/hydrogen-research/study/nir-activatable-heterostructured-nanoadjuvant-cop-nicop-executing-lactate-metabolism-interventions-for-boosted-photocatalytic-hydrogen-therapy-and-photoimmunotherapy,/study/nir-activatable-heterostructured-nanoadjuvant-copnicop-executing-lactate-metabolism-interventions-for-boosted-photocatalytic-hydrogen-therapy-and-photoimmunotherapy-1775650467171,,,,proxy-path+slug-compact-exact,high,not_found_log,,,,79,yes,"identical letters/digits; differs only in punctuation (e.g. db/db, NF-kB)"
+/tools/hydrogen-research/study/successful-treatment-of-myalgic-encephalomyelitis-chronic-fatigue-syndrome-using-hydrogen-gas-four-case-reports,/study/successful-treatment-of-myalgic-encephalomyelitischronic-fatigue-syndrome-using-hydrogen-gas-four-case-reports-1775650467171,,,,proxy-path+slug-compact-exact,high,not_found_log,,,,79,yes,"identical letters/digits; differs only in punctuation (e.g. db/db, NF-kB)"
+/tools/hydrogen-research/study/the-clinical-research-on-the-effect-of-hydrogen-rich-water-on-primary-retinitis-pigmentosa,/study/the-clinical-research-on-the-effect-of-hydrogen-rich-water-on-primary-retinitis-pigmentosa-1775650467171,,,,proxy-path+slug-prefix-exact,high,not_found_log,,,,79,yes,current slug = <old-slug>-<13-digit id>
+/tools/hydrogen-research/study/the-effect-of-hydrogen-rich-water-on-letrozole-induced-polycystic-ovary-syndrome-in-rats,/study/the-effect-of-hydrogen-rich-water-on-letrozole-induced-polycystic-ovary-syndrome-in-rats-1775650467170,,,,proxy-path+slug-prefix-exact,high,not_found_log,,,,79,yes,current slug = <old-slug>-<13-digit id>
+/tools/hydrogen-research/study/therapeutic-potential-of-hydrogen-rich-water-on-muscle-atrophy-caused-by-immobilization-in-a-mouse-model,/study/therapeutic-potential-of-hydrogen-rich-water-on-muscle-atrophy-caused-by-immobilization-in-a-mouse-model-1775650467170,,,,proxy-path+slug-prefix-exact,high,not_found_log,,,,79,yes,current slug = <old-slug>-<13-digit id>
+/tools/hydrogen-research/study/micromotor-enabled-active-hydrogen-and-tobramycin-delivery-for-synergistic-sepsis-therapy,/study/micromotor-enabled-active-hydrogen-and-tobramycin-delivery-for-synergistic-sepsis-therapy-1775650467171,,,,proxy-path+slug-prefix-exact,high,not_found_log,,,,78,yes,current slug = <old-slug>-<13-digit id>
+/tertiary-topic/performance-enhancement,/explore-by-condition/athletic-performance,,,,hub-synonym,high,not_found_log,,,,70,yes,same topic as condition hub 'Athletic Performance'
+/tertiary-topic/testicular-injury,/explore-by-body-system/reproductive,,,,curated-parent-hub,high,not_found_log,,,,68,yes,-> Reproductive hub (parent system)
+/all_blogs,/blog,,,,structural,high,not_found_log,,,,66,yes,old blog index -> blog index
+/tertiary-topic/erectile-dysfunction,/explore-by-body-system/reproductive,,,,curated-parent-hub,high,gsc+not_found_log,,12,,50,yes,-> Reproductive hub (parent system)
+/a_z_topics_,/explore-by-condition,,,,structural,high,not_found_log,,,,60,yes,old A-Z topic index -> condition index (same page type as /topics)
+/tools/hydrogen-research/condition/oxidative-stress,/explore-by-condition/oxidative-stress,,,,hub-slug-exact,high,not_found_log,,,,42,yes,condition hub 'Oxidative Stress'
+/hydrogenstudies.com/search,/search,,,,structural,high,not_found_log,,,,41,yes,broken relative link -> search page
+/secondary-topic/parkinsons-disease/page/2,/explore-by-condition/parkinsons-disease,,,,hub-slug-exact,high,not_found_log,,,,40,yes,condition hub 'Parkinson's Disease'
+/secondary-topic/diabetes-type-ii/page/2,/explore-by-condition/type-2-diabetes,,,,hub-synonym,high,not_found_log,,,,37,yes,same topic as condition hub 'Type 2 Diabetes'
+/tertiary-topic/cognitive-impairment/page/2,/explore-by-condition/cognitive-function,,,,hub-synonym,high,not_found_log,,,,34,yes,same topic as condition hub 'Cognitive Function'
+/secondary-topic/hypertension/page/2,/explore-by-condition/blood-pressure,,,,hub-synonym,high,not_found_log,,,,27,yes,same topic as condition hub 'Blood Pressure'
+/tools/hydrogen-research/condition/inflammation,/explore-by-condition/inflammation,,,,hub-slug-exact,high,not_found_log,,,,26,yes,condition hub 'Inflammation'
+/secondary-topic/diabetes-type-ii/page/3,/explore-by-condition/type-2-diabetes,,,,hub-synonym,high,not_found_log,,,,25,yes,same topic as condition hub 'Type 2 Diabetes'
+/tertiary-topic/gut-microbiome,/explore-by-condition/gut-health,,,,hub-synonym,high,not_found_log,,,,23,yes,same topic as condition hub 'Gut Health'
+/tertiary-topic/chronic-fatigue-syndrome,/explore-by-condition/chronic-fatigue,,,,hub-synonym,high,not_found_log,,,,22,yes,same topic as condition hub 'Chronic Fatigue'
+/study/molecular-hydrogen-mediates-neurorestorative-effects-after-stroke-in-diabetic-rats-the-tlr4-nf-kb-inflammatory-pathway,/study/molecular-hydrogen-mediates-neurorestorative-effects-after-stroke-in-diabetic-rats-the-tlr4nf-kb-inflammatory-pathway-1775650467167,,,,slug-compact-exact,high,gsc,,8,,,yes,"identical letters/digits; differs only in punctuation (e.g. db/db, NF-kB)"
+/study/the-effect-of-hydrogen-rich-water-interventions-in-lipid-profiles-in-adults-with-overweight-or-obesity-and-associated-metabolic-disorders-a-systematic-review-and-meta-analysis-of-randomized-controlled-trials-1775826876384,/study/the-effect-of-hydrogen-rich-water-interventions-on-lipid-profiles-in-adults-with-overweight-or-obesity-and-associated-metabolic-disorders-a-systematic-review-and-meta-analysis-of-randomized-controlled-trials-1775826876384,,,,id-suffix-match,high,gsc,,1,,,yes,"same 13-digit id, title-slug edited (e.g. typo fix)"
+/body-system/cognitive-function,/explore-by-condition/cognitive-function,/tools/hydrogen-research/condition/cognitive-function,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/cognitive-function, which 404s on this host; repointed to the same final target as the new row so it cannot chain (status code unchanged); status 302 -> 301 (permanent: target is the canonical hub)"
+/category/inflammation,/explore-by-condition/inflammation,/tools/hydrogen-research/condition/inflammation,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/inflammation, which 404s on this host; repointed to the same final target as the new row so it cannot chain (status code unchanged); status 302 -> 301 (permanent: target is the canonical hub)"
+/condition/cognitive-function,/explore-by-condition/cognitive-function,/tools/hydrogen-research/condition/cognitive-function,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/cognitive-function, which 404s on this host; repointed to the same final target as the new row so it cannot chain (status code unchanged); status 302 -> 301 (permanent: target is the canonical hub)"
+/condition/inflammation,/explore-by-condition/inflammation,/tools/hydrogen-research/condition/inflammation,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/inflammation, which 404s on this host; repointed to the same final target as the new row so it cannot chain (status code unchanged); status 302 -> 301 (permanent: target is the canonical hub)"
+/condition/oxidative-stress,/explore-by-condition/oxidative-stress,/tools/hydrogen-research/condition/oxidative-stress,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/oxidative-stress, which 404s on this host; repointed to the same final target as the new row so it cannot chain (status code unchanged); status 302 -> 301 (permanent: target is the canonical hub)"
+/condition/parkinsons-disease,/explore-by-condition/parkinsons-disease,/tools/hydrogen-research/condition/parkinsons-disease,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/parkinsons-disease, which 404s on this host; repointed to the same final target as the new row so it cannot chain (status code unchanged); status 302 -> 301 (permanent: target is the canonical hub)"
+/function/function.php,/explore-by-condition/cognitive-function,/tools/hydrogen-research/condition/cognitive-function,,,repoint-broken-target,high,redirects-table,,,,,yes,"existing 301 row (no note) -> /tools/hydrogen-research/condition/cognitive-function, which 404s on this host; repointed to the same final target as the new row so it cannot chain (status code unchanged)"
+/hydrogenstudies.com/explore-by-condition/oxidative-stress,/explore-by-condition/oxidative-stress,/tools/hydrogen-research/condition/oxidative-stress,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/oxidative-stress, which 404s on this host; repointed to the same final target as the new row so it cannot chain (status code unchanged); status 302 -> 301 (permanent: target is the canonical hub)"
+/index/function.php,/explore-by-condition/cognitive-function,/tools/hydrogen-research/condition/cognitive-function,,,repoint-broken-target,high,redirects-table,,,,,yes,"existing 301 row (no note) -> /tools/hydrogen-research/condition/cognitive-function, which 404s on this host; repointed to the same final target as the new row so it cannot chain (status code unchanged)"
+/oxidative-stress,/explore-by-condition/oxidative-stress,/tools/hydrogen-research/condition/oxidative-stress,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/oxidative-stress, which 404s on this host; repointed to the same final target as the new row so it cannot chain (status code unchanged); status 302 -> 301 (permanent: target is the canonical hub)"
+/secondary-topic/parkinsons-disease,/explore-by-condition/parkinsons-disease,/tools/hydrogen-research/condition/parkinsons-disease,,,repoint-broken-target,high,redirects-table,,,,,yes,"existing 301 row (no note) -> /tools/hydrogen-research/condition/parkinsons-disease, which 404s on this host; repointed to the same final target as the new row so it cannot chain (status code unchanged)"
+/tertiary-topic/keratin-plugs,/explore-by-body-system/skin-dermatology,,,,curated-parent-hub,high,gsc+not_found_log,,18795,12,346,no,DEFERRED: target returns 404/200 (Googlebot/Chrome) until the url-hygiene PR deploys; re-run with --include-deferred after deploy. skin condition -> Skin & Dermatology hub (parent system)
+/secondary-topic/brain-injury/page/5,/explore-by-body-system/brain-nervous-system,,,,curated-parent-hub,high,gsc+not_found_log,,310,4,36,no,DEFERRED: target returns 404/200 (Googlebot/Chrome) until the url-hygiene PR deploys; re-run with --include-deferred after deploy. brain condition -> Brain & Nervous System hub (parent system)
+/secondary-topic/vitiligo,/explore-by-body-system/skin-dermatology,,,,curated-parent-hub,high,gsc+not_found_log,,22,,255,no,DEFERRED: target returns 404/200 (Googlebot/Chrome) until the url-hygiene PR deploys; re-run with --include-deferred after deploy. skin condition -> Skin & Dermatology hub (parent system)
+/secondary-topic/amyotrophic-laterial-sclerosis-als,/explore-by-body-system/brain-nervous-system,,,,curated-parent-hub,high,gsc+not_found_log,,40,1,91,no,DEFERRED: target returns 404/200 (Googlebot/Chrome) until the url-hygiene PR deploys; re-run with --include-deferred after deploy. neurodegenerative -> Brain & Nervous System hub
+/secondary-topic/psoriasis,/explore-by-body-system/skin-dermatology,,,,curated-parent-hub,high,gsc+not_found_log,,1,,166,no,DEFERRED: target returns 404/200 (Googlebot/Chrome) until the url-hygiene PR deploys; re-run with --include-deferred after deploy. skin condition -> Skin & Dermatology hub (parent system)
+/tertiary-topic/postoperative-delerium,/explore-by-body-system/brain-nervous-system,,,,curated-parent-hub,high,gsc+not_found_log,,1,,134,no,DEFERRED: target returns 404/200 (Googlebot/Chrome) until the url-hygiene PR deploys; re-run with --include-deferred after deploy. brain condition -> Brain & Nervous System hub
+/secondary-topic/brain-injury,/explore-by-body-system/brain-nervous-system,,,,curated-parent-hub,high,not_found_log,,,,84,no,DEFERRED: target returns 404/200 (Googlebot/Chrome) until the url-hygiene PR deploys; re-run with --include-deferred after deploy. brain condition -> Brain & Nervous System hub (parent system)
+/secondary-topic/brain-injury/page/2,/explore-by-body-system/brain-nervous-system,,,,curated-parent-hub,high,not_found_log,,,,35,no,DEFERRED: target returns 404/200 (Googlebot/Chrome) until the url-hygiene PR deploys; re-run with --include-deferred after deploy. brain condition -> Brain & Nervous System hub (parent system)
+/secondary-topic/brain-injury/page/1,/explore-by-body-system/brain-nervous-system,,,,curated-parent-hub,high,not_found_log,,,,32,no,DEFERRED: target returns 404/200 (Googlebot/Chrome) until the url-hygiene PR deploys; re-run with --include-deferred after deploy. brain condition -> Brain & Nervous System hub (parent system)
+/secondary-topic/brain-injury/page/4,/explore-by-body-system/brain-nervous-system,,,,curated-parent-hub,high,not_found_log,,,,29,no,DEFERRED: target returns 404/200 (Googlebot/Chrome) until the url-hygiene PR deploys; re-run with --include-deferred after deploy. brain condition -> Brain & Nervous System hub (parent system)
+/medical-disclaimer,/disclaimer,,,,structural,high,not_found_log,,,,22,no,DEFERRED: target returns 404/200 (Googlebot/Chrome) until the url-hygiene PR deploys; re-run with --include-deferred after deploy. SPA canonical pointed here; live route is /disclaimer
+/secondary-topic/brain-injury/page/3,/explore-by-body-system/brain-nervous-system,,,,curated-parent-hub,high,not_found_log,,,,21,no,DEFERRED: target returns 404/200 (Googlebot/Chrome) until the url-hygiene PR deploys; re-run with --include-deferred after deploy. brain condition -> Brain & Nervous System hub (parent system)
+/article-author/* (3659 paths),,,,,wp-archive-class,n/a,not_found_log,,,,220891,no,"WP-era taxonomy archive with no equivalent page; mass-301 would read as soft-404 — leave 404 (or 410 with approval). e.g. /article-author/yasukazu-kajita, /article-author/liang-chen, /article-author/yasuko-k-bando"
+/country/* (37 paths),,,,,wp-archive-class,n/a,not_found_log,,,,2617,no,"WP-era taxonomy archive with no equivalent page; mass-301 would read as soft-404 — leave 404 (or 410 with approval). e.g. /country/mexico, /country/egypt, /country/germany"
+/published-year/* (35 paths),,,,,wp-archive-class,n/a,not_found_log,,,,2046,no,"WP-era taxonomy archive with no equivalent page; mass-301 would read as soft-404 — leave 404 (or 410 with approval). e.g. /published-year/1980, /published-year/2001, /published-year/2009"
+/blog/hydrogen-water-health-benefits-for-athletes-what-2024-research-shows-565894,/blog/hydrogen-water-health-benefits-for-athletes-what-2024-research-shows-551697,,,,existing-301-chains-to-410,n/a,ahrefs-backlinks+ahrefs-pages-by-backlinks,2,,,,no,existing row -> /blog/hydrogen-water-health-benefits-for-athletes-what-2024-research-shows-551697 which is 410 (Phase 2 retirement); no clearly same-topic live page — left as is
+/secondary-topic/aging,,,,,curated-parent-hub,medium,gsc+not_found_log,,886,16,183,no,no general aging hub (skin-aging is narrower; life-stage/elderly-aging is a keyword page)
+/application/* (20 paths),,,,,wp-archive-class,n/a,not_found_log,,,,1416,no,"WP-era taxonomy archive with no equivalent page; mass-301 would read as soft-404 — leave 404 (or 410 with approval). e.g. /application/aerosol, /application/spray, /application/culture-media"
+/test-subject/* (20 paths),,,,,wp-archive-class,n/a,not_found_log,,,,1365,no,"WP-era taxonomy archive with no equivalent page; mass-301 would read as soft-404 — leave 404 (or 410 with approval). e.g. /test-subject/guinea-pig, /test-subject/rabbit, /test-subject/earthworm-eudrilus-eugeniae"
+/body-part/* (25 paths),,,,,wp-archive-class,n/a,not_found_log,,,,1107,no,"WP-era taxonomy archive with no equivalent page; mass-301 would read as soft-404 — leave 404 (or 410 with approval). e.g. /body-part/peritonium, /body-part/tendon, /body-part/thymus"
+/secondary-topic/excercise,/explore-by-condition/exercise-recovery,,,,curated-parent-hub,medium,gsc+not_found_log,,7,,817,no,medium confidence — not applied; suggested target only. ambiguous: exercise-recovery vs athletic-performance
+/secondary-topic/dermatitis,/explore-by-body-system/skin-dermatology,,,,curated-parent-hub,medium,not_found_log,,,,678,no,medium confidence — not applied; suggested target only. parent-hub mapping without external signal (no GSC impressions/backlinks) — left 404 to avoid mass-301 soft-404s (PLAN §1). skin condition -> Skin & Dermatology hub (parent system)
+/tertiary-topic/fatigue/page/2,/explore-by-condition/chronic-fatigue,,,,curated-parent-hub,medium,gsc+not_found_log,,432,2,30,no,medium confidence — not applied; suggested target only. hub is narrower ('Chronic Fatigue') than the legacy topic
+/explore-by-condition/general-health-conditions,,,,,none,low,gsc,,332,4,,no,retired condition hub (not in health_conditions); no same-slug hub
+/tertiary-topic/acute-respiratory-distress-syndrome-ards,/explore-by-body-system/respiratory,,,,curated-parent-hub,medium,not_found_log,,,,511,no,medium confidence — not applied; suggested target only. parent-hub mapping without external signal (no GSC impressions/backlinks) — left 404 to avoid mass-301 soft-404s (PLAN §1). lung disease -> Respiratory hub (parent system)
+/ph/* (7 paths),,,,,wp-archive-class,n/a,not_found_log,,,,403,no,"WP-era taxonomy archive with no equivalent page; mass-301 would read as soft-404 — leave 404 (or 410 with approval). e.g. /ph/n-s, /ph/neutral, /ph/unknown"
+/additional-information,,,,,structural,low,gsc+not_found_log,,189,,179,no,unknown WP page
+/tertiary-topic/dyspnea,,,,,none,low,not_found_log,,,,282,no,no same-topic hub
+/secondary-topic/stroke,,,,,none,low,not_found_log,,,,265,no,no same-topic hub
+/secondary-topic/sepsis,,,,,curated-parent-hub,medium,gsc+not_found_log,,35,,229,no,systemic condition; no single parent hub
+/secondary-topic/cancer,,,,,none,low,not_found_log,,,,236,no,no same-topic hub
+/secondary-topic/cardiac-degeneration,,,,,none,low,not_found_log,,,,233,no,no same-topic hub
+/secondary-topic/heart-attack-myocardial-infarction,,,,,none,low,not_found_log,,,,224,no,no same-topic hub
+/secondary-topic/cardiovascular-disease-cvd,,,,,none,low,not_found_log,,,,219,no,no same-topic hub
+/secondary-topic/disuse-atrophy,,,,,none,low,not_found_log,,,,219,no,no same-topic hub
+/secondary-topic/shingles,,,,,curated-parent-hub,medium,gsc+not_found_log,,10,,203,no,skin + nerve condition; no single parent
+/secondary-topic/fatty-liver-disease-alcoholic,,,,,none,low,not_found_log,,,,209,no,no same-topic hub
+/tertiary-topic/excitotoxicity,,,,,none,low,not_found_log,,,,209,no,no same-topic hub
+/secondary-topic/chronic-obstructive-pulmonary-disease-copd,,,,,none,low,not_found_log,,,,204,no,no same-topic hub
+/secondary-topic/sleep-apnea,,,,,none,low,not_found_log,,,,201,no,no same-topic hub
+/secondary-topic/sleep-deprivation,,,,,none,low,not_found_log,,,,201,no,no same-topic hub
+/secondary-topic/food-poisoning,/explore-by-condition/gut-health,,,,curated-parent-hub,medium,gsc+not_found_log,,28,,171,no,medium confidence — not applied; suggested target only. GI illness; Gut Health hub is broad
+/secondary-topic/osteoporosis,,,,,none,low,not_found_log,,,,196,no,no same-topic hub
+/tertiary-topic/multiple-organ-dysfunction-syndrome-mods,,,,,none,low,not_found_log,,,,194,no,no same-topic hub
+/secondary-topic/corneal-injury,,,,,none,low,not_found_log,,,,190,no,no same-topic hub
+/tertiary-topic/encephalopathy,,,,,none,low,not_found_log,,,,190,no,no same-topic hub
+/secondary-topic/non-alcoholic-steatohepatitis-nash,,,,,none,low,not_found_log,,,,188,no,no same-topic hub
+/secondary-topic/heat-stress,,,,,none,low,not_found_log,,,,186,no,no same-topic hub
+/secondary-topic/lipid-metabolism,,,,,none,low,not_found_log,,,,186,no,no same-topic hub
+/tertiary-topic/edema,,,,,none,low,not_found_log,,,,186,no,no same-topic hub
+/secondary-topic/haemolytic-anemia,,,,,none,low,not_found_log,,,,184,no,no same-topic hub
+/secondary-topic/vasculitis,,,,,none,low,not_found_log,,,,184,no,no same-topic hub
+/tertiary-topic/alkali-burn,,,,,curated-parent-hub,medium,gsc+not_found_log,,1,,183,no,H2 alkali-burn research is mostly corneal (eye) vs skin — ambiguous
+/tertiary-topic/cataract,,,,,none,low,not_found_log,,,,184,no,no same-topic hub
+/secondary-topic/mastitis,,,,,none,low,not_found_log,,,,183,no,no same-topic hub
+/secondary-topic/intestinal-injury,,,,,none,low,not_found_log,,,,181,no,no same-topic hub
+/secondary-topic/upper-respiratory-tract-infection,,,,,none,low,not_found_log,,,,180,no,no same-topic hub
+/rank/* (3 paths),,,,,wp-archive-class,n/a,not_found_log,,,,177,no,"WP-era taxonomy archive with no equivalent page; mass-301 would read as soft-404 — leave 404 (or 410 with approval). e.g. /rank/neutral, /rank/negative, /rank/positive"
+/secondary-topic/alcoholic-liver-disease,,,,,none,low,not_found_log,,,,177,no,no same-topic hub
+/secondary-topic/painful-bladder-syndrome,,,,,none,low,not_found_log,,,,175,no,no same-topic hub
+/secondary-topic/cavities,,,,,none,low,not_found_log,,,,174,no,no same-topic hub
+/tertiary-topic/postoperative-liver-failure,,,,,none,low,not_found_log,,,,173,no,no same-topic hub
+/tertiary-topic/glaucoma,,,,,none,low,not_found_log,,,,172,no,no same-topic hub
+/secondary-topic/preeclampsia,,,,,none,low,not_found_log,,,,170,no,no same-topic hub
+/secondary-topic/immune-dysfunction,,,,,none,low,not_found_log,,,,169,no,no same-topic hub
+/secondary-topic/cardiac-hypertrophy,,,,,none,low,not_found_log,,,,168,no,no same-topic hub
+/secondary-topic/multiple-sclerosis-ms,,,,,none,low,not_found_log,,,,168,no,no same-topic hub
+/secondary-topic/blunt-chest-trauma,,,,,none,low,not_found_log,,,,167,no,no same-topic hub
+/secondary-topic/retinal-injury,,,,,none,low,not_found_log,,,,167,no,no same-topic hub
+/secondary-topic/gastroesophageal-reflux-disease-gerd,,,,,none,low,not_found_log,,,,166,no,no same-topic hub
+/tertiary-topic/pressure-ulcer,,,,,none,low,not_found_log,,,,166,no,no same-topic hub
+/secondary-topic/shock,,,,,none,low,not_found_log,,,,165,no,no same-topic hub
+/tertiary-topic/retinal-vein-occlusion,,,,,none,low,not_found_log,,,,162,no,no same-topic hub
+/secondary-topic/rhinitis,,,,,none,low,not_found_log,,,,161,no,no same-topic hub
+/tertiary-topic/placental-stress,,,,,none,low,not_found_log,,,,161,no,no same-topic hub
+/secondary-topic/erythema,,,,,none,low,not_found_log,,,,160,no,no same-topic hub
+/secondary-topic/alcoholic-hangover,,,,,none,low,not_found_log,,,,159,no,no same-topic hub
+/secondary-topic/gingivitis,,,,,none,low,not_found_log,,,,159,no,no same-topic hub
+/tertiary-topic/oxalate-injury,,,,,none,low,not_found_log,,,,159,no,no same-topic hub
+/tertiary-topic/endothelial-injury,,,,,none,low,not_found_log,,,,158,no,no same-topic hub
+/tertiary-topic/gastritis,,,,,none,low,not_found_log,,,,157,no,no same-topic hub
+/secondary-topic/gastric-mucosal-injury,,,,,none,low,not_found_log,,,,155,no,no same-topic hub
+/secondary-topic/tracheal-stenosis,,,,,none,low,not_found_log,,,,155,no,no same-topic hub
+/tertiary-topic/alcohol-toxicity,,,,,none,low,not_found_log,,,,154,no,no same-topic hub
+/secondary-topic/addiction,,,,,none,low,not_found_log,,,,152,no,no same-topic hub
+/secondary-topic/liver-disease,,,,,none,low,not_found_log,,,,152,no,no same-topic hub
+/tertiary-topic/cardiomyopathy,,,,,none,low,not_found_log,,,,152,no,no same-topic hub
+/tertiary-topic/colitis,,,,,none,low,not_found_log,,,,151,no,no same-topic hub
+/tertiary-topic/retinitis-pigmentosa,,,,,none,low,not_found_log,,,,151,no,no same-topic hub
+/secondary-topic/traumatic-brain-injury,,,,,none,low,not_found_log,,,,150,no,no same-topic hub
+/tertiary-topic/acute-tubuluar-necrosis,,,,,none,low,not_found_log,,,,150,no,no same-topic hub
+/tertiary-topic/pathogenic-bacterial-load,,,,,none,low,not_found_log,,,,149,no,no same-topic hub
+/tertiary-topic/ischemia-reperfusion-i-r-injury,,,,,none,low,not_found_log,,,,148,no,no same-topic hub
+/secondary-topic/dentin-integrity,,,,,curated-parent-hub,low,gsc+not_found_log,,3,,143,no,no oral/dental hub
+/secondary-topic/lung-injury,,,,,none,low,not_found_log,,,,146,no,no same-topic hub
+/tertiary-topic/myocardial-necrosis,,,,,none,low,not_found_log,,,,145,no,no same-topic hub
+/secondary-topic/spinal-cord-injury,,,,,none,low,not_found_log,,,,144,no,no same-topic hub
+/secondary-topic/gastric-ulcer,,,,,none,low,not_found_log,,,,143,no,no same-topic hub
+/secondary-topic/pregnancy,,,,,none,low,not_found_log,,,,143,no,no same-topic hub
+/tertiary-topic/intracranial-hemorrhage,,,,,none,low,not_found_log,,,,143,no,no same-topic hub
+/tertiary-topic/depression,,,,,none,low,not_found_log,,,,142,no,no same-topic hub
+/tertiary-topic/vascular-dysfunction,,,,,none,low,not_found_log,,,,142,no,no same-topic hub
+/explore-by-condition/general-health,,,,,none,low,gsc,,41,2,,no,retired condition hub (not in health_conditions); no same-slug hub
+/secondary-topic/indigestion,,,,,none,low,not_found_log,,,,141,no,no same-topic hub
+/tertiary-topic/iron-overload,,,,,none,low,not_found_log,,,,141,no,no same-topic hub
+/secondary-topic/intervertebral-disc-degeneration-ivdd,,,,,none,low,not_found_log,,,,140,no,no same-topic hub
+/tertiary-topic/constipation,,,,,none,low,not_found_log,,,,140,no,no same-topic hub
+/tertiary-topic/diabetic-retinopathy,,,,,none,low,not_found_log,,,,140,no,no same-topic hub
+/tertiary-topic/norovirus-nov-infection,,,,,none,low,not_found_log,,,,140,no,no same-topic hub
+/tertiary-topic/peripheral-arterial-disease,,,,,none,low,not_found_log,,,,140,no,no same-topic hub
+/tertiary-topic/acne,,,,,none,low,not_found_log,,,,139,no,no same-topic hub
+/tertiary-topic/hair-quality,,,,,none,low,not_found_log,,,,139,no,no same-topic hub
+/secondary-topic/osteoarthritis-oa,,,,,none,low,not_found_log,,,,138,no,no same-topic hub
+/tertiary-topic/bile-duct-injury,,,,,none,low,not_found_log,,,,138,no,no same-topic hub
+/secondary-topic/seizure,,,,,none,low,not_found_log,,,,137,no,no same-topic hub
+/secondary-topic/diabetes-type-i,,,,,none,low,not_found_log,,,,136,no,no same-topic hub
+/tertiary-topic/helicobacter-pylori-infection,,,,,none,low,not_found_log,,,,136,no,no same-topic hub
+/tertiary-topic/congenital-obstructive-nephropathy,,,,,none,low,not_found_log,,,,134,no,no same-topic hub
+/tertiary-topic/macular-degeneration,,,,,none,low,not_found_log,,,,134,no,no same-topic hub
+/tertiary-topic/psoriasis-associated-arthritis,,,,,none,low,not_found_log,,,,134,no,no same-topic hub
+/tertiary-topic/no-reflow-syndrome,,,,,none,low,not_found_log,,,,133,no,no same-topic hub
+/tertiary-topic/panic-disorder,,,,,none,low,not_found_log,,,,132,no,no same-topic hub
+/blog/hydrogen-water-general-can-it-help-fight-cancer-771335,/blog/hydrogen-water-general-can-it-help-fight-cancer-763019,,,,existing-301-chains-to-410,n/a,gsc,,81,1,,no,existing row -> /blog/hydrogen-water-general-can-it-help-fight-cancer-763019 which is 410 (Phase 2 retirement); no clearly same-topic live page — left as is
+/comments/feed,,,,,structural,low,not_found_log,,,,131,no,no comments feed
+/secondary-topic/preterm-birth,,,,,none,low,not_found_log,,,,130,no,no same-topic hub
+/tertiary-topic/fatigue,/explore-by-condition/chronic-fatigue,,,,curated-parent-hub,medium,gsc+not_found_log,,41,,89,no,medium confidence — not applied; suggested target only. hub is narrower ('Chronic Fatigue') than the legacy topic
+/tertiary-topic/necrotizing-enterocolitis,,,,,none,low,not_found_log,,,,130,no,no same-topic hub
+/tertiary-topic/dermatophagoides-farinae-infection,,,,,none,low,not_found_log,,,,129,no,no same-topic hub
+/tertiary-topic/motor-deficit,,,,,none,low,not_found_log,,,,129,no,no same-topic hub
+/secondary-topic/premature-ovarian-failure,,,,,none,low,not_found_log,,,,128,no,no same-topic hub
+/tertiary-topic/aflatoxicosis,,,,,curated-parent-hub,medium,gsc+not_found_log,,2,,125,no,toxin exposure; liver hub is a keyword page
+/tertiary-topic/fluke-infection,,,,,none,low,not_found_log,,,,127,no,no same-topic hub
+/secondary-topic/liver-injury,,,,,none,low,not_found_log,,,,126,no,no same-topic hub
+/secondary-topic/ovarian-injury,,,,,none,low,not_found_log,,,,126,no,no same-topic hub
+/tertiary-topic/fracture,,,,,none,low,not_found_log,,,,126,no,no same-topic hub
+/tertiary-topic/optic-nerve-crush,,,,,none,low,not_found_log,,,,126,no,no same-topic hub
+/explore-by-condition/pulmonary-veno-occlusive-disease-pvod,,,,,none,low,gsc,,125,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/secondary-topic/hepatitis-b,,,,,none,low,not_found_log,,,,125,no,no same-topic hub
+/tertiary-topic/graft-versus-hose-disease,,,,,none,low,not_found_log,,,,125,no,no same-topic hub
+/tertiary-topic/stress-ulcer,,,,,none,low,not_found_log,,,,125,no,no same-topic hub
+/tertiary-topic/maternal-immune-activation,,,,,none,low,not_found_log,,,,124,no,no same-topic hub
+/tertiary-topic/hypoxia-ischemia,,,,,none,low,not_found_log,,,,121,no,no same-topic hub
+/tertiary-topic/lung-contusion,,,,,none,low,not_found_log,,,,121,no,no same-topic hub
+/tertiary-topic/transplantation-graft-injury,,,,,none,low,not_found_log,,,,121,no,no same-topic hub
+/tertiary-topic/auditory-neuropathy,,,,,none,low,not_found_log,,,,120,no,no same-topic hub
+/tertiary-topic/diarrhea,,,,,none,low,not_found_log,,,,120,no,no same-topic hub
+/tertiary-topic/glomerulosclerosis,,,,,none,low,not_found_log,,,,120,no,no same-topic hub
+/secondary-topic/dehydration,,,,,none,low,not_found_log,,,,119,no,no same-topic hub
+/secondary-topic/dry-eye,,,,,none,low,not_found_log,,,,119,no,no same-topic hub
+/tertiary-topic/postoperative-pain,,,,,none,low,not_found_log,,,,119,no,no same-topic hub
+/secondary-topic/alzheimers-disease-ad,,,,,none,low,not_found_log,,,,118,no,no same-topic hub
+/secondary-topic/chronic-heart-failure,,,,,none,low,not_found_log,,,,118,no,no same-topic hub
+/secondary-topic/pancreatitis,,,,,none,low,not_found_log,,,,118,no,no same-topic hub
+/secondary-topic/osteonecrosis,,,,,none,low,not_found_log,,,,117,no,no same-topic hub
+/secondary-topic/coma,,,,,none,low,not_found_log,,,,116,no,no same-topic hub
+/secondary-topic/dementia,,,,,none,low,not_found_log,,,,116,no,no same-topic hub
+/tertiary-topic/hidden-blood-loss,,,,,none,low,not_found_log,,,,116,no,no same-topic hub
+/tertiary-topic/postsurgical-peritoneal-adhesions,,,,,none,low,not_found_log,,,,116,no,no same-topic hub
+/tertiary-topic/endotoxemia,,,,,none,low,not_found_log,,,,115,no,no same-topic hub
+/secondary-topic/cosmetic-issues,,,,,none,low,not_found_log,,,,113,no,no same-topic hub
+/secondary-topic/rhinosinusitis,,,,,none,low,not_found_log,,,,113,no,no same-topic hub
+/tertiary-topic/aplastic-anemia,,,,,none,low,not_found_log,,,,113,no,no same-topic hub
+/tertiary-topic/diffuse-axonal-injury,,,,,none,low,not_found_log,,,,112,no,no same-topic hub
+/tertiary-topic/fibrosis,,,,,curated-parent-hub,medium,gsc+not_found_log,,35,,77,no,organ unspecified
+/tertiary-topic/sensorineural-hearing-loss,,,,,none,low,not_found_log,,,,111,no,no same-topic hub
+/tools/hydrogen-research/stats,/research-analytics,,,,structural,medium,not_found_log,,,,110,no,medium confidence — not applied; suggested target only. probably the analytics page; unverified
+/secondary-topic/hearing-loss,,,,,none,low,not_found_log,,,,109,no,no same-topic hub
+/secondary-topic/liver-failure,,,,,none,low,not_found_log,,,,108,no,no same-topic hub
+/tools/hydrogen-research/export,,,,,structural,low,not_found_log,,,,108,no,no equivalent
+/secondary-topic/paraplegia,,,,,none,low,not_found_log,,,,107,no,no same-topic hub
+/tertiary-topic/status-epilepticus,,,,,none,low,not_found_log,,,,107,no,no same-topic hub
+/secondary-topic/obstructive-jaundice,,,,,none,low,not_found_log,,,,106,no,no same-topic hub
+/tertiary-topic/ischemia-reperfusion-i-r-injury/page/3,,,,,none,low,not_found_log,,,,106,no,no same-topic hub
+/tertiary-topic/necrotizing-pancreatitis,,,,,none,low,not_found_log,,,,106,no,no same-topic hub
+/secondary-topic/polycystic-ovary-syndrome,,,,,none,low,not_found_log,,,,105,no,no same-topic hub
+/secondary-topic/ros-scavenging,,,,,none,low,not_found_log,,,,102,no,no same-topic hub
+/tertiary-topic/intracranial-hemorrhage/page/2,,,,,none,low,not_found_log,,,,101,no,no same-topic hub
+/tertiary-topic/rhabdomyolysis,,,,,none,low,not_found_log,,,,99,no,no same-topic hub
+/explore-by-condition/general-wellness,,,,,none,low,gsc,,48,1,,no,retired condition hub (not in health_conditions); no same-slug hub
+/secondary-topic/periodontitis-plaque-gingivitis,,,,,none,low,not_found_log,,,,98,no,no same-topic hub
+/tertiary-topic/candida-yeast,,,,,curated-parent-hub,low,gsc+not_found_log,,1,,97,no,no fungal/infection hub
+/tertiary-topic/hemorrhagic-shock,,,,,none,low,not_found_log,,,,98,no,no same-topic hub
+/secondary-topic/periodontitis,,,,,none,low,not_found_log,,,,97,no,no same-topic hub
+/tertiary-topic/drug-toxicity-cyclospirine-a,,,,,none,low,not_found_log,,,,97,no,no same-topic hub
+/secondary-topic/hydrogen-biology,,,,,none,low,not_found_log,,,,96,no,no same-topic hub
+/secondary-topic/parasite-infection,,,,,none,low,not_found_log,,,,96,no,no same-topic hub
+/secondary-topic/intraocular-pressure,,,,,none,low,not_found_log,,,,92,no,no same-topic hub
+/secondary-topic/osteogenesis,,,,,none,low,not_found_log,,,,90,no,no same-topic hub
+/secondary-topic/neuropathic-pain,,,,,none,low,not_found_log,,,,89,no,no same-topic hub
+/tertiary-topic/post-herpetic-neuralgia,,,,,none,low,not_found_log,,,,89,no,no same-topic hub
+/secondary-topic/autism,,,,,none,low,not_found_log,,,,88,no,no same-topic hub
+/tertiary-topic/cardiac-hypertrophy,,,,,none,low,not_found_log,,,,87,no,no same-topic hub
+/tertiary-topic/ulcerative-colitis,,,,,none,low,not_found_log,,,,87,no,no same-topic hub
+/blog/hydrogen-water-health-benefits-for-cancer-your-questions-answered-267281,/blog/hydrogen-water-health-benefits-for-cancer-your-questions-answered-094049,,,,existing-301-chains-to-410,n/a,gsc,,36,1,,no,existing row -> /blog/hydrogen-water-health-benefits-for-cancer-your-questions-answered-094049 which is 410 (Phase 2 retirement); no clearly same-topic live page — left as is
+/secondary-topic/periodontitis/page/2,,,,,none,low,not_found_log,,,,86,no,no same-topic hub
+/study_template,,,,,structural,low,gsc+not_found_log,,52,,34,no,WP template artefact
+/tertiary-topic/neurodegeneration,,,,,none,low,not_found_log,,,,86,no,no same-topic hub
+/tertiary-topic/spermatogenesis,,,,,none,low,not_found_log,,,,86,no,no same-topic hub
+/secondary-topic/blood-composition,,,,,none,low,not_found_log,,,,85,no,no same-topic hub
+/secondary-topic/gastroenteritis,,,,,none,low,not_found_log,,,,85,no,no same-topic hub
+/tertiary-topic/smog-exposure,,,,,none,low,not_found_log,,,,85,no,no same-topic hub
+/tertiary-topic/stem-cell-transplantation,,,,,none,low,not_found_log,,,,85,no,no same-topic hub
+/secondary-topic/gene-expression,,,,,none,low,not_found_log,,,,84,no,no same-topic hub
+/secondary-topic/airway-disease,,,,,none,low,not_found_log,,,,83,no,no same-topic hub
+/tertiary-topic/pesticide-toxicity-chlorpyrifos,,,,,none,low,not_found_log,,,,83,no,no same-topic hub
+/secondary-topic/bladder-outlet-obstruction,,,,,none,low,not_found_log,,,,82,no,no same-topic hub
+/secondary-topic/stress-resilience,,,,,none,low,not_found_log,,,,82,no,no same-topic hub
+/tertiary-topic/cigarette-smoke-exposure,,,,,none,low,not_found_log,,,,82,no,no same-topic hub
+/tertiary-topic/wound-healing,,,,,none,low,not_found_log,,,,82,no,no same-topic hub
+/blog/hydrogen-water-general-health-what-2024-research-shows-478774,/blog/hydrogen-water-general-health-what-2024-research-shows-223550,,,,existing-301-chains-to-410,n/a,gsc,,31,1,,no,existing row -> /blog/hydrogen-water-general-health-what-2024-research-shows-223550 which is 410 (Phase 2 retirement); no clearly same-topic live page — left as is
+/tertiary-topic/amyloid-beta-toxicity,,,,,none,low,not_found_log,,,,81,no,no same-topic hub
+/tertiary-topic/biocompatibility,,,,,none,low,not_found_log,,,,81,no,no same-topic hub
+/tertiary-topic/coenzyme-q,,,,,none,low,not_found_log,,,,81,no,no same-topic hub
+/tertiary-topic/drug-toxicity-metformin,,,,,none,low,not_found_log,,,,81,no,no same-topic hub
+/tertiary-topic/intersitial-cystitis,,,,,none,low,not_found_log,,,,81,no,no same-topic hub
+/tertiary-topic/intestinal-volvulus,,,,,none,low,not_found_log,,,,81,no,no same-topic hub
+/tertiary-topic/lipid-metabolism,,,,,none,low,not_found_log,,,,81,no,no same-topic hub
+/tertiary-topic/oxygen-saturation,,,,,none,low,not_found_log,,,,81,no,no same-topic hub
+/tertiary-topic/periodontitis-plaque-gingivitis,,,,,none,low,not_found_log,,,,81,no,no same-topic hub
+/tools,,,,,structural,medium,not_found_log,,,,81,no,no equivalent
+/blog/hydrogen-water-for-heart-health-your-questions-answered-976350,/blog/hydrogen-water-heart-health-your-questions-answered-788011,,,,existing-301-chains-to-410,n/a,gsc,,30,1,,no,existing row -> /blog/hydrogen-water-heart-health-your-questions-answered-788011 which is 410 (Phase 2 retirement); no clearly same-topic live page — left as is
+/tertiary-topic/drug-toxicity-acetominophen,,,,,none,low,not_found_log,,,,80,no,no same-topic hub
+/tertiary-topic/pesticide-toxicity-paraquat,,,,,none,low,not_found_log,,,,80,no,no same-topic hub
+/tertiary-topic/anastomosis,,,,,none,low,not_found_log,,,,79,no,no same-topic hub
+/tertiary-topic/contrast-media-toxicity-loversol,,,,,none,low,not_found_log,,,,79,no,no same-topic hub
+/tertiary-topic/diabetic-peripheral-neuropathy,,,,,none,low,not_found_log,,,,79,no,no same-topic hub
+/tertiary-topic/drug-toxicity-methamphetamine,,,,,none,low,not_found_log,,,,79,no,no same-topic hub
+/tertiary-topic/melamine-toxicity,,,,,none,low,not_found_log,,,,79,no,no same-topic hub
+/tertiary-topic/mineralization-rate,,,,,none,low,not_found_log,,,,79,no,no same-topic hub
+/secondary-topic/denture-care,,,,,none,low,not_found_log,,,,78,no,no same-topic hub
+/tertiary-topic/bronchopulmonary-dysplasia,,,,,none,low,not_found_log,,,,78,no,no same-topic hub
+/secondary-topic/radioprotection,,,,,none,low,not_found_log,,,,77,no,no same-topic hub
+/secondary-topic/antibiotic-resistance,,,,,none,low,not_found_log,,,,76,no,no same-topic hub
+/tertiary-topic/hydrogen-biology,,,,,none,low,not_found_log,,,,76,no,no same-topic hub
+/tertiary-topic/metabolic-acidosis,,,,,none,low,not_found_log,,,,76,no,no same-topic hub
+/blog/hydrogen-water-skin-benefits-what-2024-research-shows-353602,,,,,none,low,gsc,,24,1,,no,no equivalent page
+/secondary-topic/asthma,,,,,none,low,not_found_log,,,,74,no,no same-topic hub
+/tertiary-topic/immune-dysfunction,,,,,none,low,not_found_log,,,,74,no,no same-topic hub
+/tertiary-topic/multiple-organ-failure-mof,,,,,none,low,not_found_log,,,,74,no,no same-topic hub
+/tertiary-topic/mycotoxicosis,,,,,none,low,not_found_log,,,,74,no,no same-topic hub
+/tertiary-topic/pathogenic-bacterial-load/page/3,,,,,none,low,not_found_log,,,,74,no,no same-topic hub
+/tertiary-topic/uv-radiation,,,,,none,low,not_found_log,,,,74,no,no same-topic hub
+/tertiary-topic/x-ray-radiation,,,,,none,low,not_found_log,,,,74,no,no same-topic hub
+/secondary-topic/atherosclerosis,,,,,none,low,not_found_log,,,,73,no,no same-topic hub
+/tertiary-topic/chemotherapy-toxicity-bleomycin,,,,,none,low,not_found_log,,,,73,no,no same-topic hub
+/secondary-topic/infertility,,,,,none,low,not_found_log,,,,72,no,no same-topic hub
+/tertiary-topic/drowning,,,,,none,low,not_found_log,,,,72,no,no same-topic hub
+/tertiary-topic/lung-injury,,,,,none,low,not_found_log,,,,72,no,no same-topic hub
+/tertiary-topic/surgery-transplantation,,,,,none,low,not_found_log,,,,72,no,no same-topic hub
+/tertiary-topic/xenobiotic-clearance,,,,,none,low,not_found_log,,,,72,no,no same-topic hub
+/explore-by-condition/whole-body-health,,,,,none,low,gsc,,71,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/secondary-topic/epithelial-dysfunction,,,,,none,low,not_found_log,,,,71,no,no same-topic hub
+/secondary-topic/heart-attack-myocardial-infarction/page/3,,,,,none,low,not_found_log,,,,71,no,no same-topic hub
+/tertiary-topic/l-dopa-induced-dyskinesia,,,,,none,low,not_found_log,,,,71,no,no same-topic hub
+/tertiary-topic/metal-toxicity-mercury,,,,,none,low,not_found_log,,,,71,no,no same-topic hub
+/tertiary-topic/ovarian-reserve-function,,,,,none,low,not_found_log,,,,71,no,no same-topic hub
+/tertiary-topic/autophagy,,,,,none,low,not_found_log,,,,70,no,no same-topic hub
+/tertiary-topic/cardiopulmonary-bypass,,,,,none,low,not_found_log,,,,70,no,no same-topic hub
+/tertiary-topic/chemotherapy-toxicity-mfolfox6,,,,,none,low,not_found_log,,,,70,no,no same-topic hub
+/tertiary-topic/kawasaki-disease,,,,,none,low,not_found_log,,,,70,no,no same-topic hub
+/tertiary-topic/noise-pollution,,,,,none,low,not_found_log,,,,70,no,no same-topic hub
+/explore-by-condition/aging,,,,,none,low,gsc,,19,1,,no,retired condition hub (not in health_conditions); no same-slug hub
+/tertiary-topic/asphyxial-encephalopathy,,,,,none,low,not_found_log,,,,69,no,no same-topic hub
+/tertiary-topic/encapsulating-peritoneal-sclerosis,,,,,none,low,not_found_log,,,,69,no,no same-topic hub
+/tertiary-topic/heat-retention,,,,,none,low,not_found_log,,,,69,no,no same-topic hub
+/tertiary-topic/hyperoxia,,,,,none,low,not_found_log,,,,69,no,no same-topic hub
+/tertiary-topic/metal-toxicity-nickel,,,,,none,low,not_found_log,,,,69,no,no same-topic hub
+/tertiary-topic/oncogenesis,,,,,none,low,not_found_log,,,,69,no,no same-topic hub
+/tertiary-topic/plastic-surgery,,,,,none,low,not_found_log,,,,69,no,no same-topic hub
+/secondary-topic/environmental-pollution,,,,,none,low,not_found_log,,,,68,no,no same-topic hub
+/secondary-topic/viral-infection,,,,,none,low,not_found_log,,,,68,no,no same-topic hub
+/tertiary-topic/antibiotic-toxicity-gentamicin,,,,,none,low,not_found_log,,,,68,no,no same-topic hub
+/tertiary-topic/drug-toxicity-remifentanil,,,,,none,low,not_found_log,,,,68,no,no same-topic hub
+/tertiary-topic/stroke,,,,,none,low,not_found_log,,,,68,no,no same-topic hub
+/tertiary-topic/metabolic-regulation,,,,,none,low,not_found_log,,,,67,no,no same-topic hub
+/blog/hydrogen-water-general-your-questions-answered-884304,/blog/hydrogen-water-general-your-questions-answered-271789,,,,existing-301-chains-to-410,n/a,gsc,,16,1,,no,existing row -> /blog/hydrogen-water-general-your-questions-answered-271789 which is 410 (Phase 2 retirement); no clearly same-topic live page — left as is
+/secondary-topic/fasting,,,,,none,low,not_found_log,,,,66,no,no same-topic hub
+/tertiary-topic/idiopathic-sudden-sensorineural-hearing-loss,,,,,none,low,not_found_log,,,,66,no,no same-topic hub
+/tertiary-topic/metal-toxicity-arsenic,,,,,none,low,not_found_log,,,,66,no,no same-topic hub
+/tertiary-topic/pemphigus,,,,,none,low,not_found_log,,,,66,no,no same-topic hub
+/tertiary-topic/ureteral-obstruction,,,,,none,low,not_found_log,,,,65,no,no same-topic hub
+/tertiary-topic/chagas-disease,,,,,none,low,not_found_log,,,,64,no,no same-topic hub
+/tertiary-topic/platelet-aggregation,,,,,none,low,not_found_log,,,,64,no,no same-topic hub
+/tertiary-topic/hypoxia-ischemia/page/3,,,,,none,low,not_found_log,,,,63,no,no same-topic hub
+/blog/how-to-use-hydrogen-water-for-energy-a-science-backed-guide-695573,/blog/how-to-use-hydrogen-water-for-energy-a-science-backed-guide-736013,,,,existing-301-chains-to-410,n/a,gsc,,12,1,,no,existing row -> /blog/how-to-use-hydrogen-water-for-energy-a-science-backed-guide-736013 which is 410 (Phase 2 retirement); no clearly same-topic live page — left as is
+/tertiary-topic/atrophy,,,,,none,low,not_found_log,,,,62,no,no same-topic hub
+/secondary-topic/uveal-injury,,,,,none,low,not_found_log,,,,59,no,no same-topic hub
+/tertiary-topic/concussion,,,,,none,low,not_found_log,,,,58,no,no same-topic hub
+/tertiary-topic/foot-ulcer,,,,,none,low,not_found_log,,,,56,no,no same-topic hub
+/tertiary-topic/unstable-angina,,,,,none,low,not_found_log,,,,54,no,no same-topic hub
+/tertiary-topic/diabetic-nephropathy,,,,,none,low,not_found_log,,,,53,no,no same-topic hub
+/tertiary-topic/hypoxia-ischemia/page/2,,,,,none,low,not_found_log,,,,53,no,no same-topic hub
+/tertiary-topic/postoperative-cognitive-impairment,,,,,none,low,not_found_log,,,,53,no,no same-topic hub
+/tertiary-topic/ulcer,,,,,none,low,not_found_log,,,,53,no,no same-topic hub
+/explore-by-condition/cellular-aging,,,,,none,low,gsc,,52,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/secondary-topic/cancer/page/2,,,,,none,low,not_found_log,,,,51,no,no same-topic hub
+/methods_of_application,/explore-by-delivery-method,,,,structural,medium,not_found_log,,,,46,no,medium confidence — not applied; suggested target only. WP 'application' index; taxonomy mixes delivery + lab methods
+/explore-by-condition/inflammatory-disorders,,,,,none,low,gsc,,44,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/secondary-topic/cellular-redox-state,,,,,none,low,not_found_log,,,,44,no,no same-topic hub
+/explore-by-condition/aspirin-induced-gastritis,,,,,none,low,gsc,,43,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/secondary-topic/heart-attack-myocardial-infarction/page/2,,,,,none,low,not_found_log,,,,43,no,no same-topic hub
+/secondary-topic/cancer/page/11,,,,,none,low,not_found_log,,,,42,no,no same-topic hub
+/tertiary-topic/corneal-thickness,,,,,none,low,not_found_log,,,,41,no,no same-topic hub
+/tertiary-topic/chemotherapy-toxicity-cisplatin,,,,,none,low,not_found_log,,,,40,no,no same-topic hub
+/explore-by-condition/radiation-exposure,,,,,none,low,gsc,,39,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/skin-cancer,,,,,none,low,gsc,,39,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/secondary-topic/sepsis/page/9,,,,,curated-parent-hub,medium,not_found_log,,,,39,no,systemic condition; no single parent hub
+/tertiary-topic/metal-toxicity-lead,,,,,none,low,not_found_log,,,,39,no,no same-topic hub
+/explore-by-condition/arsenic-poisoning,,,,,none,low,gsc,,38,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/secondary-topic/extracorporeal-cpr-ecpr,,,,,none,low,not_found_log,,,,38,no,no same-topic hub
+/secondary-topic/sepsis/page/8,,,,,curated-parent-hub,medium,not_found_log,,,,38,no,systemic condition; no single parent hub
+/tertiary-topic/electrolytes,,,,,none,low,not_found_log,,,,38,no,no same-topic hub
+/secondary-topic/traumatic-brain-injury/page/2,,,,,none,low,not_found_log,,,,37,no,no same-topic hub
+/study/hydrogen-palladium-recrystallization-mechanical-properties,,,,,none,low,gsc,,37,,,no,no current study with this title
+/tertiary-topic/herbicide-toxicity-nitrofen,,,,,none,low,not_found_log,,,,37,no,no same-topic hub
+/tertiary-topic/hormones,,,,,none,low,not_found_log,,,,37,no,no same-topic hub
+/tertiary-topic/pathogenic-bacterial-load/page/2,,,,,none,low,not_found_log,,,,37,no,no same-topic hub
+/tertiary-topic/transplantation-graft-injury/page/3,,,,,none,low,not_found_log,,,,37,no,no same-topic hub
+/explore-by-condition/h-pylori-infection,,,,,none,low,gsc,,36,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/secondary-topic/acute-kidney-injury/page/2,,,,,none,low,not_found_log,,,,36,no,no same-topic hub
+/secondary-topic/excercise/page/6,/explore-by-condition/exercise-recovery,,,,curated-parent-hub,medium,not_found_log,,,,36,no,medium confidence — not applied; suggested target only. ambiguous: exercise-recovery vs athletic-performance
+/tertiary-topic/life-expectancy,,,,,none,low,not_found_log,,,,36,no,no same-topic hub
+/explore-by-condition/endometrial-cancer,,,,,none,low,gsc,,35,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/fetal-brain-injury,,,,,none,low,gsc,,35,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/paraquat-poisoning,,,,,none,low,gsc,,35,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/secondary-topic/aging/page/3,,,,,curated-parent-hub,medium,not_found_log,,,,35,no,no general aging hub (skin-aging is narrower; life-stage/elderly-aging is a keyword page)
+/tertiary-topic/hypoxia-ischemia/page/4,,,,,none,low,not_found_log,,,,35,no,no same-topic hub
+/explore-by-condition/chronic-inflammatory-pain,,,,,none,low,gsc,,34,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/secondary-topic/aging/page/2,,,,,curated-parent-hub,medium,not_found_log,,,,34,no,no general aging hub (skin-aging is narrower; life-stage/elderly-aging is a keyword page)
+/secondary-topic/liver-function,,,,,none,low,not_found_log,,,,34,no,no same-topic hub
+/tertiary-topic/radioprotection,,,,,none,low,not_found_log,,,,34,no,no same-topic hub
+/tertiary-topic/fluidity-viscosity,,,,,none,low,not_found_log,,,,33,no,no same-topic hub
+/tertiary-topic/hunger-suppression,,,,,none,low,not_found_log,,,,33,no,no same-topic hub
+/tertiary-topic/intracranial-hemorrhage/page/1,,,,,none,low,not_found_log,,,,33,no,no same-topic hub
+/explore-by-condition/cholangiofibrosis,,,,,none,low,gsc,,32,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/corneal-neovascularization,,,,,none,low,gsc,,32,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/secondary-topic/permeability,,,,,none,low,not_found_log,,,,32,no,no same-topic hub
+/secondary-topic/protein-digestion,,,,,none,low,not_found_log,,,,32,no,no same-topic hub
+/explore-by-condition/neurodevelopmental-disorders,,,,,none,low,gsc,,31,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/pulmonary-arterial-hypertension,,,,,none,low,gsc,,31,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/radiation-induced-immunosuppression,,,,,none,low,gsc,,31,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/whole-body,,,,,none,low,gsc,,31,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/secondary-topic/hearing-loss/page/1,,,,,none,low,not_found_log,,,,31,no,no same-topic hub
+/secondary-topic/mitochondrial-function,,,,,none,low,not_found_log,,,,31,no,no same-topic hub
+/tertiary-topic/anesthetic-toxicity-sevoflurane,,,,,none,low,not_found_log,,,,31,no,no same-topic hub
+/tertiary-topic/ischemia-reperfusion-i-r-injury/page/12,,,,,none,low,not_found_log,,,,31,no,no same-topic hub
+/tertiary-topic/telomere-length,,,,,none,low,not_found_log,,,,31,no,no same-topic hub
+/explore-by-condition/skin-irritation,,,,,none,low,gsc,,30,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/secondary-topic/atherosclerosis/page/2,,,,,none,low,not_found_log,,,,30,no,no same-topic hub
+/secondary-topic/cancer/page/9,,,,,none,low,not_found_log,,,,30,no,no same-topic hub
+/secondary-topic/fungal-infection,,,,,none,low,not_found_log,,,,30,no,no same-topic hub
+/tertiary-topic/endoplasmic-reticulum-function,,,,,none,low,not_found_log,,,,30,no,no same-topic hub
+/explore-by-condition/age-related-frailty,,,,,none,low,gsc,,29,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/pneumoconiosis,,,,,none,low,gsc,,29,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/secondary-topic/excercise/page/3,/explore-by-condition/exercise-recovery,,,,curated-parent-hub,medium,not_found_log,,,,29,no,medium confidence — not applied; suggested target only. ambiguous: exercise-recovery vs athletic-performance
+/secondary-topic/sepsis/page/2,,,,,curated-parent-hub,medium,not_found_log,,,,29,no,systemic condition; no single parent hub
+/secondary-topic/sepsis/page/3,,,,,curated-parent-hub,medium,not_found_log,,,,29,no,systemic condition; no single parent hub
+/tertiary-topic/encephalopathy/page/2,,,,,none,low,not_found_log,,,,29,no,no same-topic hub
+/tertiary-topic/multiple-organ-dysfunction-syndrome-mods/page/2,,,,,none,low,not_found_log,,,,29,no,no same-topic hub
+/tertiary-topic/ros-scavenging,,,,,none,low,not_found_log,,,,29,no,no same-topic hub
+/tertiary-topic/transplantation-graft-injury/page/5,,,,,none,low,not_found_log,,,,29,no,no same-topic hub
+/secondary-topic/aging/page/4,,,,,curated-parent-hub,medium,not_found_log,,,,28,no,no general aging hub (skin-aging is narrower; life-stage/elderly-aging is a keyword page)
+/tertiary-topic/diagnosis,,,,,none,low,not_found_log,,,,28,no,no same-topic hub
+/tertiary-topic/drug-toxicity-aspirin,,,,,none,low,not_found_log,,,,28,no,no same-topic hub
+/tertiary-topic/ischemia-reperfusion-i-r-injury/page/2,,,,,none,low,not_found_log,,,,28,no,no same-topic hub
+/tertiary-topic/microgravity,,,,,none,low,not_found_log,,,,28,no,no same-topic hub
+/secondary-topic/excercise/page/2,/explore-by-condition/exercise-recovery,,,,curated-parent-hub,medium,not_found_log,,,,27,no,medium confidence — not applied; suggested target only. ambiguous: exercise-recovery vs athletic-performance
+/tertiary-topic/hospitalization-time,,,,,none,low,not_found_log,,,,27,no,no same-topic hub
+/tertiary-topic/metal-toxicity-chromium,,,,,none,low,not_found_log,,,,27,no,no same-topic hub
+/tertiary-topic/onion-toxicity,,,,,none,low,not_found_log,,,,27,no,no same-topic hub
+/secondary-topic/haemodialysis,,,,,none,low,not_found_log,,,,26,no,no same-topic hub
+/secondary-topic/neuroprotection,,,,,none,low,not_found_log,,,,26,no,no same-topic hub
+/secondary-topic/spaceflight,,,,,none,low,not_found_log,,,,26,no,no same-topic hub
+/tertiary-topic/decompression-sickness,,,,,none,low,not_found_log,,,,26,no,no same-topic hub
+/tertiary-topic/hydrogen-safety,,,,,none,low,not_found_log,,,,26,no,no same-topic hub
+/tertiary-topic/milk-volume,,,,,none,low,not_found_log,,,,26,no,no same-topic hub
+/tertiary-topic/pesticide-toxicity-trimethyltin,,,,,none,low,not_found_log,,,,26,no,no same-topic hub
+/secondary-topic/cancer/page/7,,,,,none,low,not_found_log,,,,25,no,no same-topic hub
+/secondary-topic/pathogenic-bacterial-load,,,,,none,low,not_found_log,,,,25,no,no same-topic hub
+/secondary-topic/sepsis/page/7,,,,,curated-parent-hub,medium,not_found_log,,,,25,no,systemic condition; no single parent hub
+/secondary-topic/stroke/page/3,,,,,none,low,not_found_log,,,,25,no,no same-topic hub
+/tertiary-topic/drug-toxicity-remifantanil,,,,,none,low,not_found_log,,,,25,no,no same-topic hub
+/tertiary-topic/ischemia-reperfusion-i-r-injury/page/6,,,,,none,low,not_found_log,,,,25,no,no same-topic hub
+/explore-by-condition/epithelial-ovarian-cancer,,,,,none,low,gsc,,24,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/secondary-topic/diabetes,,,,,none,low,not_found_log,,,,24,no,no same-topic hub
+/secondary-topic/excercise/page/5,/explore-by-condition/exercise-recovery,,,,curated-parent-hub,medium,not_found_log,,,,24,no,medium confidence — not applied; suggested target only. ambiguous: exercise-recovery vs athletic-performance
+/secondary-topic/sars-covid,,,,,none,low,not_found_log,,,,24,no,no same-topic hub
+/tertiary-topic/emp-pulse-radiation,,,,,none,low,not_found_log,,,,24,no,no same-topic hub
+/tertiary-topic/ischemia-reperfusion-i-r-injury/page/11,,,,,none,low,not_found_log,,,,24,no,no same-topic hub
+/tertiary-topic/root-canal,,,,,none,low,not_found_log,,,,24,no,no same-topic hub
+/explore-by-condition/type-1-diabetes,,,,,none,low,gsc,,23,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/secondary-topic/immune-regulation,,,,,none,low,not_found_log,,,,23,no,no same-topic hub
+/secondary-topic/intestinal-injury/feed,,,,,none,low,not_found_log,,,,23,no,no equivalent page
+/secondary-topic/surgery-transplantation,,,,,none,low,not_found_log,,,,23,no,no same-topic hub
+/tertiary-topic/drug-toxicity-valproic-acid,,,,,none,low,not_found_log,,,,23,no,no same-topic hub
+/tertiary-topic/ischemia-reperfusion-i-r-injury/page/4,,,,,none,low,not_found_log,,,,23,no,no same-topic hub
+/tertiary-topic/mitochondrial-function,,,,,none,low,not_found_log,,,,23,no,no same-topic hub
+/tertiary-topic/particute-matter-exposure,,,,,none,low,not_found_log,,,,23,no,no same-topic hub
+/tertiary-topic/stem-cell-differentiation,,,,,none,low,not_found_log,,,,23,no,no same-topic hub
+/explore-by-condition/hidden-blood-loss,,,,,none,low,gsc,,22,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/secondary-topic/cancer/page/10,,,,,none,low,not_found_log,,,,22,no,no same-topic hub
+/secondary-topic/cancer/page/3,,,,,none,low,not_found_log,,,,22,no,no same-topic hub
+/secondary-topic/milk-production,,,,,none,low,not_found_log,,,,22,no,no same-topic hub
+/secondary-topic/peritoneal-dialysis,,,,,none,low,not_found_log,,,,22,no,no same-topic hub
+/secondary-topic/sepsis/page/6,,,,,curated-parent-hub,medium,not_found_log,,,,22,no,systemic condition; no single parent hub
+/secondary-topic/shock/page/1,,,,,none,low,not_found_log,,,,22,no,no same-topic hub
+/secondary-topic/shock/page/2,,,,,none,low,not_found_log,,,,22,no,no same-topic hub
+/tertiary-topic/chemotherapy-toxicity-gefitinib,,,,,none,low,not_found_log,,,,22,no,no same-topic hub
+/tertiary-topic/ischemia-reperfusion-i-r-injury/page/13,,,,,none,low,not_found_log,,,,22,no,no same-topic hub
+/tertiary-topic/novel-therapy,,,,,none,low,not_found_log,,,,22,no,no same-topic hub
+/tertiary-topic/peritonitis,,,,,none,low,not_found_log,,,,22,no,no same-topic hub
+/secondary-topic/wound-healing,,,,,none,low,not_found_log,,,,21,no,no same-topic hub
+/tertiary-topic/drug-toxicity-morphine,,,,,none,low,not_found_log,,,,21,no,no same-topic hub
+/tertiary-topic/surgical-injury,,,,,none,low,not_found_log,,,,21,no,no same-topic hub
+/tertiary-topic/transplantation-graft-injury/page/2,,,,,none,low,not_found_log,,,,21,no,no same-topic hub
+/explore-by-condition/alcoholic-liver-disease,,,,,none,low,gsc,,20,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/refractory-wounds,,,,,none,low,gsc,,20,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/secondary-topic/acute-kidney-injury/page/1,,,,,none,low,not_found_log,,,,20,no,no same-topic hub
+/secondary-topic/cardiopulmonary-resuscitation-cpr,,,,,none,low,not_found_log,,,,20,no,no same-topic hub
+/secondary-topic/hearing-loss/page/2,,,,,none,low,not_found_log,,,,20,no,no same-topic hub
+/secondary-topic/stroke/page/2,,,,,none,low,not_found_log,,,,20,no,no same-topic hub
+/tertiary-topic/transplantation-graft-injury/page/4,,,,,none,low,not_found_log,,,,20,no,no same-topic hub
+/blog/new-research-shows-hydrogen-water-ros-scavenging-beats-old-methods-471753,,,,,none,low,gsc,,19,,,no,no equivalent page
+/blog/surprising-study-hydrogen-water-diabetes-protection-for-kidneys-672916,,,,,none,low,gsc,,18,,,no,no equivalent page
+/explore-by-condition/oral-infections,,,,,none,low,gsc,,17,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/radiation-induced-kidney-injury,,,,,none,low,gsc,,16,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/lung-transplant-recipients,,,,,none,low,gsc,,15,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/food-borne-illness-prevention,,,,,none,low,gsc,,14,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/inflammatory-bowel-disease-ibd,,,,,none,low,gsc,,14,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/small-intestinal-bacterial-overgrowth-sibo,,,,,none,low,gsc,,14,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/drug-induced-liver-injury,,,,,none,low,gsc,,13,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/neurotoxicity,,,,,none,low,gsc,,13,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/blog/piurify-complaints,,,,,none,low,gsc,,12,,,no,no equivalent page
+/explore-by-condition/metabolic-health,,,,,none,low,gsc,,12,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/chronic-illness,,,,,none,low,gsc,,11,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/chronic-obstructive-pulmonary-disease-copd,,,,,none,low,gsc,,11,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/noise-induced-hearing-loss,,,,,none,low,gsc,,11,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/stroke,,,,,none,low,gsc,,11,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/wounds,,,,,none,low,gsc,,11,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/atherosclerosis,,,,,none,low,gsc,,10,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/depression,,,,,none,low,gsc,,10,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/study/clematis-tangutica-extract-hyperlipidemia-hydrogen-study,,,,,none,low,gsc,,10,,,no,no current study with this title
+/explore-by-condition/delayed-onset-muscle-soreness-doms,,,,,none,low,gsc,,9,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/idiopathic-sudden-sensorineural-hearing-loss,,,,,none,low,gsc,,9,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/osteomyelitis,,,,,none,low,gsc,,9,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/pregnancy-gingivitis,,,,,none,low,gsc,,9,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/right-ventricular-hypertrophy,,,,,none,low,gsc,,9,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/st-elevated-myocardial-infarction,,,,,none,low,gsc,,9,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/blog/new-research-shows-hydrogen-water-fights-pollution-damage-441123,,,,,none,low,gsc,,8,,,no,no equivalent page
+/explore-by-condition/degenerative-conditions,,,,,none,low,gsc,,8,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/gastric-cancer,,,,,none,low,gsc,,8,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/general,,,,,none,low,gsc,,8,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/post-operative-hyperalgesia,,,,,none,low,gsc,,8,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/second-degree-burns,,,,,none,low,gsc,,8,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/uveitis,,,,,none,low,gsc,,8,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/vascular-dementia,,,,,none,low,gsc,,8,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/cancer,,,,,none,low,gsc,,7,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/chronic-dermatitis,,,,,none,low,gsc,,7,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/chronic-stress,,,,,none,low,gsc,,7,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/general-research,,,,,none,low,gsc,,7,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/glaucoma,,,,,none,low,gsc,,7,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/high-pressure-neurological-syndrome,,,,,none,low,gsc,,7,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/multiple-disease-states,,,,,none,low,gsc,,7,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/oxidative-stress-related-diseases,,,,,none,low,gsc,,7,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/traumatic-optic-neuropathy,,,,,none,low,gsc,,7,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/blog/new-research-shows-hydrogen-water-diabetes-benefits-932731,,,,,none,low,gsc,,6,,,no,no equivalent page
+/explore-by-condition/acute-erythematous-skin-disease,,,,,none,low,gsc,,6,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/cellular-damage,,,,,none,low,gsc,,6,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/colon-cancer,,,,,none,low,gsc,,6,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/exercise-performance,,,,,none,low,gsc,,6,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/gastric-mucosal-atrophy,,,,,none,low,gsc,,6,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/sj-gren-s-syndrome,,,,,none,low,gsc,,6,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/traumatic-brain-injury-tbi,,,,,none,low,gsc,,6,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/learn,,,,,none,low,gsc,,6,,,no,no equivalent page
+/explore-by-condition/acute-inflammation,,,,,none,low,gsc,,5,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/digestive-health,,,,,none,low,gsc,,5,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/esophageal-cancer,,,,,none,low,gsc,,5,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/general-therapeutic-applications,,,,,none,low,gsc,,5,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/germinal-matrix-hemorrhage,,,,,none,low,gsc,,5,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/hypospadias,,,,,none,low,gsc,,5,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/lifestyle-related-diseases,,,,,none,low,gsc,,5,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/study/aqueous-oh-kinetics-aliphatic-carboxylic-acids-hydrogen,,,,,none,low,gsc,,5,,,no,no current study with this title
+/explore-by-condition/aging-related-disorders,,,,,none,low,gsc,,4,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/brain-glioma,,,,,none,low,gsc,,4,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/cisplatin-induced-ototoxicity,,,,,none,low,gsc,,4,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/general-disease-prevention,,,,,none,low,gsc,,4,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/methamphetamine-addiction,,,,,none,low,gsc,,4,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/ovarian-torsion,,,,,none,low,gsc,,4,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/post-operative-sore-throat,,,,,none,low,gsc,,4,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/radiation-induced-dermatitis,,,,,none,low,gsc,,4,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/retinitis-pigmentosa,,,,,none,low,gsc,,4,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/skeletal-muscle-injury,,,,,none,low,gsc,,4,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/spinal-cord-injury-sci,,,,,none,low,gsc,,4,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/steroid-associated-osteonecrosis,,,,,none,low,gsc,,4,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/tendon-injuries,,,,,none,low,gsc,,4,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/third-degree-burns,,,,,none,low,gsc,,4,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/study/diabetes-medications-alzheimers-molecular-docking-study,,,,,none,low,gsc,,4,,,no,no current study with this title
+/explore-by-condition/accelerated-aging,,,,,none,low,gsc,,3,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/cardiovascular-health,,,,,none,low,gsc,,3,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/general-medical-applications,,,,,none,low,gsc,,3,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/heart-failure,,,,,none,low,gsc,,3,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/inflammatory-diseases,,,,,none,low,gsc,,3,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/melanoma,,,,,none,low,gsc,,3,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/metabolic-dysfunction-associated-steatotic-liver-disease,,,,,none,low,gsc,,3,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/ocular-melanoma,,,,,none,low,gsc,,3,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/perforated-peritonitis,,,,,none,low,gsc,,3,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/physical-inactivity,,,,,none,low,gsc,,3,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/wound-healing-impairment,,,,,none,low,gsc,,3,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/recent-studies,,,,,none,low,gsc,,3,,,no,no equivalent page
+/study/effect-of,,,,,none,low,gsc,,3,,,no,no current study with this title
+/explore-by-body-system/acid-base-balance,,,,,none,low,gsc,,2,,,no,body-system slug with no matching studies; not a sitemap hub
+/explore-by-condition/acute-cerebral-infarction,,,,,none,low,gsc,,2,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/acute-cerebral-ischemia,,,,,none,low,gsc,,2,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/allergic-asthma,,,,,none,low,gsc,,2,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/aspirin-induced-gastropathy,,,,,none,low,gsc,,2,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/asthma,,,,,none,low,gsc,,2,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/brain-edema,,,,,none,low,gsc,,2,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/burns,,,,,none,low,gsc,,2,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/corneal-endothelial-decompensation,,,,,none,low,gsc,,2,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/covid-19,,,,,none,low,gsc,,2,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/exercise-induced-muscle-damage,,,,,none,low,gsc,,2,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/eye-diseases,,,,,none,low,gsc,,2,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/general-research-model,,,,,none,low,gsc,,2,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/healthy-normal-physiology,,,,,none,low,gsc,,2,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/heart,,,,,none,low,gsc,,2,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/heavy-metal-poisoning,,,,,none,low,gsc,,2,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/inflammatory-conditions,,,,,none,low,gsc,,2,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/interstitial-lung-disease,,,,,none,low,gsc,,2,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/long-covid,,,,,none,low,gsc,,2,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/mediastinitis,,,,,none,low,gsc,,2,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/myocardial-necrosis,,,,,none,low,gsc,,2,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/neurological-damage,,,,,none,low,gsc,,2,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/overweight,,,,,none,low,gsc,,2,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/oxidative-stress-disorders,,,,,none,low,gsc,,2,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/pediatric-functional-constipation,,,,,none,low,gsc,,2,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/post-covid-19-fatigue,,,,,none,low,gsc,,2,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/skin-health,,,,,none,low,gsc,,2,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/blog/how-to-use-hydrogen-water-for-gut-health-a-science-backed_guide-646080,,,,,none,low,gsc,,1,,,no,no equivalent page
+/blog/hydrogen-water-and-radiation-what-2024-research-shows-923754,,,,,none,low,gsc,,1,,,no,no equivalent page
+/blog/hydrogen-water-health-benefits-what-2024-research-shows-416604,,,,,none,low,gsc,,1,,,no,no equivalent page
+/blog/new-research-shows-hydrogen-water-boosts-exercise-recovery-367599,,,,,none,low,gsc,,1,,,no,no equivalent page
+/blog/new-research-shows-hydrogen-water-for-spinal-cord-injury-315505,,,,,none,low,gsc,,1,,,no,no equivalent page
+/explore-by-body-system/gut-brain-axis,,,,,none,low,gsc,,1,,,no,body-system slug with no matching studies; not a sitemap hub
+/explore-by-condition/acne-vulgaris,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/acute-necrotizing-pancreatitis,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/age-related-oxidative-stress,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/aging-related-diseases,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/allergic-contact-dermatitis,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/anxiety,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/auditory-neuropathy,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/autism-spectrum-disorder,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/bone-fractures,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/bronchiolitis-obliterans-syndrome,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/burn-injuries,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/cancer-multiple-types,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/cancer-prevention,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/carbon-monoxide-poisoning,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/cervical-cancer,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/chronic-fatigue-syndrome,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/chronic-intermittent-hypoxia,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/chronic-obstructive-pulmonary-disease,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/chronic-pain,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/chronic-periodontitis,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/cisplatin-ototoxicity,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/congenital-diaphragmatic-hernia-cdh,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/critical-illness,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/cyclosporine-induced-nephrotoxicity,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/dyslipidemia,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/endothelial-dysfunction,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/exercise-induced-inflammation,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/exercise-induced-oxidative-stress,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/gastritis,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/general-cellular-dysfunction,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/glioblastoma-multiforme,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/healthy-population,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/heat-stroke,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/high-cholesterol,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/hypertension,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/hypoxic-ischemic-brain-injury,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/idiopathic-sudden-sensorineural-hearing-loss-issnhl,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/intestinal-dysbiosis,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/ischemic-stroke,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/keloid-scars,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/kidney-stones,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/mountain-sickness,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/multiple-conditions-not-specified,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/muscle-weakness,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/neonatal-hypoxic-ischemic-encephalopathy-hie,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/oxidative-stress-related-disorders,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/post-operative-cognitive-dysfunction,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/premature-ovarian-failure,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/psoriasis,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/pulmonary-endothelial-dysfunction,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/respiratory-inflammation,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/sepsis-associated-encephalopathy,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/sepsis-associated-encephalopathy-sae,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/severe-burns,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/skin-diseases,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/surgical-brain-injury,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/systemic-pathological-conditions,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/testicular-ischemia-reperfusion-injury,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/testicular-torsion,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/thrombosis,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/tissue-inflammation,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/unstable-angina,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/uv-induced-skin-damage,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/various-diseases,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/explore-by-condition/vascular-dysfunction,,,,,none,low,gsc,,1,,,no,retired condition hub (not in health_conditions); no same-slug hub
+/study/cellular-senescence-dental-pulp-endodontics-review,,,,,none,low,gsc,,1,,,no,no current study with this title
+/study/hydrogen-hiv-drug-resistance-combinatorial-design-study,,,,,none,low,gsc,,1,,,no,no current study with this title
+/study/hydrogen-individualized-valve-therapy-cardiovascular,,,,,none,low,gsc,,1,,,no,no current study with this title
+/study/hydrogen-water-treatment-antibiotic-removal-antimicrobial-resistance,,,,,none,low,gsc,,1,,,no,no current study with this title
+/study/molecular-basis-skin-disease-hydrogen-research,,,,,none,low,gsc,,1,,,no,no current study with this title
+/condition/gut-health,/explore-by-condition/gut-health,/tools/hydrogen-research/condition/gut-health,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 3; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/gut-health, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval)"
+/condition/athletic-performance,/explore-by-condition/athletic-performance,/tools/hydrogen-research/condition/athletic-performance,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 7; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/athletic-performance, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval)"
+/condition/weight-loss-metabolism,/explore-by-condition/weight-loss-metabolism,/tools/hydrogen-research/condition/weight-loss-metabolism,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 8; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/weight-loss-metabolism, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval)"
+/condition/cholesterol,/explore-by-condition/cholesterol,/tools/hydrogen-research/condition/cholesterol,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 20; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/cholesterol, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval)"
+/condition/blood-pressure,/explore-by-condition/blood-pressure,/tools/hydrogen-research/condition/blood-pressure,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 24; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/blood-pressure, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval)"
+/condition/anxiety-stress,/explore-by-condition/anxiety-stress,/tools/hydrogen-research/condition/anxiety-stress,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 31; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/anxiety-stress, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval)"
+/%28select%280%29from%28select%28sleep%2815%29%29%29v%29/%2a%27+%28select%280%29from%28select%28sleep%2815%29%29%29v%29+%27%22+%28select%280%29from%28select%28sleep%2815%29%29%29v%29+%22%2a//blood-pressure,/explore-by-condition/blood-pressure,/tools/hydrogen-research/condition/blood-pressure,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 32; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/blood-pressure, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval); source is a scanner/SQL-injection probe path"
+/@@iu4kw/blood-pressure,/explore-by-condition/blood-pressure,/tools/hydrogen-research/condition/blood-pressure,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 33; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/blood-pressure, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval); source is a scanner/SQL-injection probe path"
+/@@f8ki6/allergies,/explore-by-condition/allergies,/tools/hydrogen-research/condition/allergies,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 34; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/allergies, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval); source is a scanner/SQL-injection probe path"
+"/if(now()=sysdate(),sleep(15),0)/blood-pressure",/explore-by-condition/blood-pressure,/tools/hydrogen-research/condition/blood-pressure,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 35; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/blood-pressure, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval); source is a scanner/SQL-injection probe path"
+/%28select%280%29from%28select%28sleep%2815%29%29%29v%29/%2a%27+%28select%280%29from%28select%28sleep%2815%29%29%29v%29+%27%22+%28select%280%29from%28select%28sleep%2815%29%29%29v%29+%22%2a//anxiety-stress,/explore-by-condition/anxiety-stress,/tools/hydrogen-research/condition/anxiety-stress,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 36; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/anxiety-stress, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval); source is a scanner/SQL-injection probe path"
+/@@momio/anxiety-stress,/explore-by-condition/anxiety-stress,/tools/hydrogen-research/condition/anxiety-stress,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 37; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/anxiety-stress, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval); source is a scanner/SQL-injection probe path"
+"/if(now()=sysdate(),sleep(15),0)/anxiety-stress",/explore-by-condition/anxiety-stress,/tools/hydrogen-research/condition/anxiety-stress,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 38; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/anxiety-stress, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval); source is a scanner/SQL-injection probe path"
+"/if(now()=sysdate(),sleep(15),0)/allergies",/explore-by-condition/allergies,/tools/hydrogen-research/condition/allergies,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 39; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/allergies, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval); source is a scanner/SQL-injection probe path"
+/%28select%280%29from%28select%28sleep%2815%29%29%29v%29/%2a%27+%28select%280%29from%28select%28sleep%2815%29%29%29v%29+%27%22+%28select%280%29from%28select%28sleep%2815%29%29%29v%29+%22%2a//allergies,/explore-by-condition/allergies,/tools/hydrogen-research/condition/allergies,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 40; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/allergies, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval); source is a scanner/SQL-injection probe path"
+"/if(now()=sysdate(),sleep(15),0)/cholesterol",/explore-by-condition/cholesterol,/tools/hydrogen-research/condition/cholesterol,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 41; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/cholesterol, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval); source is a scanner/SQL-injection probe path"
+"/if(now()=sysdate(),sleep(15),0)/chronic-fatigue",/explore-by-condition/chronic-fatigue,/tools/hydrogen-research/condition/chronic-fatigue,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 42; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/chronic-fatigue, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval); source is a scanner/SQL-injection probe path"
+/%28select%280%29from%28select%28sleep%2815%29%29%29v%29/%2a%27+%28select%280%29from%28select%28sleep%2815%29%29%29v%29+%27%22+%28select%280%29from%28select%28sleep%2815%29%29%29v%29+%22%2a//cholesterol,/explore-by-condition/cholesterol,/tools/hydrogen-research/condition/cholesterol,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 43; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/cholesterol, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval); source is a scanner/SQL-injection probe path"
+/%28select%280%29from%28select%28sleep%2815%29%29%29v%29/%2a%27+%28select%280%29from%28select%28sleep%2815%29%29%29v%29+%27%22+%28select%280%29from%28select%28sleep%2815%29%29%29v%29+%22%2a//chronic-fatigue,/explore-by-condition/chronic-fatigue,/tools/hydrogen-research/condition/chronic-fatigue,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 44; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/chronic-fatigue, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval); source is a scanner/SQL-injection probe path"
+/@@udkgl/chronic-fatigue,/explore-by-condition/chronic-fatigue,/tools/hydrogen-research/condition/chronic-fatigue,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 45; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/chronic-fatigue, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval); source is a scanner/SQL-injection probe path"
+/@@ycer1/cholesterol,/explore-by-condition/cholesterol,/tools/hydrogen-research/condition/cholesterol,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 46; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/cholesterol, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval); source is a scanner/SQL-injection probe path"
+/condition/skin-aging,/explore-by-condition/skin-aging,/tools/hydrogen-research/condition/skin-aging,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 47; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/skin-aging, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval)"
+"/if(now()=sysdate(),sleep(15),0)/type-2-diabetes",/explore-by-condition/type-2-diabetes,/tools/hydrogen-research/condition/type-2-diabetes,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 48; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/type-2-diabetes, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval); source is a scanner/SQL-injection probe path"
+/@@bibho/type-2-diabetes,/explore-by-condition/type-2-diabetes,/tools/hydrogen-research/condition/type-2-diabetes,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 49; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/type-2-diabetes, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval); source is a scanner/SQL-injection probe path"
+/%28select%280%29from%28select%28sleep%2815%29%29%29v%29/%2a%27+%28select%280%29from%28select%28sleep%2815%29%29%29v%29+%27%22+%28select%280%29from%28select%28sleep%2815%29%29%29v%29+%22%2a//type-2-diabetes,/explore-by-condition/type-2-diabetes,/tools/hydrogen-research/condition/type-2-diabetes,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 50; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/type-2-diabetes, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval); source is a scanner/SQL-injection probe path"
+/condition/kidney-health,/explore-by-condition/kidney-health,/tools/hydrogen-research/condition/kidney-health,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 51; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/kidney-health, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval)"
+/condition/exercise-recovery,/explore-by-condition/exercise-recovery,/tools/hydrogen-research/condition/exercise-recovery,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 52; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/exercise-recovery, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval)"
+/condition/chronic-fatigue,/explore-by-condition/chronic-fatigue,/tools/hydrogen-research/condition/chronic-fatigue,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 53; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/chronic-fatigue, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval)"
+/condition/type-2-diabetes,/explore-by-condition/type-2-diabetes,/tools/hydrogen-research/condition/type-2-diabetes,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 54; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/type-2-diabetes, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval)"
+/condition/rheumatoid-arthritis,/explore-by-condition/rheumatoid-arthritis,/tools/hydrogen-research/condition/rheumatoid-arthritis,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 56; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/rheumatoid-arthritis, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval)"
+/condition/metabolic-syndrome,/explore-by-condition/metabolic-syndrome,/tools/hydrogen-research/condition/metabolic-syndrome,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 57; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/metabolic-syndrome, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval)"
+/condition/radiation-therapy-side-effects,/explore-by-condition/radiation-therapy-side-effects,/tools/hydrogen-research/condition/radiation-therapy-side-effects,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 70; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/radiation-therapy-side-effects, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval)"
+/condition/fatty-liver-nafld,/explore-by-condition/fatty-liver-nafld,/tools/hydrogen-research/condition/fatty-liver-nafld,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 108; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/fatty-liver-nafld, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval)"
+/condition/allergies,/explore-by-condition/allergies,/tools/hydrogen-research/condition/allergies,301,302,repoint-broken-target,high,redirects-table,,,,,yes,"existing 302 row (id 132; auto-promoted from 404 (score 1.00, condition)) -> /tools/hydrogen-research/condition/allergies, which 404s on this host; repointed to the live condition hub, status -> 301 (coordinator directive under Josh's redirect-map approval)"

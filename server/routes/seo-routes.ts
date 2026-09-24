@@ -12,6 +12,7 @@ import { eq, desc, isNotNull, isNull, sql, and, count, inArray, gt } from "drizz
 import { requireAdmin } from "../auth";
 import { logger } from "../utils/logger";
 import { toAbsoluteUrl } from "../utils/absolute-url";
+import { BODY_SYSTEM_HUBS, MECHANISM_HUB_SLUGS } from "../utils/explore-hubs";
 
 const router = Router();
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
@@ -460,13 +461,9 @@ router.get("/sitemap-explore.xml", async (req: Request, res: Response) => {
     const urls: string[] = [];
     const today = formatDate(new Date());
 
-    // Predefined body system explore pages
-    const bodySystems = [
-      "brain-nervous-system", "cardiovascular", "digestive", "immune-system",
-      "musculoskeletal", "respiratory", "endocrine", "urinary-renal",
-      "skin-dermatology", "reproductive", "liver", "eyes-vision",
-    ];
-    for (const bs of bodySystems) {
+    // Body system explore pages — same list the renderer resolves
+    // (server/utils/explore-hubs.ts), so every advertised URL returns 200.
+    for (const { slug: bs } of BODY_SYSTEM_HUBS) {
       urls.push(`  <url>
     <loc>${SITE_URL}/explore-by-body-system/${bs}</loc>
     <lastmod>${today}</lastmod>
@@ -476,11 +473,7 @@ router.get("/sitemap-explore.xml", async (req: Request, res: Response) => {
     }
 
     // Predefined mechanism pages
-    const mechanisms = [
-      "hydrogen-water", "hydrogen-inhalation", "hydrogen-rich-saline",
-      "hydrogen-bath", "topical-hydrogen", "hydrogen-gas",
-    ];
-    for (const m of mechanisms) {
+    for (const m of MECHANISM_HUB_SLUGS) {
       urls.push(`  <url>
     <loc>${SITE_URL}/explore-by-mechanism/${m}</loc>
     <lastmod>${today}</lastmod>

@@ -11,6 +11,13 @@ import type { RedirectSuggestion } from "@shared/schema";
 import { eq, sql, desc, and, inArray } from "drizzle-orm";
 import { logger } from "../utils/logger";
 import type { Request, Response, NextFunction } from "express";
+import {
+  getSearchHubIndex,
+  normalizationTarget,
+  rawQueryOf,
+  resolveSearchRedirect,
+  withQuery,
+} from "./url-hygiene";
 
 const TAG = "RedirectService";
 
@@ -130,66 +137,106 @@ export async function invalidateRedirectCache(): Promise<void> {
 
 // ── Express middleware ────────────────────────────────────────
 
+export type RedirectDecision =
+  | { kind: "redirect"; status: number; location: string; id?: number }
+  | { kind: "gone"; id: number };
+
+let initialLoadDone = false;
+
+/**
+ * Decide what a GET/HEAD request should get before routing, or null to pass
+ * through. Order matters for single-hop resolution:
+ *   1. redirects table, keyed on the lowercase no-trailing-slash path, so a
+ *      legacy `/Study/Old-Slug/?ref=x` goes straight to its final URL
+ *   2. legacy search links (`/search/?search=<hub term>` → hub)
+ *   3. plain case / trailing-slash normalization (url-hygiene.ts)
+ * Shared by redirectMiddleware() and the www→apex host redirect in app.ts so
+ * `www.` legacy links also resolve in one hop.
+ */
+export async function resolveRedirect(req: Request): Promise<RedirectDecision | null> {
+  if (req.method !== "GET" && req.method !== "HEAD") return null;
+
+  // Skip API routes, assets, and health checks
+  const path = req.path;
+  if (
+    path.startsWith("/api/") ||
+    path.startsWith("/assets/") ||
+    path.startsWith("/src/") ||
+    path === "/health" ||
+    path === "/favicon.ico"
+  ) {
+    return null;
+  }
+
+  // Lazy-load cache
+  if (!initialLoadDone || isCacheStale()) {
+    await loadCache();
+    initialLoadDone = true;
+  }
+
+  const normalizedPath = path.toLowerCase().replace(/\/+$/, "") || "/";
+  const match = redirectCache.get(normalizedPath);
+  const rawQuery = rawQueryOf(req.originalUrl);
+
+  if (match) {
+    if (match.statusCode === 410) return { kind: "gone", id: match.id };
+    // Carry the query string through (utm/ref params on legacy backlinks)
+    // unless the target already has its own.
+    return { kind: "redirect", status: match.statusCode, location: withQuery(match.toPath, rawQuery), id: match.id };
+  }
+
+  // URL hygiene — only for paths with no table row.
+  try {
+    if (normalizedPath === "/search") {
+      const searchTarget = resolveSearchRedirect(
+        path,
+        req.query?.search,
+        rawQuery,
+        req.query?.search ? await getSearchHubIndex() : new Map(),
+      );
+      if (searchTarget) return { kind: "redirect", status: 301, location: searchTarget };
+      if (path === "/search") return null;
+    }
+    const canonical = normalizationTarget(path);
+    if (canonical) return { kind: "redirect", status: 301, location: withQuery(canonical, rawQuery) };
+  } catch (err) {
+    logger.error("URL hygiene check failed", err, TAG);
+  }
+  return null;
+}
+
+function bumpHitCount(id: number): void {
+  // Asynchronous — never blocks the redirect
+  db.update(redirects)
+    .set({
+      hitCount: sql`${redirects.hitCount} + 1`,
+      lastHitAt: new Date(),
+    })
+    .where(eq(redirects.id, id))
+    .catch((err) => logger.error("Failed to update redirect hit count", err, TAG));
+}
+
 /**
  * Middleware that intercepts requests and issues redirects if a match exists.
  * Mount early in the middleware chain (before routes).
  */
 export function redirectMiddleware() {
-  // Load cache on first request
-  let initialLoadDone = false;
-
   return async (req: Request, res: Response, next: NextFunction) => {
-    // Only check GET/HEAD requests
-    if (req.method !== "GET" && req.method !== "HEAD") {
-      return next();
-    }
+    const decision = await resolveRedirect(req);
+    if (!decision) return next();
+    if (decision.id !== undefined) bumpHitCount(decision.id);
 
-    // Skip API routes, assets, and health checks
-    const path = req.path;
-    if (
-      path.startsWith("/api/") ||
-      path.startsWith("/assets/") ||
-      path.startsWith("/src/") ||
-      path === "/health" ||
-      path === "/favicon.ico"
-    ) {
-      return next();
-    }
-
-    // Lazy-load cache
-    if (!initialLoadDone || isCacheStale()) {
-      await loadCache();
-      initialLoadDone = true;
-    }
-
-    const normalizedPath = path.toLowerCase().replace(/\/+$/, "") || "/";
-    const match = redirectCache.get(normalizedPath);
-
-    if (match) {
-      // Bump hit count asynchronously (don't block the redirect)
-      db.update(redirects)
-        .set({
-          hitCount: sql`${redirects.hitCount} + 1`,
-          lastHitAt: new Date(),
-        })
-        .where(eq(redirects.id, match.id))
-        .catch((err) => logger.error("Failed to update redirect hit count", err, TAG));
-
-      // 410 Gone rows (Phase 2 retirements): not a redirect — the URL is
-      // permanently retired. Serving a real 410 (vs 404) tells Google to drop
-      // it faster and is the PLAN.md 2.2 semantic ("410 the rest").
-      if (match.statusCode === 410) {
-        res.status(410)
-          .set("Cache-Control", "public, max-age=86400")
-          .type("text/html")
-          .send("<!doctype html><title>410 Gone</title><h1>410 Gone</h1><p>This page has been permanently retired. Browse current research at <a href=\"/studies\">hydrogenstudies.com/studies</a>.</p>");
-        return;
-      }
-      res.redirect(match.statusCode, match.toPath);
+    // 410 Gone rows (Phase 2 retirements): not a redirect — the URL is
+    // permanently retired. Serving a real 410 (vs 404) tells Google to drop
+    // it faster and is the PLAN.md 2.2 semantic ("410 the rest").
+    if (decision.kind === "gone") {
+      res.status(410)
+        .set("Cache-Control", "public, max-age=86400")
+        .type("text/html")
+        .send("<!doctype html><title>410 Gone</title><h1>410 Gone</h1><p>This page has been permanently retired. Browse current research at <a href=\"/studies\">hydrogenstudies.com/studies</a>.</p>");
       return;
     }
-
-    next();
+    res.redirect(decision.status, decision.location);
   };
 }
 
@@ -395,6 +442,16 @@ export function popularityBonus(viewCount: number | null | undefined): number {
   return Math.min(0.05, Math.log10(v + 1) / 60); // ~0.02 at 10 views, capped at 0.05
 }
 
+/**
+ * Site path of a condition hub. Suggestions must target THIS host's routes:
+ * `/tools/hydrogen-research/condition/<slug>` only exists on echowater.com
+ * (Shopify App Proxy → /proxy/*) and 404s here, so every auto-promoted
+ * condition redirect built with it pointed at a dead page (fixed 2026-09-23).
+ */
+export function conditionHubPath(slug: string): string {
+  return `/explore-by-condition/${slug}`;
+}
+
 /** Public entry point — returns ranked candidates for a 404 path. */
 export async function getRankedSuggestions(path: string): Promise<RedirectSuggestion[]> {
   const { query, tokens, pathHint, lastSegment } = reconstructQuery(path);
@@ -416,7 +473,7 @@ export async function getRankedSuggestions(path: string): Promise<RedirectSugges
       .from(healthConditions).where(eq(healthConditions.slug, lastSegment)).limit(1);
     if (c?.slug) {
       return [{
-        target: `/tools/hydrogen-research/condition/${c.slug}`,
+        target: conditionHubPath(c.slug),
         contentType: "condition",
         title: c.name ?? null,
         score: 1,
@@ -618,7 +675,7 @@ export async function getRankedSuggestions(path: string): Promise<RedirectSugges
       if (prefixBonus > 0) reasons.push("URL path hint: /condition");
 
       candidates.push({
-        target: `/tools/hydrogen-research/condition/${r.slug}`,
+        target: conditionHubPath(r.slug),
         contentType: "condition",
         title: r.name ?? null,
         score,
