@@ -27,7 +27,7 @@ https://claude.ai/artifact/CqrJPn16xeNiKMBNsn3kcE
 | Dose | how much per day 900·9; how long it lasts 70·0 | `/blog/how-much-hydrogen-water-per-day` | 1 ✅ | OK |
 | Kidneys | good for kidneys 1.0k·4 (+27 variants = 3.8k) | `/blog/is-hydrogen-water-good-for-kidneys` | 1 ✅ | **Disease** |
 | PPM | hydrogen water ppm 40·1 | `/blog/hydrogen-water-ppm-levels` | 1 ✅ (corrected) | OK |
-| Tablets & delivery | hydrogen water tablets 9.5k·30; hydrogen tablets 7.9k·29; how to make 1.2k·0 | rewrite `/blog/h2-tabs-side-effects` as a generic tablets guide (ranks #3–4, ~1% CTR) | 2 | OK (device guide) |
+| Tablets & delivery | hydrogen water tablets 9.5k·30; hydrogen tablets 7.9k·29; how to make 1.2k·0 | `/blog/h2-tabs-side-effects` rewritten as a generic tablets guide (ranked #3–4, ~1% CTR) | 2 ✅ (09-24) | OK (device guide) |
 | Benefits | hydrogen water benefits 12k·18; benefits of 6.8k·19; molecular hydrogen benefits 1.3k·26 | rebuild `/blog/molecular-hydrogen-benefits-guide-pillar` as evidence-graded guide | 2 | Gray → none |
 | Comparisons | ionized 500·0; vs alkaline 250·0 | refresh `/blog/hydrogen-water-vs-alkaline-water` | 2 | OK |
 | Inhalation & machines | is hydrogen flammable 4.0k·9; hydrogen machine 600·0 (#1) | `/blog/hydrogen-therapy-machine-home` + `/blog/hydrogen-inhalation-side-effects` | 2 | OK (devices) |
@@ -35,7 +35,7 @@ https://claude.ai/artifact/CqrJPn16xeNiKMBNsn3kcE
 | Devices | bottle benefits 1.6k·14; do bottles work 450·6 | `/products` → honest device guide, lift noindex | 4 | OK after counsel |
 | Research | human studies 250·8; hydrogen water studies 150·42 | `/studies`, researcher profiles, dose dataset | 4 | OK |
 | Head term | hydrogen water 26k·28 | earned via the trio above + internal links | months 2–3 | OK |
-| Buying intent | hydrogen water bottle 19k·12; best bottle 7.1k·4; machine 6.1k·30 | **echowater.com** | — | n/a |
+| Buying intent | hydrogen water bottle 19k·12; best bottle 7.1k·4; machine 6.1k·30 | **echowater.com** — buyer's guide `/blogs/blog/best-hydrogen-water-bottle` ✅ (09-24) + Flask SEO title | — | n/a |
 
 ## Baseline → 90-day targets (to 2026-12-23)
 Non-branded GSC clicks / 28d: 135 → 800 · non-branded queries in top 3: 22 → 60 · in top 10:
