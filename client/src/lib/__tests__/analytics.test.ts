@@ -187,7 +187,7 @@ describe("initAhrefs (cookieless)", () => {
   });
 });
 
-describe("scheduleAnalytics (deferred past load + idle — LCP)", () => {
+describe("scheduleAnalytics (deferred past load + interaction/delay + idle — LCP)", () => {
   const gtagScript = () => document.head.querySelector('script[src*="googletagmanager.com/gtag/js"]');
   const ahrefs = () => document.head.querySelector('script[src="https://analytics.ahrefs.com/analytics.js"]');
   let idleCallbacks: Array<() => void>;
@@ -206,9 +206,10 @@ describe("scheduleAnalytics (deferred past load + idle — LCP)", () => {
   });
 
   afterEach(() => {
-    // Flush this test's pending once-`load` listener so it can't fire in a
-    // later test (each test loads a fresh module instance).
+    // Flush this test's pending once-`load` and first-interaction listeners so
+    // they can't fire in a later test (each test loads a fresh module instance).
     window.dispatchEvent(new Event("load"));
+    window.dispatchEvent(new Event("pointerdown"));
     idleCallbacks = [];
     delete (window as any).requestIdleCallback;
     setReadyState("complete");
@@ -217,6 +218,7 @@ describe("scheduleAnalytics (deferred past load + idle — LCP)", () => {
 
   function fireLoadThenIdle() {
     window.dispatchEvent(new Event("load"));
+    window.dispatchEvent(new Event("pointerdown"));
     for (const cb of idleCallbacks.splice(0)) cb();
   }
 
@@ -231,12 +233,31 @@ describe("scheduleAnalytics (deferred past load + idle — LCP)", () => {
     expect(ahrefs()).toBeNull();
   });
 
-  it("does not load on `load` alone — waits for an idle period", async () => {
+  it("does not load on `load` alone — waits for an interaction, then an idle period", async () => {
     const { scheduleAnalytics } = await load();
     scheduleAnalytics();
     window.dispatchEvent(new Event("load"));
     expect(gtagScript()).toBeNull();
+    expect(idleCallbacks).toHaveLength(0);
+    window.dispatchEvent(new Event("scroll"));
     expect(idleCallbacks).toHaveLength(1);
+    window.dispatchEvent(new Event("keydown"));
+    expect(idleCallbacks).toHaveLength(1);
+    expect(gtagScript()).toBeNull();
+  });
+
+  it("without any interaction, starts after ANALYTICS_START_DELAY_MS (then idle)", async () => {
+    vi.useFakeTimers();
+    const { scheduleAnalytics, ANALYTICS_START_DELAY_MS } = await load();
+    expect(ANALYTICS_START_DELAY_MS).toBe(3500);
+    scheduleAnalytics();
+    window.dispatchEvent(new Event("load"));
+    vi.advanceTimersByTime(ANALYTICS_START_DELAY_MS - 1);
+    expect(idleCallbacks).toHaveLength(0);
+    vi.advanceTimersByTime(1);
+    expect(idleCallbacks).toHaveLength(1);
+    idleCallbacks[0]();
+    expect(gtagScript()).not.toBeNull();
   });
 
   it("after load + idle: loads gtag.js and Ahrefs, config queued after the consent defaults", async () => {
@@ -298,16 +319,19 @@ describe("scheduleAnalytics (deferred past load + idle — LCP)", () => {
     expect(ANALYTICS_IDLE_FALLBACK_MS).toBe(1500);
     scheduleAnalytics();
     window.dispatchEvent(new Event("load"));
+    window.dispatchEvent(new Event("pointerdown"));
     vi.advanceTimersByTime(1499);
     expect(gtagScript()).toBeNull();
     vi.advanceTimersByTime(1);
     expect(gtagScript()).not.toBeNull();
   });
 
-  it("schedules straight onto idle when the page has already loaded", async () => {
+  it("skips the load wait when the page has already loaded", async () => {
     setReadyState("complete");
     const { scheduleAnalytics } = await load();
     scheduleAnalytics();
+    expect(idleCallbacks).toHaveLength(0);
+    window.dispatchEvent(new Event("touchstart"));
     expect(idleCallbacks).toHaveLength(1);
     idleCallbacks[0]();
     expect(gtagScript()).not.toBeNull();
