@@ -27,7 +27,7 @@
  *         • redirect_actions_log: one row per path, action 'exclude_410'.
  *       Before any write, a JSON backup of the affected study rows and the
  *       pre-existing redirect rows is written to $BACKUP_DIR (default
- *       reports/backups/, git-ignored). One transaction per study.
+ *       reports/backups/study-exclusions/, git-ignored). One transaction per study.
  *       --apply REFUSES unless a line of the id file STARTS with
  *       "approved-by: josh" (optionally "# approved-by: josh 2026-..") — add it
  *       once Josh approves the exact list.
@@ -211,7 +211,7 @@ async function planOrApply(db: pg.Client) {
     return;
   }
 
-  const backupDir = process.env.BACKUP_DIR || path.join(process.cwd(), "reports", "backups");
+  const backupDir = process.env.BACKUP_DIR || path.join(process.cwd(), "reports", "backups", "study-exclusions");
   fs.mkdirSync(backupDir, { recursive: true });
   const backupFile = path.join(backupDir, `exclude-energy-studies-${RESTORE ? "restore-" : ""}${Date.now()}.json`);
   fs.writeFileSync(backupFile, JSON.stringify({ actor: ACTOR, idsFile: IDS_FILE, studies: studyRows, redirects: existingRedirects }, null, 2));
