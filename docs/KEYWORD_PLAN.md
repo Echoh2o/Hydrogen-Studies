@@ -28,7 +28,7 @@ https://claude.ai/artifact/CqrJPn16xeNiKMBNsn3kcE
 | Kidneys | good for kidneys 1.0k·4 (+27 variants = 3.8k) | `/blog/is-hydrogen-water-good-for-kidneys` | 1 ✅ | **Disease** |
 | PPM | hydrogen water ppm 40·1 | `/blog/hydrogen-water-ppm-levels` | 1 ✅ (corrected) | OK |
 | Tablets & delivery | hydrogen water tablets 9.5k·30; hydrogen tablets 7.9k·29; how to make 1.2k·0; brand queries (h2 tabs, vital reaction, primecell h2) | `/blog/h2-tabs-side-effects` — rewritten as the generic tablets guide (09-24); 6 tablet posts merged into it (09-28) | 2 ✅ (how-to-make section pending) | OK (device guide) |
-| Benefits | hydrogen water benefits 12k·18; benefits of 6.8k·19; molecular hydrogen benefits 1.3k·26 | rebuild `/blog/molecular-hydrogen-benefits-guide-pillar` as evidence-graded guide | 2 | Gray → none |
+| Benefits | hydrogen water benefits 12k·18; benefits of 6.8k·19; molecular hydrogen benefits 1.3k·26; molecular hydrogen 3.2k·18 | `/blog/molecular-hydrogen-benefits-guide-pillar` rebuilt as evidence-graded guide (09-28) | 2 ✅ | Gray → none |
 | Comparisons | ionized 500·0; vs alkaline 250·0 | refresh `/blog/hydrogen-water-vs-alkaline-water` | 2 | OK |
 | Inhalation & machines | is hydrogen flammable 4.0k·9; hydrogen machine 600·0 (#1) | `/blog/hydrogen-therapy-machine-home` + `/blog/hydrogen-inhalation-side-effects` | 2 | OK (devices) |
 | Hubs | kidney, exercise recovery, sleep, skin, fatigue intros (PLAN 4.5) | `/explore-by-condition/*` | 3 | per Appendix E |

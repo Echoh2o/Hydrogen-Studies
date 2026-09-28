@@ -36,3 +36,20 @@ its backup JSON.
 (redirects id 3475): 301 → `…-551697` (a 410) changed to 301 → `/hydrogen-for/athletic-performance`.
 External link: ionza.co.nz (DR 28). Sibling URLs `…-571752`, `…-572212`, `…-564510` still
 301 → the 410 (no known backlinks; not changed — not in the approved list).
+
+## Keyword plan wave 2: evidence-graded benefits guide
+
+`/blog/molecular-hydrogen-benefits-guide-pillar` (id 9864) rewritten in place (same slug) as
+"Hydrogen Water Benefits: An Evidence-Graded Guide to Molecular Hydrogen". It targets "hydrogen water
+benefits" (12k/mo), "benefits of hydrogen water" (6.8k), "molecular hydrogen benefits" (1.3k) and
+"molecular hydrogen" (3.2k). It has 23 sources, each checked in PubMed (`wave2/sources-verified.csv`), a GRADE-style
+evidence table, a limitations section and a visible FAQ (5). Gray bridge topic, so there is no product content.
+The previous version contained animal/cell results framed as benefits, case reports, unverifiable
+regulatory claims and links to 7 retired (410) posts; all were dropped.
+Rollback: `wave2/backup-molecular-hydrogen-benefits-guide-pillar-*.json`.
+
+## Bylines
+
+`author_name = 'Hydrogen Studies Editorial Team'` set on the 6 wave-1 posts (what-is,
+side-effects, real-or-fake, how-much-per-day, kidneys, ppm-levels). They were published before
+the column existed (#67), so they showed no author.
