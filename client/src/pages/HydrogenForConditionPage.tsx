@@ -368,7 +368,11 @@ export default function HydrogenForConditionPage() {
                     </Link>
                   </>
                 )}
-                <Link href="/hydrogen-therapy-guide">
+                {/* /hydrogen-therapy-guide is a server-side 301 with no SPA
+                    route, so a client-side Link to it rendered NotFound. Link
+                    the benefits guide (its target after the 2026-09-28 merge)
+                    directly. */}
+                <Link href="/blog/molecular-hydrogen-benefits-guide-pillar">
                   <Button variant="outline" size="lg" className="text-white border-white hover:bg-white hover:text-teal-600">
                     Read the Science Guide
                   </Button>

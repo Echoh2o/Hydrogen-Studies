@@ -60,6 +60,42 @@ export const LIFE_STAGE_HUB_SLUGS: readonly string[] = [
   "pregnancy", "infants-children", "adults", "elderly-aging", "athletes",
 ];
 
+/**
+ * Demographic hubs the /explore-by-demographic index links (crawler body AND
+ * SPA). Their pages list studies with the shared explore-detail text query
+ * (seo-body-renderer getExploreDetailStudies), so a slug is only a useful hub
+ * when that phrase names a population in study titles. Only hubs whose page
+ * lists ≥1 study are linked — listedExploreHubs() below.
+ *
+ * Before 2026-09-28 the SPA index linked rows of the `demographics` table
+ * (empty in production) to the unrouted /demographics/<slug>, and the
+ * crawler index linked nothing.
+ */
+export const DEMOGRAPHIC_HUB_SLUGS: readonly string[] = [
+  "athletes", "healthy-adults", "older-adults", "elderly", "women", "children",
+];
+
+/**
+ * Delivery-method hubs the /explore-by-delivery-method index links (crawler
+ * body AND SPA). Slugs are the ones the SPA index has always grouped
+ * (drinking water / inhalation / other methods); same ≥1-study rule as above.
+ */
+export const DELIVERY_METHOD_HUB_SLUGS: readonly string[] = [
+  "drinking-water", "inhalation", "bathing", "saline-injection", "tablets",
+];
+
+/** Hub types whose index lists a curated slug set (see the arrays above). */
+export type ListedExploreHubType = "demographic" | "delivery-method";
+
+export const LISTED_EXPLORE_HUB_SLUGS: Readonly<Record<ListedExploreHubType, readonly string[]>> = {
+  demographic: DEMOGRAPHIC_HUB_SLUGS,
+  "delivery-method": DELIVERY_METHOD_HUB_SLUGS,
+};
+
+export function isListedExploreHubType(type: string): type is ListedExploreHubType {
+  return Object.prototype.hasOwnProperty.call(LISTED_EXPLORE_HUB_SLUGS, type);
+}
+
 export type ExploreHubType =
   | "condition"
   | "body-system"
@@ -168,8 +204,8 @@ export function conditionHubForValue(
 /**
  * Copy for an /explore-by-<type>/<slug> detail hub (mechanism, delivery
  * method, life stage, benefit, demographic) as the crawler renderer emits it.
- * The SPA mechanism page renders the same strings so browsers and crawlers
- * get the same H1 and intro.
+ * The SPA mechanism, demographic and delivery-method pages render the same
+ * strings so browsers and crawlers get the same H1 and intro.
  */
 export function exploreDetailCopy(slug: string): { name: string; h1: string; intro: string } {
   const name = titleCaseSlug(slug);
@@ -187,5 +223,86 @@ export function mechanismHubMeta(slug: string): { title: string; description: st
     title: `${name} Hydrogen Therapy Research | Hydrogen Studies`,
     description: `Research on ${name.toLowerCase()} as a hydrogen delivery mechanism. Studies, protocols, and clinical outcomes.`,
     path: exploreHubPath("mechanism", slug),
+  };
+}
+
+/**
+ * <title> + meta description + path of an /explore-by-{delivery-method,
+ * benefit,demographic}/<slug> hub. The crawler meta (seo-bot-middleware) and
+ * the SPA hub pages both build from this, so browsers and bots get the same
+ * title and canonical. The slug is lowercased: the studies API only accepts
+ * lowercase slugs, so the SPA always renders the lowercase hub.
+ */
+export function exploreDetailMeta(
+  type: "delivery-method" | "benefit" | "demographic",
+  slug: string,
+): { title: string; description: string; path: string } {
+  const s = slug.toLowerCase();
+  const { name } = exploreDetailCopy(s);
+  return {
+    title: `${name}: Hydrogen Research | Hydrogen Studies`,
+    description: `Peer-reviewed molecular hydrogen studies related to ${name.toLowerCase()}, with study types, publication years and links to each study summary and its source.`,
+    path: exploreHubPath(type, s),
+  };
+}
+
+/** One linked hub on an /explore-by-<type> index. */
+export interface ExploreHubSummary {
+  slug: string;
+  name: string;
+  path: string;
+  /** Studies the hub page lists (the shared detail query, LIMIT 100). */
+  studyCount: number;
+}
+
+/**
+ * "Hub exists" predicate for the curated demographic / delivery-method hubs:
+ * a listed slug is linked only when its page lists at least one study (a hub
+ * without studies is an empty page). `studyCounts` maps slug → number of
+ * studies the hub page lists. Order follows the curated array.
+ */
+export function listedExploreHubs(
+  type: ListedExploreHubType,
+  studyCounts: Readonly<Record<string, number>>,
+): ExploreHubSummary[] {
+  return LISTED_EXPLORE_HUB_SLUGS[type]
+    .filter((slug) => (studyCounts[slug] ?? 0) > 0)
+    .map((slug) => ({
+      slug,
+      name: exploreDetailCopy(slug).name,
+      path: exploreHubPath(type, slug),
+      studyCount: studyCounts[slug],
+    }));
+}
+
+/** "1 study" / "12 studies" — hub counts on the crawler and SPA indexes. */
+export function studyCountLabel(n: number): string {
+  return `${n} ${n === 1 ? "study" : "studies"}`;
+}
+
+/**
+ * Title / meta description / H1 / intro of the /explore-by-demographic and
+ * /explore-by-delivery-method index pages — crawler (meta + body) and SPA
+ * render the same strings.
+ */
+export function exploreIndexCopy(type: ListedExploreHubType): {
+  title: string;
+  description: string;
+  h1: string;
+  intro: string;
+} {
+  if (type === "demographic") {
+    return {
+      title: "Hydrogen Research by Demographics | Hydrogen Studies",
+      description: "Explore hydrogen therapy research filtered by demographic groups and population types.",
+      h1: "Hydrogen Research by Demographics",
+      intro: "Explore hydrogen therapy research organized by demographic.",
+    };
+  }
+  return {
+    title: "Hydrogen Delivery Methods Research | Hydrogen Studies",
+    description: "Compare research on hydrogen water, hydrogen gas inhalation, hydrogen-rich saline, hydrogen baths, and other delivery methods.",
+    h1: "Hydrogen Research by Delivery Method",
+    intro: "Explore hydrogen therapy research organized by delivery method.",
   };
 }

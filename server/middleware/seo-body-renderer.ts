@@ -42,12 +42,26 @@ import {
   conditionHubForValue,
   exploreDetailCopy,
   exploreHubPath,
+  exploreIndexCopy,
   findBodySystemHub,
+  isListedExploreHubType,
+  LISTED_EXPLORE_HUB_SLUGS,
+  listedExploreHubs,
+  studyCountLabel,
   type BodySystemHub,
   type ConditionHubRef,
+  type ExploreHubSummary,
+  type ListedExploreHubType,
 } from "../../shared/explore-hubs";
 
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
+
+/**
+ * The evidence-graded benefits guide. /benefits was merged into it (owner
+ * approved 2026-09-28; the 301 is a redirects-table row), so template links
+ * point at the final URL instead of hopping through the redirect.
+ */
+const BENEFITS_GUIDE_PATH = "/blog/molecular-hydrogen-benefits-guide-pillar";
 
 // ── Utilities ─────────────────────────────────────────────────
 
@@ -146,12 +160,37 @@ async function getLiveBodySystemHubs(): Promise<BodySystemHub[]> {
   return _liveBodySystemHubs;
 }
 
+const _liveListedHubs = new Map<ListedExploreHubType, { hubs: ExploreHubSummary[]; at: number }>();
+
+/**
+ * Curated demographic / delivery-method hubs (shared/explore-hubs.ts) whose
+ * page lists at least one study right now, with that count. The crawler index
+ * (renderExploreIndex) and the SPA index (GET /api/explore/:type/hubs) both
+ * read this, so browsers and bots link exactly the same hubs. Counts come from
+ * the same query the hub page itself runs (getExploreDetailStudies), so an
+ * index count always equals the number of studies on the linked page.
+ */
+export async function getLiveExploreHubs(type: ListedExploreHubType): Promise<ExploreHubSummary[]> {
+  const cached = _liveListedHubs.get(type);
+  if (cached && Date.now() - cached.at < 30 * 60 * 1000) return cached.hubs;
+  const counts: Record<string, number> = {};
+  await Promise.all(
+    LISTED_EXPLORE_HUB_SLUGS[type].map(async (slug) => {
+      counts[slug] = (await getExploreDetailStudies(slug)).length;
+    }),
+  );
+  const hubs = listedExploreHubs(type, counts);
+  _liveListedHubs.set(type, { hubs, at: Date.now() });
+  return hubs;
+}
+
 /** Test-only: drop the cached hub lists. */
 export function __resetConditionHubsForTests(): void {
   _conditionHubs = null;
   _conditionHubsAt = 0;
   _liveBodySystemHubs = null;
   _liveBodySystemHubsAt = 0;
+  _liveListedHubs.clear();
 }
 
 // ── Shared HTML fragments ─────────────────────────────────────
@@ -198,7 +237,7 @@ function footer(conditions: { name: string; slug: string }[]): string {
   h += `<li><a href="/learn/basics">Hydrogen Basics</a></li>`;
   h += `<li><a href="/learn/health-benefits">Health Benefits</a></li>`;
   h += `<li><a href="/learn/therapy-guide">Therapy Guide</a></li>`;
-  h += `<li><a href="/benefits">Benefits Overview</a></li>`;
+  h += `<li><a href="${BENEFITS_GUIDE_PATH}">Hydrogen water benefits (evidence-graded)</a></li>`;
   h += `</ul></section>`;
 
   h += `<section><h3>Company</h3><ul>`;
@@ -609,7 +648,7 @@ async function renderHomepage(): Promise<string> {
   h += `<li><a href="/learn/basics">Hydrogen Therapy Basics</a></li>`;
   h += `<li><a href="/learn/health-benefits">Health Benefits Guide</a></li>`;
   h += `<li><a href="/learn/therapy-guide">Therapy Guide</a></li>`;
-  h += `<li><a href="/benefits">Benefits Overview</a></li>`;
+  h += `<li><a href="${BENEFITS_GUIDE_PATH}">Hydrogen water benefits (evidence-graded)</a></li>`;
   h += `</ul></section>\n`;
 
   h += footer(conditions);
@@ -793,10 +832,11 @@ async function renderExploreIndex(type: string): Promise<string> {
     condition: "Hydrogen Research by Health Condition",
     "body-system": "Hydrogen Research by Body System",
     mechanism: "Hydrogen Research by Mechanism",
-    "delivery-method": "Hydrogen Research by Delivery Method",
+    // Shared with the SPA index pages (same H1 for browsers and bots).
+    "delivery-method": exploreIndexCopy("delivery-method").h1,
     "life-stage": "Hydrogen Research by Life Stage",
     benefit: "Hydrogen Research by Health Benefit",
-    demographic: "Hydrogen Research by Demographics",
+    demographic: exploreIndexCopy("demographic").h1,
   };
   const title = titles[type] || "Explore Hydrogen Research";
 
@@ -832,6 +872,23 @@ async function renderExploreIndex(type: string): Promise<string> {
       h += `</ul>\n`;
     } catch {
       h += `<p>Browse research by body system.</p>\n`;
+    }
+  } else if (isListedExploreHubType(type)) {
+    // The curated hubs that list studies — the same list (and links) the SPA
+    // index renders from GET /api/explore/:type/hubs. Before 2026-09-28 these
+    // indexes linked no hub at all for crawlers.
+    h += `<p>${esc(exploreIndexCopy(type).intro)}</p>\n`;
+    try {
+      const hubs = await getLiveExploreHubs(type);
+      if (hubs.length > 0) {
+        h += `<ul>`;
+        for (const hub of hubs) {
+          h += `<li><a href="${esc(hub.path)}">${esc(hub.name)}</a> (${studyCountLabel(hub.studyCount)})</li>`;
+        }
+        h += `</ul>\n`;
+      }
+    } catch {
+      // Hub list unavailable — the intro and cross-links still render.
     }
   } else {
     h += `<p>Explore hydrogen therapy research organized by ${type.replace(/-/g, " ")}.</p>\n`;
@@ -1001,7 +1058,6 @@ export async function renderHydrogenForPage(slug: string): Promise<string | null
 function renderStaticPage(pathname: string): string | null {
   const pages: Record<string, { title: string; desc: string }> = {
     "/about": { title: "About Hydrogen Studies", desc: "Hydrogen Studies is the most comprehensive database of molecular hydrogen research, dedicated to making scientific research accessible to everyone." },
-    "/benefits": { title: "Health Benefits of Hydrogen", desc: "Discover the scientifically-studied health benefits of molecular hydrogen, from anti-inflammatory effects to neuroprotection, backed by peer-reviewed research." },
     "/contact": { title: "Contact Us", desc: "Get in touch with the Hydrogen Studies team. Questions about hydrogen research, partnership inquiries, or feedback welcome." },
     "/products": { title: "Hydrogen Products", desc: "Explore hydrogen water generators, inhalation devices, and other hydrogen therapy products backed by research." },
     "/recommendations": { title: "Research Recommendations", desc: "Personalized hydrogen therapy research recommendations based on your interests and health conditions." },

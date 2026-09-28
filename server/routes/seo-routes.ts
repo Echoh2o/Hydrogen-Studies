@@ -97,7 +97,6 @@ Allow: /learn/
 Allow: /search
 Allow: /advanced-search
 Allow: /about
-Allow: /benefits
 Allow: /products
 Allow: /recommendations
 Allow: /contact
@@ -243,7 +242,8 @@ router.get("/sitemap-pages.xml", (req: Request, res: Response) => {
     // PLAN.md 0.6: internal search results are noindex and out of the sitemap.
     // PLAN.md 1.8: thin pages (/products, /recommendations, /learn/*) are
     // noindex until they carry real content — kept in nav, not in the sitemap.
-    { url: "/benefits", priority: "0.8", freq: "monthly" },
+    // /benefits 301s to /blog/molecular-hydrogen-benefits-guide-pillar (merged,
+    // owner-approved 2026-09-28) — the guide is listed in sitemap-blog.
     { url: "/about", priority: "0.6", freq: "monthly" },
     { url: "/contact", priority: "0.4", freq: "yearly" },
     { url: "/explore-by-condition", priority: "0.9", freq: "weekly" },
@@ -255,7 +255,7 @@ router.get("/sitemap-pages.xml", (req: Request, res: Response) => {
     { url: "/explore-by-benefit", priority: "0.8", freq: "weekly" },
     { url: "/insights", priority: "0.7", freq: "weekly" },
     { url: "/research-analytics", priority: "0.7", freq: "weekly" },
-    // /hydrogen-therapy-guide 301s to /blog/hydrogen-gas-therapy-research —
+    // /hydrogen-therapy-guide is a 301 (a redirects-table row, not code) —
     // a sitemap lists only final 200 URLs (removal approved, re-audit 2026-09-28).
     // Programmatic hydrogen-for condition pages
     { url: "/hydrogen-for/heart-disease", priority: "0.8", freq: "weekly" },

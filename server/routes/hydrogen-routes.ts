@@ -16,7 +16,8 @@ import {
   studyOutcomes,
 } from "@shared/schema-hydrogen-fields";
 import { and, eq, sql } from "drizzle-orm";
-import { getExploreDetailStudies } from "../middleware/seo-body-renderer";
+import { getExploreDetailStudies, getLiveExploreHubs } from "../middleware/seo-body-renderer";
+import { isListedExploreHubType } from "@shared/explore-hubs";
 
 const router = Router();
 
@@ -281,6 +282,27 @@ router.get("/api/explore/:type/:slug/studies", async (req: Request, res: Respons
   } catch (error) {
     logger.error("Error fetching explore hub studies", error, "HydrogenRoutes", { type, slug });
     res.status(500).json({ error: "Failed to fetch studies" });
+  }
+});
+
+/**
+ * Hubs linked from the /explore-by-demographic and /explore-by-delivery-method
+ * indexes — the curated slugs whose page lists ≥1 study, with that count.
+ * Same function the crawler index renders from (seo-body-renderer
+ * getLiveExploreHubs), so the SPA and bot indexes link the same hubs.
+ */
+router.get("/api/explore/:type/hubs", async (req: Request, res: Response) => {
+  const { type } = req.params;
+  if (!isListedExploreHubType(type)) {
+    return res.status(404).json({ error: "Not found" });
+  }
+  try {
+    const hubs = await getLiveExploreHubs(type);
+    res.set("Cache-Control", "public, max-age=300");
+    res.json({ hubs });
+  } catch (error) {
+    logger.error("Error fetching explore hubs", error, "HydrogenRoutes", { type });
+    res.status(500).json({ error: "Failed to fetch hubs" });
   }
 });
 

@@ -28,8 +28,11 @@ test.describe("Public Pages - Navigation & Rendering", () => {
     ).toBeVisible();
   });
 
-  test("benefits page loads", async ({ page }) => {
-    await page.goto("/benefits");
+  // /benefits used to be an SPA redirect to /learn; it is now a server 301 to
+  // the benefits guide (redirects-table row, 2026-09-28). The page this test
+  // actually exercised was /learn, so test that directly.
+  test("learn page (benefits overview) loads", async ({ page }) => {
+    await page.goto("/learn");
     await expect(page.locator("body")).toContainText(/benefit|health|hydrogen/i);
   });
 

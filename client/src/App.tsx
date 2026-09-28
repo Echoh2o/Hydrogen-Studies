@@ -28,7 +28,6 @@ const ResetPasswordPage = lazy(() => import("@/pages/ResetPasswordPage"));
 
 // Lazy load all non-critical pages for better performance
 const SearchPage = lazy(() => import("@/pages/SearchPage"));
-const BenefitsPage = lazy(() => import("@/pages/BenefitsPage"));
 const LearnPage = lazy(() => import("@/pages/LearnPage"));
 const ProductsPage = lazy(() => import("@/pages/ProductsPage"));
 const HydrogenBasicsPage = lazy(() => import("@/pages/HydrogenBasicsPage"));
@@ -230,7 +229,8 @@ function Router() {
           component={NaturalLanguageSearchPage}
         />
         <Route path="/advanced-search" component={EnhancedSearchPage} />
-        <Route path="/benefits">{() => <Redirect to="/learn" />}</Route>
+        {/* /benefits: server 301 → /blog/molecular-hydrogen-benefits-guide-pillar
+            (redirects-table row; merged 2026-09-28) — no SPA route. */}
         <Route path="/learn" component={LearnPage} />
         <Route path="/products" component={ProductsPage} />
         <Route path="/about" component={About} />
