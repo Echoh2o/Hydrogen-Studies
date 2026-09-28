@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/card";
 import { Helmet } from "react-helmet";
 import Footer from "@/components/layout/Footer";
+import { exploreHubPath } from "@shared/explore-hubs";
+import { abstractExcerpt, excerptAtWord } from "@shared/seo-markup";
 
 interface Study {
   id: number;
@@ -59,6 +61,9 @@ const LifeStageCategoryPage = () => {
 
   const exactCategoryName = categoryMap[decodedName] || decodedName;
   const displayName = exactCategoryName;
+  // Same URL the sitemap and the crawler canonical use — the old
+  // /life-stage/<slug> canonical 404s (re-audit 2026-09-28).
+  const canonicalUrl = `https://hydrogenstudies.com${exploreHubPath("life-stage", encodeURIComponent(decodedName))}`;
 
   const [studies, setStudies] = useState<Study[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -116,13 +121,10 @@ const LifeStageCategoryPage = () => {
     });
   };
 
-  // Truncate text if it's too long
-  const truncateText = (text: string, maxLength: number = 200) => {
-    if (!text) return "No abstract available";
-    return text.length > maxLength
-      ? `${text.substring(0, maxLength)}...`
-      : text;
-  };
+  // Short abstract excerpt; "" when there is no real abstract (no
+  // "No abstract available" placeholder — CLAUDE.md).
+  const truncateText = (text: string, maxLength: number = 200) =>
+    excerptAtWord(abstractExcerpt(text), maxLength);
 
   // Get icon and color based on life stage name
   const getLifeStageIcon = () => {
@@ -154,10 +156,7 @@ const LifeStageCategoryPage = () => {
           name="keywords"
           content={`hydrogen therapy ${displayName.toLowerCase()}, molecular hydrogen age-specific, h2 benefits ${displayName.toLowerCase()}, hydrogen water ${displayName.toLowerCase()}, hydrogen research by age`}
         />
-        <link
-          rel="canonical"
-          href={`https://hydrogenstudies.com/life-stage/${encodeURIComponent(decodedName)}`}
-        />
+        <link rel="canonical" href={canonicalUrl} />
 
         {/* Open Graph Tags */}
         <meta
@@ -169,10 +168,7 @@ const LifeStageCategoryPage = () => {
           content={`Scientific studies on hydrogen therapy benefits specifically for ${displayName.toLowerCase()}. Age-appropriate research on molecular hydrogen.`}
         />
         <meta property="og:type" content="website" />
-        <meta
-          property="og:url"
-          content={`https://hydrogenstudies.com/life-stage/${encodeURIComponent(decodedName)}`}
-        />
+        <meta property="og:url" content={canonicalUrl} />
         <meta property="og:image" content="/og-lifestage-image.jpg" />
 
         {/* Twitter Card Tags */}
@@ -193,13 +189,13 @@ const LifeStageCategoryPage = () => {
             headline: `Hydrogen Therapy Research for ${displayName}`,
             description: `Scientific research database on how hydrogen therapy affects ${displayName.toLowerCase()}. Age-specific evidence on molecular hydrogen health benefits.`,
             keywords: `hydrogen therapy, ${displayName.toLowerCase()}, molecular hydrogen, h2 benefits, age-specific research`,
-            url: `https://hydrogenstudies.com/life-stage/${encodeURIComponent(decodedName)}`,
+            url: canonicalUrl,
             mainEntity: {
               "@type": "ItemList",
               itemListElement: studies.map((study, index) => ({
                 "@type": "ListItem",
                 position: index + 1,
-                url: `https://hydrogenstudies.com/studies/${study.id}`,
+                url: `https://hydrogenstudies.com/study/${study.slug || `id/${study.id}`}`,
                 name: study.title,
               })),
             },
@@ -246,7 +242,9 @@ const LifeStageCategoryPage = () => {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center items-center py-16">
+        // min-h-screen: keeps the footer below the fold until the results
+        // arrive, so it doesn't jump down when they render (CLS).
+        <div className="flex justify-center items-start py-16 min-h-screen">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <span className="ml-2 text-neutral-700">Loading studies...</span>
         </div>
@@ -279,11 +277,13 @@ const LifeStageCategoryPage = () => {
                       )}
                     </div>
                   </CardHeader>
-                  <CardContent>
-                    <p className="text-neutral-700">
-                      {truncateText(study.abstract)}
-                    </p>
-                  </CardContent>
+                  {truncateText(study.abstract) && (
+                    <CardContent>
+                      <p className="text-neutral-700">
+                        {truncateText(study.abstract)}
+                      </p>
+                    </CardContent>
+                  )}
                   <CardFooter>
                     <Link href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}>
                       <Button>View Full Study</Button>

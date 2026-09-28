@@ -357,10 +357,13 @@ export default function SEOStudyPage() {
                         /
                       </span>
                     </li>
+                    {/* /categories and /category/<x> are SPA-only redirects
+                        that 404 for crawlers — link /studies like the
+                        crawler breadcrumb; the category is a plain label. */}
                     <li className="inline-flex items-center">
-                      <Link href="/categories">
+                      <Link href="/studies">
                         <span className="hover:text-primary cursor-pointer">
-                          Categories
+                          Studies
                         </span>
                       </Link>
                       <span className="mx-2" aria-hidden="true">
@@ -369,13 +372,7 @@ export default function SEOStudyPage() {
                     </li>
                     {study.category && (
                       <li className="inline-flex items-center">
-                        <Link
-                          href={`/category/${encodeURIComponent(study.category.toLowerCase())}`}
-                        >
-                          <span className="hover:text-primary cursor-pointer">
-                            {study.category}
-                          </span>
-                        </Link>
+                        <span>{study.category}</span>
                         <span className="mx-2" aria-hidden="true">
                           /
                         </span>

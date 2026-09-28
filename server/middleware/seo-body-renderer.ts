@@ -34,7 +34,18 @@ import {
 import { isBridgeAllowed } from "../../shared/bridge-policy";
 import { getHydrogenForTopic } from "../../shared/hydrogen-for-topics";
 import { getLiveBlogPredicate } from "../services/live-blog-index";
-import { bodySystemLikePatterns, findBodySystemHub } from "../utils/explore-hubs";
+import {
+  BODY_SYSTEM_HUBS,
+  bodySystemHubName,
+  bodySystemHubPathForValue,
+  bodySystemLikePatterns,
+  conditionHubForValue,
+  exploreDetailCopy,
+  exploreHubPath,
+  findBodySystemHub,
+  type BodySystemHub,
+  type ConditionHubRef,
+} from "../../shared/explore-hubs";
 
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
 
@@ -81,6 +92,66 @@ async function getTopConditions(): Promise<{ name: string; slug: string }[]> {
     _topConditions = [];
   }
   return _topConditions!;
+}
+
+let _conditionHubs: ConditionHubRef[] | null = null;
+let _conditionHubsAt = 0;
+
+/**
+ * Every condition hub that exists (one per health_conditions row — the table
+ * renderConditionPage and sitemap-categories resolve from). Study pages link
+ * a condition only when it is in this list.
+ */
+async function getConditionHubs(): Promise<ConditionHubRef[]> {
+  if (_conditionHubs && Date.now() - _conditionHubsAt < 30 * 60 * 1000) return _conditionHubs;
+  try {
+    const r = await db.execute(sql`
+      SELECT name, slug FROM health_conditions WHERE slug IS NOT NULL
+    `);
+    _conditionHubs = (r.rows || []).map((row: any) => ({ name: row.name, slug: row.slug }));
+    _conditionHubsAt = Date.now();
+  } catch {
+    // Unknown hub set → link nothing rather than risk links to 404s.
+    return [];
+  }
+  return _conditionHubs!;
+}
+
+let _liveBodySystemHubs: BodySystemHub[] | null = null;
+let _liveBodySystemHubsAt = 0;
+
+function bodySystemMatchSql(slug: string) {
+  return sql.join(
+    bodySystemLikePatterns(slug).map((p) => sql`LOWER(array_to_string(body_systems, ' ')) LIKE ${p}`),
+    sql` OR `,
+  );
+}
+
+/**
+ * Canonical body-system hubs that resolve right now — renderBodySystemPage
+ * 404s a hub with no matching study, so the index links only these.
+ */
+async function getLiveBodySystemHubs(): Promise<BodySystemHub[]> {
+  if (_liveBodySystemHubs && Date.now() - _liveBodySystemHubsAt < 30 * 60 * 1000) return _liveBodySystemHubs;
+  const live = await Promise.all(
+    BODY_SYSTEM_HUBS.map(async (hub) => {
+      const r = await db.execute(sql`
+        SELECT 1 FROM studies WHERE (${bodySystemMatchSql(hub.slug)}) AND slug IS NOT NULL LIMIT 1
+      `);
+      return (r.rows || []).length > 0 ? hub : null;
+    }),
+  );
+  _liveBodySystemHubs = live.filter((h): h is BodySystemHub => h !== null);
+  _liveBodySystemHubsAt = Date.now();
+  return _liveBodySystemHubs;
+}
+
+/** Test-only: drop the cached hub lists. */
+export function __resetConditionHubsForTests(): void {
+  _conditionHubs = null;
+  _conditionHubsAt = 0;
+  _liveBodySystemHubs = null;
+  _liveBodySystemHubsAt = 0;
 }
 
 // ── Shared HTML fragments ─────────────────────────────────────
@@ -269,18 +340,25 @@ export async function renderStudy(slugOrId: string): Promise<string | null> {
     const condition = conditionsArr[0] || s.category || null;
     const bodySystemsArr: string[] = (s.body_systems || []).filter((b: string) => b && b.trim());
     const bodySystem = bodySystemsArr[0] || null;
-    const [related, relatedBlogs, conditions] = await Promise.all([
+    const [related, relatedBlogs, conditions, conditionHubs] = await Promise.all([
       getRelatedStudies(s.id, condition),
       getRelatedBlogs(condition || ""),
       getTopConditions(),
+      getConditionHubs(),
     ]);
+    // Link a condition / body system only when a real hub exists for it
+    // (shared/explore-hubs.ts). Long-tail values have no hub and render as
+    // plain text — re-audit 2026-09-28: 284/300 study pages linked a 404.
+    const conditionHub = conditionHubForValue(condition, conditionHubs);
+    const conditionHref = conditionHub ? exploreHubPath("condition", conditionHub.slug) : null;
+    const bodySystemHref = bodySystemHubPathForValue(bodySystem);
 
     const crumbs: { label: string; href?: string }[] = [
       { label: "Home", href: "/" },
       { label: "Studies", href: "/studies" },
     ];
-    if (condition) {
-      crumbs.push({ label: condition, href: `/explore-by-condition/${slugify(condition)}` });
+    if (condition && conditionHref) {
+      crumbs.push({ label: condition, href: conditionHref });
     }
     crumbs.push({ label: truncate(title, 50) });
 
@@ -305,8 +383,12 @@ export async function renderStudy(slugOrId: string): Promise<string | null> {
     if (s.outcome) h += `<dt>Outcome</dt><dd>${esc(s.outcome)}</dd>`;
     if (s.peer_reviewed) h += `<dt>Peer Reviewed</dt><dd>Yes</dd>`;
     if (s.country) h += `<dt>Country</dt><dd>${esc(s.country)}</dd>`;
-    if (condition) h += `<dt>Health Condition</dt><dd><a href="/explore-by-condition/${slugify(condition)}">${esc(condition)}</a></dd>`;
-    if (bodySystem) h += `<dt>Body System</dt><dd><a href="/explore-by-body-system/${slugify(bodySystem)}">${esc(bodySystem)}</a></dd>`;
+    if (condition) {
+      h += `<dt>Health Condition</dt><dd>${conditionHref ? `<a href="${esc(conditionHref)}">${esc(condition)}</a>` : esc(condition)}</dd>`;
+    }
+    if (bodySystem) {
+      h += `<dt>Body System</dt><dd>${bodySystemHref ? `<a href="${esc(bodySystemHref)}">${esc(bodySystem)}</a>` : esc(bodySystem)}</dd>`;
+    }
     h += `</dl>\n`;
 
     // Content sections
@@ -665,10 +747,7 @@ async function renderBodySystemPage(slug: string): Promise<string | null> {
   const displayName = findBodySystemHub(slug)?.label
     ?? slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   try {
-    const likeAny = sql.join(
-      bodySystemLikePatterns(slug).map((p) => sql`LOWER(array_to_string(body_systems, ' ')) LIKE ${p}`),
-      sql` OR `,
-    );
+    const likeAny = bodySystemMatchSql(slug);
     const [studiesR, conditions] = await Promise.all([
       db.execute(sql`
         SELECT slug, COALESCE(plain_language_title, title) as title, publish_year, journal
@@ -689,7 +768,9 @@ async function renderBodySystemPage(slug: string): Promise<string | null> {
       { label: displayName },
     ]);
     h += `<h1>Hydrogen Research: ${esc(displayName)}</h1>\n`;
-    h += `<p>Research studies on molecular hydrogen's effects on the ${esc(displayName.toLowerCase())} system. Browse clinical trials, reviews, and findings.</p>\n`;
+    // bodySystemHubName ends in "System" exactly once ("the immune system",
+    // not "the immune system system").
+    h += `<p>Research studies on molecular hydrogen's effects on the ${esc(bodySystemHubName(slug).toLowerCase())}. Browse clinical trials, reviews, and findings.</p>\n`;
 
     h += `<section><h2>Research Studies</h2><ul>`;
     for (const s of studies) {
@@ -738,15 +819,14 @@ async function renderExploreIndex(type: string): Promise<string> {
       h += `<p>Explore conditions by browsing the research database.</p>\n`;
     }
   } else if (type === "body-system") {
+    // The canonical hubs (the sitemap-explore list) that resolve, not every
+    // distinct body_systems value: slugifying ~200 raw values linked 20 URLs
+    // that 404 and ~170 thin long-tail pages (re-audit 2026-09-28).
     try {
-      const r = await db.execute(sql`
-        SELECT DISTINCT unnest(body_systems) as body_system FROM studies
-        WHERE body_systems IS NOT NULL ORDER BY 1
-      `);
+      const hubs = await getLiveBodySystemHubs();
       h += `<ul>`;
-      for (const row of (r.rows || []) as any[]) {
-        const bs = row.body_system;
-        h += `<li><a href="/explore-by-body-system/${slugify(bs)}">${esc(bs)}</a></li>`;
+      for (const hub of hubs) {
+        h += `<li><a href="${exploreHubPath("body-system", hub.slug)}">${esc(hub.label)}</a></li>`;
       }
       h += `</ul>\n`;
     } catch {
@@ -769,25 +849,47 @@ async function renderExploreIndex(type: string): Promise<string> {
   return h;
 }
 
-async function renderExploreDetail(type: string, slug: string): Promise<string | null> {
-  const displayName = slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+export interface ExploreDetailStudy {
+  slug: string;
+  title: string;
+  publish_year: number | null;
+  journal: string | null;
+}
+
+/**
+ * Studies listed on an /explore-by-<type>/<slug> detail hub. Shared by the
+ * crawler body below and the SPA (GET /api/explore/:type/:slug/studies), so
+ * browsers and crawlers list the same studies.
+ */
+export async function getExploreDetailStudies(slug: string): Promise<ExploreDetailStudy[]> {
   const searchTerm = slug.replace(/-/g, " ");
+  const studiesR = await db.execute(sql`
+    SELECT slug, COALESCE(plain_language_title, title) as title, publish_year, journal
+    FROM studies WHERE slug IS NOT NULL AND (
+      LOWER(title) LIKE LOWER(${"%" + searchTerm + "%"})
+      OR LOWER(array_to_string(health_conditions, ' ')) LIKE LOWER(${"%" + searchTerm + "%"})
+      OR LOWER(array_to_string(body_systems, ' ')) LIKE LOWER(${"%" + searchTerm + "%"})
+      OR LOWER(COALESCE(h2_delivery_method, '')) LIKE LOWER(${"%" + searchTerm + "%"})
+    )
+    ORDER BY publish_year DESC NULLS LAST LIMIT 100
+  `);
+  return ((studiesR.rows || []) as any[]).map((row) => ({
+    slug: row.slug,
+    title: row.title,
+    publish_year: row.publish_year ?? null,
+    journal: row.journal ?? null,
+  }));
+}
+
+async function renderExploreDetail(type: string, slug: string): Promise<string | null> {
+  // Same H1/intro copy as the SPA hub page (shared/explore-hubs.ts).
+  const { name: displayName, h1, intro } = exploreDetailCopy(slug);
   try {
-    const [studiesR, conditions] = await Promise.all([
-      db.execute(sql`
-        SELECT slug, COALESCE(plain_language_title, title) as title, publish_year, journal
-        FROM studies WHERE slug IS NOT NULL AND (
-          LOWER(title) LIKE LOWER(${"%" + searchTerm + "%"})
-          OR LOWER(array_to_string(health_conditions, ' ')) LIKE LOWER(${"%" + searchTerm + "%"})
-          OR LOWER(array_to_string(body_systems, ' ')) LIKE LOWER(${"%" + searchTerm + "%"})
-          OR LOWER(COALESCE(h2_delivery_method, '')) LIKE LOWER(${"%" + searchTerm + "%"})
-        )
-        ORDER BY publish_year DESC NULLS LAST LIMIT 100
-      `),
+    const [studies, conditions] = await Promise.all([
+      getExploreDetailStudies(slug),
       getTopConditions(),
     ]);
 
-    const studies = (studiesR.rows || []) as any[];
     const parentLabels: Record<string, string> = {
       mechanism: "Mechanisms",
       "delivery-method": "Delivery Methods",
@@ -801,8 +903,8 @@ async function renderExploreDetail(type: string, slug: string): Promise<string |
       { label: parentLabels[type] || type, href: `/explore-by-${type}` },
       { label: displayName },
     ]);
-    h += `<h1>${esc(displayName)} — Hydrogen Therapy Research</h1>\n`;
-    h += `<p>Research studies related to ${esc(displayName.toLowerCase())} in hydrogen therapy.</p>\n`;
+    h += `<h1>${esc(h1)}</h1>\n`;
+    h += `<p>${esc(intro)}</p>\n`;
 
     if (studies.length > 0) {
       h += `<section><h2>Research Studies</h2><ul>`;

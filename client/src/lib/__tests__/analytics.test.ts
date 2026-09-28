@@ -187,6 +187,171 @@ describe("initAhrefs (cookieless)", () => {
   });
 });
 
+describe("scheduleAnalytics (deferred past load + idle — LCP)", () => {
+  const gtagScript = () => document.head.querySelector('script[src*="googletagmanager.com/gtag/js"]');
+  const ahrefs = () => document.head.querySelector('script[src="https://analytics.ahrefs.com/analytics.js"]');
+  let idleCallbacks: Array<() => void>;
+
+  function setReadyState(state: DocumentReadyState) {
+    Object.defineProperty(document, "readyState", { value: state, configurable: true });
+  }
+
+  beforeEach(() => {
+    idleCallbacks = [];
+    setReadyState("loading");
+    (window as any).requestIdleCallback = vi.fn((cb: () => void) => {
+      idleCallbacks.push(cb);
+      return idleCallbacks.length;
+    });
+  });
+
+  afterEach(() => {
+    // Flush this test's pending once-`load` listener so it can't fire in a
+    // later test (each test loads a fresh module instance).
+    window.dispatchEvent(new Event("load"));
+    idleCallbacks = [];
+    delete (window as any).requestIdleCallback;
+    setReadyState("complete");
+    vi.useRealTimers();
+  });
+
+  function fireLoadThenIdle() {
+    window.dispatchEvent(new Event("load"));
+    for (const cb of idleCallbacks.splice(0)) cb();
+  }
+
+  it("queues consent defaults immediately but requests no script and no config before load", async () => {
+    const { scheduleAnalytics } = await load();
+    scheduleAnalytics();
+    const cmds = commands();
+    expect(cmds[0].slice(0, 2)).toEqual(["consent", "default"]);
+    expect(cmds[1].slice(0, 2)).toEqual(["consent", "default"]);
+    expect(cmds.some((c) => c[0] === "config")).toBe(false);
+    expect(gtagScript()).toBeNull();
+    expect(ahrefs()).toBeNull();
+  });
+
+  it("does not load on `load` alone — waits for an idle period", async () => {
+    const { scheduleAnalytics } = await load();
+    scheduleAnalytics();
+    window.dispatchEvent(new Event("load"));
+    expect(gtagScript()).toBeNull();
+    expect(idleCallbacks).toHaveLength(1);
+  });
+
+  it("after load + idle: loads gtag.js and Ahrefs, config queued after the consent defaults", async () => {
+    const { scheduleAnalytics } = await load();
+    scheduleAnalytics();
+    fireLoadThenIdle();
+    expect(gtagScript()).not.toBeNull();
+    expect(ahrefs()).not.toBeNull();
+    const cmds = commands();
+    const config = cmds.findIndex((c) => c[0] === "config");
+    expect(config).toBeGreaterThan(1);
+    expect(cmds[config][2]).not.toHaveProperty("send_page_view");
+    expect(cmds.filter((c) => c[0] === "config")).toHaveLength(1);
+  });
+
+  it("a decline made BEFORE the deferred load is applied ahead of config (no hit under the default)", async () => {
+    const { scheduleAnalytics } = await load();
+    scheduleAnalytics();
+    localStorage.setItem(CONSENT_KEY, "declined");
+    window.dispatchEvent(new Event(CONSENT_UPDATED_EVENT));
+    // Ahrefs must neither load early nor load at all after a decline.
+    expect(ahrefs()).toBeNull();
+    fireLoadThenIdle();
+    const cmds = commands();
+    const update = cmds.findIndex((c) => c[0] === "consent" && c[1] === "update");
+    expect(cmds[update][2]).toEqual({ analytics_storage: "denied" });
+    expect(update).toBeLessThan(cmds.findIndex((c) => c[0] === "config"));
+    expect(ahrefs()).toBeNull();
+  });
+
+  it("an accept made before the deferred load is queued ahead of config", async () => {
+    const { scheduleAnalytics } = await load();
+    scheduleAnalytics();
+    localStorage.setItem(CONSENT_KEY, "accepted");
+    window.dispatchEvent(new Event(CONSENT_UPDATED_EVENT));
+    expect(gtagScript()).toBeNull();
+    fireLoadThenIdle();
+    const cmds = commands();
+    const update = cmds.findIndex((c) => c[0] === "consent" && c[1] === "update");
+    expect(cmds[update][2]).toEqual({ analytics_storage: "granted" });
+    expect(update).toBeLessThan(cmds.findIndex((c) => c[0] === "config"));
+  });
+
+  it("GPC: denied update queued at startup, Ahrefs never loads", async () => {
+    setGpc(true);
+    const { scheduleAnalytics } = await load();
+    scheduleAnalytics();
+    const cmds = commands();
+    expect(cmds.find((c) => c[0] === "consent" && c[1] === "update")?.[2]).toEqual({ analytics_storage: "denied" });
+    fireLoadThenIdle();
+    expect(gtagScript()).not.toBeNull();
+    expect(ahrefs()).toBeNull();
+  });
+
+  it("falls back to setTimeout(1500) where requestIdleCallback is missing", async () => {
+    delete (window as any).requestIdleCallback;
+    vi.useFakeTimers();
+    const { scheduleAnalytics, ANALYTICS_IDLE_FALLBACK_MS } = await load();
+    expect(ANALYTICS_IDLE_FALLBACK_MS).toBe(1500);
+    scheduleAnalytics();
+    window.dispatchEvent(new Event("load"));
+    vi.advanceTimersByTime(1499);
+    expect(gtagScript()).toBeNull();
+    vi.advanceTimersByTime(1);
+    expect(gtagScript()).not.toBeNull();
+  });
+
+  it("schedules straight onto idle when the page has already loaded", async () => {
+    setReadyState("complete");
+    const { scheduleAnalytics } = await load();
+    scheduleAnalytics();
+    expect(idleCallbacks).toHaveLength(1);
+    idleCallbacks[0]();
+    expect(gtagScript()).not.toBeNull();
+  });
+
+  it("is idempotent", async () => {
+    const { scheduleAnalytics } = await load();
+    scheduleAnalytics();
+    scheduleAnalytics();
+    fireLoadThenIdle();
+    expect(document.head.querySelectorAll('script[src*="gtag/js"]')).toHaveLength(1);
+    expect(commands().filter((c) => c[0] === "consent" && c[1] === "default")).toHaveLength(2);
+  });
+
+  it("landing on /admin: nothing is queued or loaded", async () => {
+    window.history.replaceState(null, "", "/admin/pipeline");
+    const { scheduleAnalytics } = await load();
+    scheduleAnalytics();
+    fireLoadThenIdle();
+    expect(window.gtag).toBeUndefined();
+    expect(gtagScript()).toBeNull();
+    expect(ahrefs()).toBeNull();
+  });
+
+  it("on /admin when the deferred load runs: gtag.js and Ahrefs stay unloaded", async () => {
+    const { scheduleAnalytics } = await load();
+    scheduleAnalytics();
+    window.history.pushState(null, "", "/admin/jobs");
+    fireLoadThenIdle();
+    expect(gtagScript()).toBeNull();
+    expect(ahrefs()).toBeNull();
+  });
+
+  it("track* stay no-ops until gtag.js is requested (no events queued before config)", async () => {
+    const { scheduleAnalytics, trackEvent } = await load();
+    scheduleAnalytics();
+    trackEvent("search", "search_query", "hydrogen");
+    expect(commands().some((c) => c[0] === "event")).toBe(false);
+    fireLoadThenIdle();
+    trackEvent("search", "search_query", "hydrogen");
+    expect(commands().some((c) => c[0] === "event" && c[1] === "search")).toBe(true);
+  });
+});
+
 describe("choice made after load", () => {
   it("decline → consent update denied and GA cookies cleared", async () => {
     const { initGA } = await load();

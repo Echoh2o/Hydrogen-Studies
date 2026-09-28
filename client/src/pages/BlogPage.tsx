@@ -296,20 +296,15 @@ function BlogPageContent() {
             { label: blog.title },
           ]} />
 
-          {/* Category link */}
+          {/* Category label. Not a link: /blog/category/* pages have no
+              crawler rendering (they 404 for bots), so every template link
+              to them was a link to a dead page (re-audit 2026-09-28). */}
           {study?.category && (
             <div className="mb-4">
-              <Link
-                to={`/blog/category/${study.category.toLowerCase().replace(/[\s_]+/g, "-").replace(/[^a-z0-9-]/g, "")}`}
-              >
-                <Badge
-                  variant="outline"
-                  className="cursor-pointer hover:bg-teal-50 hover:border-teal-300 transition-colors"
-                >
-                  <Tag className="h-3 w-3 mr-1" />
-                  {study.category}
-                </Badge>
-              </Link>
+              <Badge variant="outline">
+                <Tag className="h-3 w-3 mr-1" />
+                {study.category}
+              </Badge>
             </div>
           )}
 
@@ -345,12 +340,17 @@ function BlogPageContent() {
               </span>
             </div>
 
-            {/* Featured image */}
-            <div className="mb-6">
+            {/* Featured image — the box is sized before the image loads
+                (16:9, the generated hero images are 1408×768 / 1280×720;
+                capped at 400px like before), so the summary below doesn't
+                jump when it arrives (CLS 0.217 of 0.25, re-audit 2026-09-28). */}
+            <div className="mb-6 aspect-video max-h-[400px] w-full overflow-hidden rounded-lg shadow-md bg-neutral-100">
               <img
                 src={blog.imageUrl || "/images/fallback-study-image.svg"}
                 alt={blog.imageAlt || "Article illustration"}
-                className="w-full h-auto max-h-[400px] object-cover rounded-lg shadow-md"
+                width={1408}
+                height={768}
+                className="block w-full h-full object-cover"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = "/images/fallback-study-image.svg";
                 }}
@@ -422,19 +422,18 @@ function BlogPageContent() {
             </div>
           )}
 
-          {/* Topic tags as links */}
+          {/* Topic tags — plain labels, not /blog/category/<tag> links: those
+              pages 404 for crawlers (see the category label above). */}
           {blog.semanticKeywords && blog.semanticKeywords.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-6">
-              {blog.semanticKeywords.slice(0, 8).map((keyword: string) => {
-                const tagSlug = keyword.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+/g, "-");
-                return (
-                  <Link key={keyword} to={`/blog/category/${tagSlug}`}>
-                    <span className="inline-block px-3 py-1 bg-neutral-100 hover:bg-teal-50 text-neutral-700 hover:text-teal-700 text-sm rounded-full border border-neutral-200 hover:border-teal-200 transition-colors cursor-pointer">
-                      {keyword}
-                    </span>
-                  </Link>
-                );
-              })}
+              {blog.semanticKeywords.slice(0, 8).map((keyword: string) => (
+                <span
+                  key={keyword}
+                  className="inline-block px-3 py-1 bg-neutral-100 text-neutral-700 text-sm rounded-full border border-neutral-200"
+                >
+                  {keyword}
+                </span>
+              ))}
             </div>
           )}
 

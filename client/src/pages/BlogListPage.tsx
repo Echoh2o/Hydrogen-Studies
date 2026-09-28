@@ -150,26 +150,23 @@ export default function BlogListPage() {
           </div>
         </section>
 
-        {/* Browse by Research Category */}
+        {/* Research categories — labels, not /blog/category/* links: those
+            pages have no crawler rendering and 404 for bots (re-audit
+            2026-09-28). */}
         {studyCategories.length > 0 && (
           <section className="py-6 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                Browse by Research Category
+                Research Categories
               </h2>
               <div className="flex flex-wrap gap-2">
                 {studyCategories.map((cat) => (
-                  <Link key={cat.slug} href={`/blog/category/${cat.slug}`}>
-                    <Badge
-                      variant="outline"
-                      className="cursor-pointer hover:bg-teal-50 hover:border-teal-300 transition-colors px-3 py-1.5 text-sm"
-                    >
-                      {cat.name}
-                      <span className="ml-1.5 text-xs text-gray-400">
-                        ({cat.count})
-                      </span>
-                    </Badge>
-                  </Link>
+                  <Badge key={cat.slug} variant="outline" className="px-3 py-1.5 text-sm">
+                    {cat.name}
+                    <span className="ml-1.5 text-xs text-gray-400">
+                      ({cat.count})
+                    </span>
+                  </Badge>
                 ))}
               </div>
             </div>

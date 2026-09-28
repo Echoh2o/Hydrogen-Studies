@@ -452,6 +452,65 @@ export function conditionHubPath(slug: string): string {
   return `/explore-by-condition/${slug}`;
 }
 
+const STUDY_PATH_RE = /^\/stud(?:y|ies)\/([^/?#]+)\/?$/i;
+
+/**
+ * `/study/<slug>` ↔ `/studies/<slug>` are two routes for the SAME study page,
+ * never a redirect: a row between them can only shadow the live page.
+ */
+export function isSameSlugStudyAlias(fromPath: string, toPath: string): boolean {
+  const a = STUDY_PATH_RE.exec(fromPath.split(/[?#]/)[0]);
+  const b = STUDY_PATH_RE.exec(toPath.split(/[?#]/)[0]);
+  return !!a && !!b && a[1].toLowerCase() === b[1].toLowerCase();
+}
+
+/**
+ * True when `normalizedPath` (lowercase, no trailing slash — the not_found_log
+ * key) is a page that exists right now: a study under /study/ or /studies/,
+ * or a published, non-archived blog post. A 404 logged for such a path is
+ * transient (deploy downtime, a DB blip, or a /Study/Slug/ variant that
+ * normalizes onto the live URL) and must never become a redirect — the
+ * redirects table is checked before routing, so the row would shadow the
+ * live page (row 8929, 2026-09-23).
+ */
+export async function pathResolvesToLiveContent(normalizedPath: string): Promise<boolean> {
+  const study = STUDY_PATH_RE.exec(normalizedPath);
+  if (study && study[1].toLowerCase() !== "tags") {
+    const slug = study[1].toLowerCase();
+    const [row] = await db
+      .select({ id: studies.id })
+      .from(studies)
+      .where(sql`lower(${studies.slug}) = ${slug}`)
+      .limit(1);
+    if (row) return true;
+  }
+  const blog = /^\/blog\/([^/?#]+)\/?$/i.exec(normalizedPath);
+  if (blog) {
+    const slug = blog[1].toLowerCase();
+    const [row] = await db
+      .select({ id: blogArticles.id })
+      .from(blogArticles)
+      .where(and(
+        sql`lower(${blogArticles.slug}) = ${slug}`,
+        eq(blogArticles.isPublished, true),
+        eq(blogArticles.isArchived, false),
+      ))
+      .limit(1);
+    if (row) return true;
+  }
+  return false;
+}
+
+/**
+ * Why a 404 must NOT be auto-promoted into a redirect row, or null when it
+ * may be. Checked before every auto-promote insert.
+ */
+export async function autoPromoteBlockReason(normalizedFrom: string, toPath: string): Promise<string | null> {
+  if (isSameSlugStudyAlias(normalizedFrom, toPath)) return "same-slug /study ↔ /studies alias";
+  if (await pathResolvesToLiveContent(normalizedFrom)) return "from_path is a live page";
+  return null;
+}
+
 /** Public entry point — returns ranked candidates for a 404 path. */
 export async function getRankedSuggestions(path: string): Promise<RedirectSuggestion[]> {
   const { query, tokens, pathHint, lastSegment } = reconstructQuery(path);
@@ -926,6 +985,11 @@ export async function backfillSuggestions(
       ) {
         const normalized = entry.path.toLowerCase().replace(/\/+$/, "") || "/";
         try {
+          // Never shadow a live page: the 404 was transient if the path
+          // resolves now, and /study/X → /studies/X is the same page. The
+          // suggestions stay saved for manual review.
+          const blocked = await autoPromoteBlockReason(normalized, top.target);
+          if (blocked) throw new Error(`refused: ${blocked}`);
           // Defense in depth — content slugs are admin-editable and could
           // theoretically resolve to an external-looking string. Reject
           // anything that doesn't look like a same-site path.
@@ -953,7 +1017,8 @@ export async function backfillSuggestions(
         } catch (err) {
           // Most common: unique-constraint violation (a redirect for this
           // path already exists). Less common: validation failure on a
-          // weird slug. Either way, the suggestions row is saved for
+          // weird slug, or a refusal (live from_path / same-slug alias).
+          // Either way, the suggestions row is saved for
           // manual review — we just skip the auto-promote.
           logger.warn("Auto-promote skipped", TAG, {
             path: entry.path.slice(0, 200),

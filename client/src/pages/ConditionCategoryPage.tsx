@@ -12,6 +12,7 @@ import {
 import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
+import { abstractExcerpt, excerptAtWord } from "@shared/seo-markup";
 
 interface Study {
   id: number;
@@ -119,13 +120,10 @@ const ConditionCategoryPage = () => {
     });
   };
 
-  // Truncate text if it's too long
-  const truncateText = (text: string, maxLength: number = 200) => {
-    if (!text) return "No abstract available";
-    return text.length > maxLength
-      ? `${text.substring(0, maxLength)}...`
-      : text;
-  };
+  // Short abstract excerpt; "" when there is no real abstract (no
+  // "No abstract available" placeholder — CLAUDE.md).
+  const truncateText = (text: string, maxLength: number = 200) =>
+    excerptAtWord(abstractExcerpt(text), maxLength);
 
   return (
     <>
@@ -223,7 +221,9 @@ const ConditionCategoryPage = () => {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center items-center py-16">
+          // min-h-screen: keeps the footer below the fold until the results
+          // arrive, so it doesn't jump down when they render (CLS).
+          <div className="flex justify-center items-start py-16 min-h-screen">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <span className="ml-2 text-neutral-700">Loading studies...</span>
           </div>
@@ -257,11 +257,13 @@ const ConditionCategoryPage = () => {
                           )}
                         </div>
                       </CardHeader>
-                      <CardContent>
-                        <p className="text-neutral-700">
-                          {truncateText(study.abstract)}
-                        </p>
-                      </CardContent>
+                      {truncateText(study.abstract) && (
+                        <CardContent>
+                          <p className="text-neutral-700">
+                            {truncateText(study.abstract)}
+                          </p>
+                        </CardContent>
+                      )}
                       <CardFooter>
                         <Link href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}>
                           <Button>View Full Study</Button>
