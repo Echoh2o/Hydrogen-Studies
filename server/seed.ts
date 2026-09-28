@@ -1757,6 +1757,10 @@ async function seed() {
         ...study,
         slug: studySlug,
         viewCount: Math.floor(Math.random() * 500) + 50,
+        // Deterministic modification date: sitemaps (and their E2E tests) only
+        // emit <lastmod> for studies that have one; otherwise it depended on the
+        // retraction job (external API) touching a row mid-run.
+        lastModified: new Date("2026-01-15T00:00:00Z"),
       } as any);
       insertedStudies++;
     } catch (e: any) {
