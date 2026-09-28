@@ -29,7 +29,12 @@ import {
   studyPageTitle,
 } from "../../shared/seo-markup";
 import { getHydrogenForTopic } from "../../shared/hydrogen-for-topics";
-import { bodySystemHubName, mechanismHubMeta } from "../../shared/explore-hubs";
+import {
+  bodySystemHubName,
+  exploreDetailMeta,
+  exploreIndexCopy,
+  mechanismHubMeta,
+} from "../../shared/explore-hubs";
 import { marked } from "marked";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -262,6 +267,11 @@ export function buildBlogMeta(blog: any): PageMeta {
   };
 }
 
+function exploreIndexMeta(type: "demographic" | "delivery-method"): { title: string; description: string } {
+  const { title, description } = exploreIndexCopy(type);
+  return { title, description };
+}
+
 export function resolveStaticPageMeta(pathname: string): PageMeta | null {
   // PLAN.md 0.6 + 1.8: internal-search pages and thin pages carry
   // noindex,follow until they have real content. Kept in nav; removed from
@@ -310,10 +320,6 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
       title: `Advanced Research Search | ${SITE_NAME}`,
       description: "Advanced search with filters for study type, outcome, date range, body system, and health condition across hydrogen therapy research."
     },
-    "/benefits": {
-      title: `Health Benefits of Hydrogen | ${SITE_NAME}`,
-      description: "Discover the scientifically-studied health benefits of molecular hydrogen, from anti-inflammatory effects to neuroprotection."
-    },
     "/explore-by-condition": {
       title: `Hydrogen Research by Health Condition | ${SITE_NAME}`,
       description: "Explore hydrogen therapy research organized by health condition. Find studies on diabetes, Alzheimer's, arthritis, cancer support, and more."
@@ -330,14 +336,9 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
       title: `Hydrogen Research by Life Stage | ${SITE_NAME}`,
       description: "Find hydrogen therapy research relevant to your life stage — pregnancy, childhood, adults, elderly, and athletes."
     },
-    "/explore-by-demographic": {
-      title: `Hydrogen Research by Demographics | ${SITE_NAME}`,
-      description: "Explore hydrogen therapy research filtered by demographic groups and population types."
-    },
-    "/explore-by-delivery-method": {
-      title: `Hydrogen Delivery Methods Research | ${SITE_NAME}`,
-      description: "Compare research on hydrogen water, hydrogen gas inhalation, hydrogen-rich saline, hydrogen baths, and other delivery methods."
-    },
+    // Shared with the SPA index pages (same title/description for browsers).
+    "/explore-by-demographic": exploreIndexMeta("demographic"),
+    "/explore-by-delivery-method": exploreIndexMeta("delivery-method"),
     "/explore-by-benefit": {
       title: `Hydrogen Research by Health Benefit | ${SITE_NAME}`,
       description: "Browse hydrogen therapy research organized by health benefit — antioxidant, anti-inflammatory, neuroprotective, and more."
@@ -413,14 +414,18 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
   }
 
   // explore-by-{delivery-method,benefit,demographic}/:slug detail pages also
-  // rendered bodies without meta (homepage FALLBACK).
+  // rendered bodies without meta (homepage FALLBACK). Title/description/
+  // canonical are shared with the SPA hub pages (shared/explore-hubs.ts).
   const exploreDetailMatch = pathname.match(/^\/explore-by-(delivery-method|benefit|demographic)\/([^/]+)$/);
   if (exploreDetailMatch) {
-    const name = exploreDetailMatch[2].replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    const meta = exploreDetailMeta(
+      exploreDetailMatch[1] as "delivery-method" | "benefit" | "demographic",
+      exploreDetailMatch[2],
+    );
     return {
-      title: `${name}: Hydrogen Research | ${SITE_NAME}`,
-      description: `Peer-reviewed molecular hydrogen studies related to ${name.toLowerCase()}, with study types, publication years and links to each study summary and its source.`,
-      canonical: `${SITE_URL}${pathname}`,
+      title: meta.title,
+      description: meta.description,
+      canonical: `${SITE_URL}${meta.path}`,
       ogType: "website",
       ogImage: `${SITE_URL}/logo.png`,
     };

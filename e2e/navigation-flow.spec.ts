@@ -19,14 +19,14 @@ test.describe("End-to-End Navigation Flows", () => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
-    // Navigate to benefits
-    const benefitsLink = page.getByRole("link", { name: /benefits/i }).first();
+    // Navigate to benefits via the homepage's "Explore All Benefits" CTA,
+    // which links the real /learn page. (/benefits itself is no longer an SPA
+    // route: the server 301s it to the evidence-graded benefits guide.)
+    const benefitsLink = page.getByRole("link", { name: /explore all benefits/i }).first();
     if (await benefitsLink.isVisible()) {
       await benefitsLink.click();
       await page.waitForLoadState("networkidle");
-      // A "benefits" link may point at /benefits (which now redirects to the
-      // real /learn page) or straight at /learn — accept either destination.
-      expect(page.url()).toMatch(/\/benefits|\/learn/);
+      expect(new URL(page.url()).pathname).toBe("/learn");
 
       // Click a "browse studies" or similar link
       const browseLink = page.locator('a[href*="/studies"], a[href*="/search"]').first();

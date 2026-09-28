@@ -93,14 +93,25 @@ describe("study service — public listing/search/stats queries", async () => {
 });
 
 describe("crawler-facing SSR bodies (same HTML for bots and browsers)", async () => {
-  const { renderPageBody, renderStudy, renderHydrogenForPage } = await import("../middleware/seo-body-renderer");
+  const { renderPageBody, renderStudy, renderHydrogenForPage, __resetConditionHubsForTests } = await import(
+    "../middleware/seo-body-renderer"
+  );
+  // Index hub lists are cached — drop the cache so the index's own queries run.
+  const fresh = (path: string) => () => {
+    __resetConditionHubsForTests();
+    return renderPageBody(path);
+  };
 
   it.each([
     ["homepage", () => renderPageBody("/")],
     ["/studies directory", () => renderPageBody("/studies")],
     ["body-system hub", () => renderPageBody("/explore-by-body-system/cardiovascular")],
-    ["body-system index", () => renderPageBody("/explore-by-body-system")],
+    ["body-system index", fresh("/explore-by-body-system")],
     ["mechanism hub", () => renderPageBody("/explore-by-mechanism/antioxidant")],
+    ["demographic hub", () => renderPageBody("/explore-by-demographic/athletes")],
+    ["demographic index", fresh("/explore-by-demographic")],
+    ["delivery-method hub", () => renderPageBody("/explore-by-delivery-method/inhalation")],
+    ["delivery-method index", fresh("/explore-by-delivery-method")],
     ["study page", () => renderStudy("some-study-slug")],
     ["hydrogen-for page", () => renderHydrogenForPage("heart-disease")],
   ] as const)("%s", async (label, run) => {
@@ -135,7 +146,14 @@ describe("hub and explorer APIs", async () => {
     "/api/consumer-categories/studies?model=condition&category=Heart%20Disease%20%26%20Hypertension",
     "/api/consumer-categories/life-stages",
     "/api/explore/mechanism/antioxidant/studies",
+    "/api/explore/demographic/athletes/studies",
+    "/api/explore/delivery-method/inhalation/studies",
+    "/api/explore/demographic/hubs",
+    "/api/explore/delivery-method/hubs",
   ])("%s", async (path) => {
+    // Hub lists are cached; drop the cache so this request's queries run.
+    const { __resetConditionHubsForTests } = await import("../middleware/seo-body-renderer");
+    __resetConditionHubsForTests();
     await request(app).get(path);
     expectAllFiltered(path);
   });
