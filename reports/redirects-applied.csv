@@ -3136,3 +3136,14 @@ exclude-410,4223,/study/the-global-hydrogen-budget-1777577956395,-
 exclude-410,4243,/study/mitigating-ammonia-inhibition-in-anaerobic-digestion-of-swine-manure-using-hydrogen-nanobubble-water-acclimation-multi-omics-insights-1782857395647,-
 exclude-410,4297,/study/existing-and-emerging-technologies-in-biohydrogen-production-mechanisms-and-influential-factors-for-sustainable-energy-transition-1788216910212,-
 exclude-410,4298,/study/hydrogen-producing-facultative-anaerobic-bacteria-isolated-from-kitchen-wastewater-for-sustainable-bioenergy-applications-1788216910213,- (was bogus auto-promoted 302 row 8929)
+# 2026-09-28 benefits merge (Josh in session: "Merge older pages") → /blog/molecular-hydrogen-benefits-guide-pillar
+merge,7906,/blog/how-to-use-hydrogen-water-health-benefits-for-your-whole-body-a-science-backed-guide-632384,/blog/molecular-hydrogen-benefits-guide-pillar
+merge,9973,/blog/hydrogen-gas-therapy-research,/blog/molecular-hydrogen-benefits-guide-pillar
+merge,-,/benefits,/blog/molecular-hydrogen-benefits-guide-pillar
+repoint,62,/hydrogen-therapy-guide,/blog/molecular-hydrogen-benefits-guide-pillar
+repoint,-,/blog/how-to-use-hydrogen-water-health-benefits-for-your-whole-body-a-science-backed-guide-480946,/blog/molecular-hydrogen-benefits-guide-pillar
+repoint,817,/blog/how-to-use-hydrogen-water-health-benefits-for-your-whole-body-a-science-backed-guide-559927,/blog/molecular-hydrogen-benefits-guide-pillar
+repoint,3032,/blog/how-to-use-hydrogen-water-health-benefits-for-your-whole-body-a-science-backed-guide-563159,/blog/molecular-hydrogen-benefits-guide-pillar
+# 2026-09-28 off-topic study exclusion (Josh in session: "remove off topic studies"); reports/offtopic-studies-2026-09-28.csv
+exclude-410,3646,/study/clostridium-beijerinckii-displays-a-soluble-fefe-hydrogenaseformate-dehydrogenase-enzyme-complex-that-links-h2-and-co2-metabolism-1775650467182,-
+exclude-410,4255,/study/hydrogen-supplementation-improves-glucose-based-n-caproate-production-in-caproiciproducens-galactitolivorans-with-reverse-b-oxidation-associated-redox-remodeling-1782857395648,-
