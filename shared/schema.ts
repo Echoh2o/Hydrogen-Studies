@@ -417,6 +417,14 @@ export const studies = pgTable(
     enrichmentAttemptedAt: timestamp("enrichment_attempted_at"),
     imageBackfillFailedAt: timestamp("image_backfill_failed_at"),
 
+    // Off-topic exclusion (migration 023). true = hidden from every public
+    // surface and its URLs answer 410 Gone; the row stays so import dedupe
+    // never re-adds it. Set only by scripts/content/exclude-energy-studies.ts
+    // after an approved id list (see shared/study-topic-filter.ts).
+    isExcluded: boolean("is_excluded").notNull().default(false),
+    excludedReason: text("excluded_reason"),
+    excludedAt: timestamp("excluded_at"),
+
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (table) => {
@@ -446,6 +454,11 @@ export const studies = pgTable(
       doiIdx: index("studies_doi_idx")
         .on(table.doi)
         .where(sql`${table.doi} IS NOT NULL`),
+      // The small excluded set the 410 guard loads. Mirrors boot migration
+      // 023_add_study_exclusion.
+      isExcludedIdx: index("studies_is_excluded_idx")
+        .on(table.id)
+        .where(sql`${table.isExcluded} = true`),
     };
   },
 );

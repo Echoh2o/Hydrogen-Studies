@@ -230,6 +230,9 @@ export async function performSemanticSearch(
       conditions.push(lte(studies.publishYear, parsedQuery.filters.yearTo));
     }
 
+    // Excluded (off-topic hydrogen-energy) studies never reach search results.
+    conditions.push(eq(studies.isExcluded, false));
+
     // Get studies from database
     let query = db.select().from(studies).$dynamic();
 

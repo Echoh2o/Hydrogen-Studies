@@ -80,6 +80,8 @@ export async function generateWeeklyDigest(): Promise<ResearchDigest> {
       and(
         gte(studies.createdAt, new Date(weekStart)),
         lte(studies.createdAt, new Date(weekEnd + "T23:59:59Z")),
+        // Excluded (off-topic hydrogen-energy) studies never appear in a digest.
+        eq(studies.isExcluded, false),
       ),
     )
     .orderBy(desc(studies.id));

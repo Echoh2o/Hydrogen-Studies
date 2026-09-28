@@ -1108,6 +1108,7 @@ router.get("/:id(\\d+)/study-chart-data", async (req, res) => {
         FROM years y
         LEFT JOIN studies s
           ON COALESCE(s.category, 'General') = ${category}
+          AND s.is_excluded = false
           AND EXTRACT(YEAR FROM COALESCE(
             CASE WHEN s.journal_publish_date ~ '^\\d{4}' THEN to_date(LEFT(s.journal_publish_date, 10), 'YYYY-MM-DD') END,
             CASE WHEN s.publish_date ~ '^\\d{4}' THEN to_date(LEFT(s.publish_date, 10), 'YYYY-MM-DD') END

@@ -95,6 +95,8 @@ export default function StudiesTable() {
   queryParams.set("limit", pageSize.toString());
   queryParams.set("sortBy", sortBy);
   queryParams.set("sortOrder", sortOrder);
+  // Admins also see excluded (off-topic, 410) studies — labelled below.
+  queryParams.set("includeExcluded", "true");
 
   if (debouncedSearch) {
     queryParams.set("search", debouncedSearch);
@@ -496,6 +498,15 @@ export default function StudiesTable() {
                     <TableCell>
                       <div className="max-w-[350px]">
                         <p className="font-medium truncate">{study.title}</p>
+                        {study.isExcluded && (
+                          <Badge
+                            variant="destructive"
+                            className="mt-1"
+                            title={study.excludedReason || "Excluded from the public site (410 Gone)"}
+                          >
+                            Excluded · 410
+                          </Badge>
+                        )}
                         {study.journal && (
                           <p className="text-sm text-muted-foreground truncate">
                             {study.journal}

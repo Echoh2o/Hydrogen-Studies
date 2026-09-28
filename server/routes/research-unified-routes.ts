@@ -18,6 +18,11 @@ import { enrichStudyFromPubMed } from "../services/pubmed-enricher";
 import { fetchWithTimeout } from "../utils/http";
 import { logger } from "../utils/logger";
 import { requireAdmin } from "../auth";
+import {
+  checkStudyTopic,
+  filterOffTopicSearchResults,
+  isOffTopicStudyError,
+} from "../services/study-topic-guard";
 
 /**
  * Build study data from PubMed search result (client-sent paper data).
@@ -503,6 +508,11 @@ router.get("/api/research/search", async (req: Request, res: Response) => {
 
     logger.info("After deduplication and unification", "ResearchUnifiedRoutes", { uniqueResults: unifiedResults.length });
 
+    // Study finder guard: hide hydrogen-ENERGY papers from the admin finder.
+    const topicFiltered = filterOffTopicSearchResults(unifiedResults, "unified");
+    unifiedResults.length = 0;
+    unifiedResults.push(...topicFiltered.kept);
+
     // Step 4: Sort and paginate the results
     // Sort by year (newest first) if available
     unifiedResults.sort((a, b) => {
@@ -541,6 +551,7 @@ router.get("/api/research/search", async (req: Request, res: Response) => {
       nextIndex: Math.min(pageNum * pageSizeNum, unifiedResults.length),
       articles: paginatedResults,
       sourceCounts: sourceCounts,
+      excludedOffTopic: topicFiltered.excludedOffTopic,
       errors: errors.length > 0 ? errors : undefined,
     };
 
@@ -627,6 +638,20 @@ router.post(
         return res
           .status(404)
           .json({ error: "Failed to extract study data from paper" });
+      }
+
+      // Study finder guard: hydrogen-ENERGY research never enters the review
+      // queue (nor the AI relevance scoring that follows it).
+      const topic = checkStudyTopic(
+        { title: studyData.title, abstract: studyData.abstract, keywords: (studyData as any).keywords ?? null, journal: studyData.journal },
+        `review-queue:${source}`,
+      );
+      if (topic.excluded) {
+        return res.status(422).json({
+          success: false,
+          offTopic: true,
+          error: `Off-topic: ${topic.reason}. Hydrogen Studies covers molecular hydrogen for human health only.`,
+        });
       }
 
       // Create review queue item
@@ -930,6 +955,9 @@ router.put(
             study: savedStudy,
           });
         } catch (importError: unknown) {
+          if (isOffTopicStudyError(importError)) {
+            return res.status(422).json({ error: importError.message, offTopic: true, reviewItem: updatedItem });
+          }
           logger.error("Error importing approved study", importError, "ResearchUnifiedRoutes");
           res.status(500).json({
             error: importError instanceof Error ? importError.message : "Failed to import approved study",
@@ -1053,6 +1081,7 @@ router.post("/api/research/import", requireAdmin, async (req: Request, res: Resp
       study: savedStudy,
     });
   } catch (error: unknown) {
+    if (isOffTopicStudyError(error)) return res.status(422).json({ error: error.message, offTopic: true });
     logger.error("Error importing paper", error, "ResearchUnifiedRoutes");
     res.status(500).json({ error: error instanceof Error ? error.message : "Failed to import paper" });
   }
@@ -1099,6 +1128,7 @@ router.post("/api/research/pubmed/import", requireAdmin, async (req: Request, re
 
     res.json({ success: true, message: "Study imported from PubMed", study: saved });
   } catch (error: unknown) {
+    if (isOffTopicStudyError(error)) return res.status(422).json({ error: error.message, offTopic: true });
     logger.error("PubMed import error", error, "ResearchUnifiedRoutes");
     res.status(500).json({ error: error instanceof Error ? error.message : "PubMed import failed" });
   }
@@ -1127,6 +1157,7 @@ router.post("/api/semantic-scholar/import", requireAdmin, async (req: Request, r
 
     res.json({ success: true, message: "Study imported from Semantic Scholar", study: saved });
   } catch (error: unknown) {
+    if (isOffTopicStudyError(error)) return res.status(422).json({ error: error.message, offTopic: true });
     logger.error("Semantic Scholar import error", error, "ResearchUnifiedRoutes");
     res.status(500).json({ error: error instanceof Error ? error.message : "Semantic Scholar import failed" });
   }
@@ -1155,6 +1186,7 @@ router.post("/api/crossref/import", requireAdmin, async (req: Request, res: Resp
 
     res.json({ success: true, message: "Study imported from CrossRef", study: saved });
   } catch (error: unknown) {
+    if (isOffTopicStudyError(error)) return res.status(422).json({ error: error.message, offTopic: true });
     logger.error("CrossRef import error", error, "ResearchUnifiedRoutes");
     res.status(500).json({ error: error instanceof Error ? error.message : "CrossRef import failed" });
   }
@@ -1205,6 +1237,7 @@ router.post("/api/europepmc/save", requireAdmin, async (req: Request, res: Respo
     const saved = await studyService.createStudy(study);
     res.json({ success: true, message: "Study imported from Europe PMC", study: saved });
   } catch (error: unknown) {
+    if (isOffTopicStudyError(error)) return res.status(422).json({ error: error.message, offTopic: true });
     logger.error("Europe PMC save error", error, "ResearchUnifiedRoutes");
     res.status(500).json({ error: error instanceof Error ? error.message : "Europe PMC save failed" });
   }
@@ -1234,11 +1267,14 @@ router.get(
         pageSizeNum,
       );
 
+      // Study finder guard: hide hydrogen-ENERGY papers.
+      const { kept, excludedOffTopic } = filterOffTopicSearchResults(Array.isArray(results) ? results : [], "pubmed");
       res.json({
         success: true,
         source: "pubmed",
-        data: results,
-        total: results.length,
+        data: kept,
+        total: kept.length,
+        excludedOffTopic,
         page: pageNum,
         pageSize: pageSizeNum,
       });
@@ -1271,11 +1307,14 @@ router.get(
 
       const results = await searchEuropePMC(query, pageNum, pageSizeNum);
 
+      // Study finder guard: hide hydrogen-ENERGY papers.
+      const { kept, excludedOffTopic } = filterOffTopicSearchResults(results.results || [], "europe-pmc");
       res.json({
         success: true,
         source: "europe-pmc",
-        data: results.results,
-        total: results.total,
+        data: kept,
+        total: Math.max(0, (results.total || 0) - excludedOffTopic),
+        excludedOffTopic,
         page: pageNum,
         pageSize: pageSizeNum,
       });
@@ -1308,11 +1347,14 @@ router.get(
 
       const results = await searchCrossRef(query, pageNum, pageSizeNum);
 
+      // Study finder guard: hide hydrogen-ENERGY papers.
+      const { kept, excludedOffTopic } = filterOffTopicSearchResults(results.items || [], "crossref");
       res.json({
         success: true,
         source: "crossref",
-        data: results.items || [],
-        total: results.total_results || 0,
+        data: kept,
+        total: Math.max(0, (results.total_results || 0) - excludedOffTopic),
+        excludedOffTopic,
         page: pageNum,
         pageSize: pageSizeNum,
       });
@@ -1349,11 +1391,14 @@ router.get(
         pageSizeNum,
       );
 
+      // Study finder guard: hide hydrogen-ENERGY papers.
+      const { kept, excludedOffTopic } = filterOffTopicSearchResults(results.data || [], "semantic-scholar");
       res.json({
         success: true,
         source: "semantic-scholar",
-        data: results.data || [],
-        total: results.total || 0,
+        data: kept,
+        total: Math.max(0, (results.total || 0) - excludedOffTopic),
+        excludedOffTopic,
         page: pageNum,
         pageSize: pageSizeNum,
       });

@@ -86,6 +86,7 @@ import {
 } from "./utils/health-monitoring";
 import { qualityAudit } from "./utils/comprehensive-quality-audit";
 import { redirectMiddleware, resolveRedirect, ensureRedirectIndexes } from "./services/redirect-service";
+import { excludedStudyGoneMiddleware } from "./services/excluded-studies";
 import {
   searchRateLimiter,
   generalApiRateLimiter,
@@ -194,6 +195,11 @@ app.use(compression());
 
 // Redirect middleware — must be very early (before routes) to intercept 301/302s
 app.use(redirectMiddleware());
+// Excluded (off-topic hydrogen-energy) studies: every public URL answers 410
+// Gone to bots and browsers alike, even without a redirects-table row. Before
+// the /study/id/:id resolver, the /proxy router, the bot middleware and the
+// SPA fallback so none of them can serve the page.
+app.use(excludedStudyGoneMiddleware());
 // Fire-and-forget: enables pg_trgm, creates GIN trigram indexes, and
 // adds not_found_log.suggestions (idempotent). Safe to swallow — the
 // suggestion engine tolerates missing indexes via fallback seq-scans.
@@ -584,11 +590,13 @@ app.get("/api/public-stats", generalApiRateLimiter, async (req, res) => {
     const { studies: studiesTable } = await import("@shared/schema");
     const { count: countFn, countDistinct, sql: sqlFn } = await import("drizzle-orm");
 
-    const [totalResult] = await database.select({ value: countFn() }).from(studiesTable);
-    const [countryResult] = await database.select({ value: countDistinct(studiesTable.country) }).from(studiesTable);
-    const [peerReviewedResult] = await database.select({ value: countFn() }).from(studiesTable).where(sqlFn`${studiesTable.peerReviewed} = true`);
-    const [humanResult] = await database.select({ value: countFn() }).from(studiesTable).where(sqlFn`LOWER(${studiesTable.studyType}) LIKE '%human%' OR LOWER(${studiesTable.studyType}) LIKE '%clinical%'`);
-    const [oldestResult] = await database.select({ value: sqlFn`MIN(${studiesTable.publishYear})` }).from(studiesTable).where(sqlFn`${studiesTable.publishYear} IS NOT NULL AND ${studiesTable.publishYear} > 1900`);
+    // Excluded (off-topic hydrogen-energy) studies never count toward public stats.
+    const live = sqlFn`${studiesTable.isExcluded} = false`;
+    const [totalResult] = await database.select({ value: countFn() }).from(studiesTable).where(live);
+    const [countryResult] = await database.select({ value: countDistinct(studiesTable.country) }).from(studiesTable).where(live);
+    const [peerReviewedResult] = await database.select({ value: countFn() }).from(studiesTable).where(sqlFn`${studiesTable.peerReviewed} = true AND ${live}`);
+    const [humanResult] = await database.select({ value: countFn() }).from(studiesTable).where(sqlFn`(LOWER(${studiesTable.studyType}) LIKE '%human%' OR LOWER(${studiesTable.studyType}) LIKE '%clinical%') AND ${live}`);
+    const [oldestResult] = await database.select({ value: sqlFn`MIN(${studiesTable.publishYear})` }).from(studiesTable).where(sqlFn`${studiesTable.publishYear} IS NOT NULL AND ${studiesTable.publishYear} > 1900 AND ${live}`);
 
     const totalStudies = Number(totalResult?.value || 0);
     const countries = Number(countryResult?.value || 0);
@@ -1031,6 +1039,7 @@ pool.query("SELECT 1").then(async () => {
     const { addTaxonomyAndPasswordReset } = await import("./migrations/add-taxonomy-and-password-reset");
     const { addUniquenessAndJobState } = await import("./migrations/add-uniqueness-and-job-state");
     const { addBlogBylineFields } = await import("./migrations/add-blog-byline-fields");
+    const { addStudyExclusion } = await import("./migrations/add-study-exclusion");
 
     await runMigrations([
       { name: "001_add_fulltext_search", up: addFullTextSearch },
@@ -1055,6 +1064,7 @@ pool.query("SELECT 1").then(async () => {
       { name: "020_add_taxonomy_and_password_reset", up: addTaxonomyAndPasswordReset },
       { name: "021_add_uniqueness_and_job_state", up: addUniquenessAndJobState },
       { name: "022_add_blog_byline_fields", up: addBlogBylineFields },
+      { name: "023_add_study_exclusion", up: addStudyExclusion },
     ]);
 
     // Recover orphaned "processing" jobs — items whose worker crashed/restarted

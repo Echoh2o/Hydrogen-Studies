@@ -52,6 +52,8 @@ export async function generateStudyLinks(studyId: number): Promise<LinkSuggestio
       and(
         eq(studies.category, study.category),
         ne(studies.id, studyId),
+        // Never link to an excluded (off-topic, 410) study.
+        eq(studies.isExcluded, false),
       )
     )
     .orderBy(desc(studies.publishYear))
@@ -125,7 +127,7 @@ export async function generateBlogLinks(blogId: number): Promise<LinkSuggestion[
       slug: studies.slug,
     })
       .from(studies)
-      .where(eq(studies.id, blog.studyId))
+      .where(and(eq(studies.id, blog.studyId), eq(studies.isExcluded, false)))
       .limit(1);
 
     if (sourceStudy) {
@@ -259,6 +261,7 @@ export async function buildAllStudyLinks(options: {
       smartLinks,
       and(eq(smartLinks.fromType, "study"), eq(smartLinks.fromId, studies.id)),
     )
+    .where(eq(studies.isExcluded, false))
     .groupBy(studies.id)
     .orderBy(sql`max(${smartLinks.createdAt}) asc nulls first`, studies.id)
     .limit(batchSize);
@@ -319,13 +322,18 @@ export async function getLinksFor(contentType: string, contentId: number): Promi
   url: string;
 }>> {
   // smart_links rows are generated once and never pruned, so a stored link
-  // can point at a post that was since retired (410) or unpublished. Only
-  // return blog targets that are live (published AND not archived).
+  // can point at a post that was since retired (410) or unpublished, or at a
+  // study that was since excluded (off-topic, 410). Only return live targets:
+  // blogs published AND not archived, studies not excluded.
   const rows = await db.select({ link: smartLinks, blogSlug: blogArticles.slug })
     .from(smartLinks)
     .leftJoin(
       blogArticles,
       and(eq(smartLinks.toType, "blog"), eq(blogArticles.id, smartLinks.toId)),
+    )
+    .leftJoin(
+      studies,
+      and(eq(smartLinks.toType, "study"), eq(studies.id, smartLinks.toId)),
     )
     .where(
       and(
@@ -333,6 +341,7 @@ export async function getLinksFor(contentType: string, contentId: number): Promi
         eq(smartLinks.fromId, contentId),
         eq(smartLinks.isActive, true),
         sql`(${smartLinks.toType} <> 'blog' OR (${blogArticles.isPublished} = true AND ${blogArticles.isArchived} = false))`,
+        sql`(${smartLinks.toType} <> 'study' OR ${studies.isExcluded} = false)`,
       )
     )
     .orderBy(desc(smartLinks.relevanceScore))

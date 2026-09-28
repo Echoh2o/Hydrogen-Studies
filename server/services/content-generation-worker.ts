@@ -82,7 +82,8 @@ async function enrichSummaryForStudyId(studyId: number): Promise<void> {
       keyFinding: studies.keyFinding,
     })
     .from(studies)
-    .where(eq(studies.id, studyId))
+    // Excluded (off-topic, 410) studies get no AI enrichment.
+    .where(and(eq(studies.id, studyId), eq(studies.isExcluded, false)))
     .limit(1);
 
   // Nothing to enrich without an abstract; and keyFinding non-NULL means this

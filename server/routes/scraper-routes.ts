@@ -12,6 +12,7 @@ import { db } from "../db";
 import { studies } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { externalApi } from "../utils/http";
+import { checkStudyTopic } from "../services/study-topic-guard";
 
 const router = Router();
 
@@ -191,6 +192,20 @@ router.post("/save-url", requireAdmin, async (req: Request, res: Response) => {
 
     if (!studyData) {
       return res.status(404).json({ success: false, message: "Could not extract study data from this URL" });
+    }
+
+    // Study finder guard: this path inserts directly (not via createStudy),
+    // so apply the hydrogen-ENERGY topic filter here.
+    const topic = checkStudyTopic(
+      { title: studyData.title, abstract: studyData.abstract, keywords: (studyData as any).keywords ?? null, journal: studyData.journal },
+      "url-scraper",
+    );
+    if (topic.excluded) {
+      return res.status(422).json({
+        success: false,
+        offTopic: true,
+        message: `Off-topic: ${topic.reason}. Hydrogen Studies covers molecular hydrogen for human health only.`,
+      });
     }
 
     // Check for duplicates by DOI or title

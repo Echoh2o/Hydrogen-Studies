@@ -2,9 +2,26 @@ import { Router, Request, Response } from "express";
 import { studyService } from "../services/study-service";
 import { getPersonalizedRecommendations } from "../services/recommendation-engine";
 import { searchRateLimiter, aiGenerationRateLimiter } from "../utils/rate-limiting";
-import { requireAdmin } from "../auth";
+import { requireAdmin, isElevatedRequest } from "../auth";
 import { invalidateBotCache } from "../middleware/seo-bot-middleware";
 import { logger } from "../utils/logger";
+import { isOffTopicStudyError } from "../services/study-topic-guard";
+
+/**
+ * Excluded (off-topic hydrogen-energy) studies are gone for the public: every
+ * public study endpoint answers 410 for them. Admins/editors still get the
+ * row (the admin editor and deletion flows need it).
+ */
+async function respondGoneIfExcluded(
+  req: Request,
+  res: Response,
+  study: { isExcluded?: boolean | null } | undefined | null,
+): Promise<boolean> {
+  if (!study?.isExcluded) return false;
+  if (await isElevatedRequest(req)) return false;
+  res.status(410).json({ error: "This study has been removed from Hydrogen Studies", gone: true });
+  return true;
+}
 
 export class StudiesController {
   public router: Router;
@@ -123,7 +140,7 @@ export class StudiesController {
   private getStats = async (req: Request, res: Response) => {
     try {
       const { pool } = await import("../db");
-      const totalResult = await pool.query("SELECT COUNT(*) as count FROM studies");
+      const totalResult = await pool.query("SELECT COUNT(*) as count FROM studies WHERE is_excluded = false");
       const totalStudies = parseInt(totalResult.rows[0]?.count || "0");
       res.json({ totalStudies });
     } catch (error) {
@@ -135,29 +152,30 @@ export class StudiesController {
   private getAnalytics = async (req: Request, res: Response) => {
     try {
       const { pool } = await import("../db");
-      const totalResult = await pool.query("SELECT COUNT(*) as count FROM studies");
+      // Excluded (off-topic) studies never count toward public stats.
+      const totalResult = await pool.query("SELECT COUNT(*) as count FROM studies WHERE is_excluded = false");
       const totalStudies = parseInt(totalResult.rows[0]?.count || "0");
 
       // Get top viewed studies as "high impact"
       const topStudies = await pool.query(
         `SELECT id, title, COALESCE(view_count, 0) as citations,
          COALESCE(publish_year, EXTRACT(YEAR FROM NOW())::int) as year
-         FROM studies ORDER BY view_count DESC NULLS LAST LIMIT 5`
+         FROM studies WHERE is_excluded = false ORDER BY view_count DESC NULLS LAST LIMIT 5`
       );
 
       // Real stats from database
       const [countryResult, journalResult, humanResult, categoryResult, peakYearResult, recentAvgResult, oldestResult, countryBreakdown, categoryBreakdown, count2015, count2023] = await Promise.all([
-        pool.query("SELECT COUNT(DISTINCT country) as count FROM studies WHERE country IS NOT NULL"),
-        pool.query("SELECT COUNT(DISTINCT journal) as count FROM studies WHERE journal IS NOT NULL"),
-        pool.query("SELECT COUNT(*) as count FROM studies WHERE LOWER(study_type) LIKE '%human%' OR LOWER(study_type) LIKE '%clinical%'"),
-        pool.query("SELECT COUNT(DISTINCT category) as count FROM studies WHERE category IS NOT NULL"),
-        pool.query("SELECT publish_year, COUNT(*) as cnt FROM studies WHERE publish_year IS NOT NULL GROUP BY publish_year ORDER BY cnt DESC LIMIT 1"),
-        pool.query("SELECT ROUND(AVG(cnt)) as avg FROM (SELECT COUNT(*) as cnt FROM studies WHERE publish_year >= 2019 AND publish_year IS NOT NULL GROUP BY publish_year) t"),
-        pool.query("SELECT MIN(publish_year) as min_year FROM studies WHERE publish_year IS NOT NULL AND publish_year > 1900"),
-        pool.query("SELECT country, COUNT(*) as count FROM studies WHERE country IS NOT NULL GROUP BY country ORDER BY count DESC"),
-        pool.query("SELECT category, COUNT(*) as count FROM studies WHERE category IS NOT NULL GROUP BY category ORDER BY count DESC"),
-        pool.query("SELECT COUNT(*) as count FROM studies WHERE publish_year = 2015"),
-        pool.query("SELECT COUNT(*) as count FROM studies WHERE publish_year = 2023"),
+        pool.query("SELECT COUNT(DISTINCT country) as count FROM studies WHERE country IS NOT NULL AND is_excluded = false"),
+        pool.query("SELECT COUNT(DISTINCT journal) as count FROM studies WHERE journal IS NOT NULL AND is_excluded = false"),
+        pool.query("SELECT COUNT(*) as count FROM studies WHERE is_excluded = false AND (LOWER(study_type) LIKE '%human%' OR LOWER(study_type) LIKE '%clinical%')"),
+        pool.query("SELECT COUNT(DISTINCT category) as count FROM studies WHERE category IS NOT NULL AND is_excluded = false"),
+        pool.query("SELECT publish_year, COUNT(*) as cnt FROM studies WHERE publish_year IS NOT NULL AND is_excluded = false GROUP BY publish_year ORDER BY cnt DESC LIMIT 1"),
+        pool.query("SELECT ROUND(AVG(cnt)) as avg FROM (SELECT COUNT(*) as cnt FROM studies WHERE publish_year >= 2019 AND publish_year IS NOT NULL AND is_excluded = false GROUP BY publish_year) t"),
+        pool.query("SELECT MIN(publish_year) as min_year FROM studies WHERE publish_year IS NOT NULL AND publish_year > 1900 AND is_excluded = false"),
+        pool.query("SELECT country, COUNT(*) as count FROM studies WHERE country IS NOT NULL AND is_excluded = false GROUP BY country ORDER BY count DESC"),
+        pool.query("SELECT category, COUNT(*) as count FROM studies WHERE category IS NOT NULL AND is_excluded = false GROUP BY category ORDER BY count DESC"),
+        pool.query("SELECT COUNT(*) as count FROM studies WHERE publish_year = 2015 AND is_excluded = false"),
+        pool.query("SELECT COUNT(*) as count FROM studies WHERE publish_year = 2023 AND is_excluded = false"),
       ]);
 
       const totalCountries = parseInt(countryResult.rows[0]?.count || "0");
@@ -205,7 +223,7 @@ export class StudiesController {
         `SELECT publish_year as year,
          COUNT(*) as count
          FROM studies
-         WHERE publish_year IS NOT NULL
+         WHERE publish_year IS NOT NULL AND is_excluded = false
          GROUP BY publish_year
          ORDER BY publish_year`
       );
@@ -242,7 +260,7 @@ export class StudiesController {
         `SELECT id, title, COALESCE(view_count, 0) as citations, category,
          COALESCE(publish_year, EXTRACT(YEAR FROM NOW())::int) as year
          FROM studies
-         WHERE title IS NOT NULL
+         WHERE title IS NOT NULL AND is_excluded = false
          ORDER BY view_count DESC NULLS LAST
          LIMIT 20`
       );
@@ -340,7 +358,7 @@ export class StudiesController {
       // (10.1234/hydro.2023.*) — unacceptable on an evidence database.
       const { db } = await import("../db");
       const { studies } = await import("../../shared/schema");
-      const { sql, desc } = await import("drizzle-orm");
+      const { sql, desc, and, eq } = await import("drizzle-orm");
 
       const cat = category.trim();
       const contains = `%${cat}%`;
@@ -366,7 +384,7 @@ export class StudiesController {
       const rows = await db
         .select()
         .from(studies)
-        .where(matchCondition)
+        .where(and(matchCondition, eq(studies.isExcluded, false)))
         .orderBy(desc(studies.id))
         .limit(50);
 
@@ -379,7 +397,11 @@ export class StudiesController {
 
   private getAllStudies = async (req: Request, res: Response) => {
     try {
-      const result = await studyService.getStudies(req.query);
+      // Excluded (off-topic) studies are filtered by the service. Only an
+      // admin/editor asking explicitly (?includeExcluded=true) sees them.
+      const { includeExcluded, ...query } = req.query as Record<string, any>;
+      const wantsExcluded = includeExcluded === "true" && (await isElevatedRequest(req));
+      const result = await studyService.getStudies({ ...query, includeExcluded: wantsExcluded });
       res.json(result);
     } catch (error) {
        logger.error("Error fetching studies", error, "StudiesController");
@@ -405,6 +427,7 @@ export class StudiesController {
 
         const study = await studyService.getStudyById(id);
         if (!study) return res.status(404).json({ message: "Study not found" });
+        if (await respondGoneIfExcluded(req, res, study)) return;
 
         res.json(study);
     } catch (error) {
@@ -420,6 +443,7 @@ export class StudiesController {
 
           const study = await studyService.getStudyBySlug(slug);
           if (!study) return res.status(404).json({ error: "Study not found" });
+          if (await respondGoneIfExcluded(req, res, study)) return;
 
           res.json(study);
       } catch (error) {
@@ -435,6 +459,7 @@ export class StudiesController {
 
           const study = await studyService.getStudyById(studyId);
           if (!study) return res.status(404).json({ error: "Study not found" });
+          if (await respondGoneIfExcluded(req, res, study)) return;
 
           const relatedStudies = await studyService.getRelatedStudies(studyId, study.category || "");
           res.json(relatedStudies);
@@ -451,6 +476,7 @@ export class StudiesController {
 
           const study = await studyService.getStudyById(studyId);
           if (!study) return res.status(404).json({ error: "Study not found" });
+          if (await respondGoneIfExcluded(req, res, study)) return;
 
           // Format response
           const response = {
@@ -488,6 +514,7 @@ export class StudiesController {
       try {
           const studyId = parseInt(req.params.id);
           if (isNaN(studyId)) return res.status(400).json({ error: "Invalid study ID" });
+          if (await respondGoneIfExcluded(req, res, await studyService.getStudyById(studyId))) return;
 
           // Use the advanced recommendation engine
           const result = await getPersonalizedRecommendations({
@@ -520,6 +547,7 @@ export class StudiesController {
           const studyId = parseInt(req.params.id);
           if (isNaN(studyId)) return res.status(400).json({ error: "Invalid study ID" });
 
+          if (await respondGoneIfExcluded(req, res, await studyService.getStudyById(studyId))) return;
           const insights = await studyService.getStudyInsights(studyId);
           res.json(insights || {});
       } catch (error) {
@@ -536,7 +564,9 @@ export class StudiesController {
           // insertStudySchema; viewCount omitted here so a create can't seed a
           // fake view count).
           const { insertStudySchema } = await import("../../shared/schema");
-          const createSchema = insertStudySchema.omit({ viewCount: true });
+          // Exclusion columns are set only by the audited retirement script
+          // (scripts/content/exclude-energy-studies.ts), never via this API.
+          const createSchema = insertStudySchema.omit({ viewCount: true, isExcluded: true, excludedReason: true, excludedAt: true });
           const parsed = createSchema.safeParse(req.body);
           if (!parsed.success) {
               return res.status(400).json({ error: "Invalid study data", details: parsed.error.flatten() });
@@ -550,6 +580,9 @@ export class StudiesController {
 
           res.status(201).json(study);
       } catch (error) {
+          if (isOffTopicStudyError(error)) {
+              return res.status(422).json({ error: error.message, offTopic: true });
+          }
           logger.error("Error creating study", error, "StudiesController");
           res.status(500).json({ error: "Failed to create study" });
       }
@@ -567,7 +600,9 @@ export class StudiesController {
           // canonical URLs, the redirect system, and the view counter), and
           // rejects an empty update (which otherwise threw "No values to set").
           const { insertStudySchema } = await import("../../shared/schema");
-          const updateSchema = insertStudySchema.partial().omit({ slug: true, viewCount: true });
+          const updateSchema = insertStudySchema
+            .partial()
+            .omit({ slug: true, viewCount: true, isExcluded: true, excludedReason: true, excludedAt: true });
           const parsed = updateSchema.safeParse(req.body);
           if (!parsed.success) {
               return res.status(400).json({ error: "Invalid study data", details: parsed.error.flatten() });
@@ -925,13 +960,13 @@ Write ONLY the TL;DR text, nothing else. No labels, no quotes.`;
   private runBatchGenerateTldrs = async (limit: number): Promise<void> => {
       const { db } = await import("../db");
       const { studies } = await import("../../shared/schema");
-      const { isNull } = await import("drizzle-orm");
+      const { isNull, and, eq } = await import("drizzle-orm");
 
-      // Get studies without TLDRs
+      // Get studies without TLDRs (never spend AI on excluded, off-topic studies)
       const studiesWithoutTldr = await db
         .select({ id: studies.id, title: studies.title, abstract: studies.abstract, conclusion: studies.conclusion })
         .from(studies)
-        .where(isNull(studies.tldr))
+        .where(and(isNull(studies.tldr), eq(studies.isExcluded, false)))
         .limit(limit);
 
       if (studiesWithoutTldr.length === 0) {
@@ -941,7 +976,6 @@ Write ONLY the TL;DR text, nothing else. No labels, no quotes.`;
 
       const { generateStudyTldr } = await import("../services/tldr-generator");
       const { MODELS } = await import("../services/ai-provider");
-      const { eq } = await import("drizzle-orm");
 
       let generated = 0;
       const errors: string[] = [];

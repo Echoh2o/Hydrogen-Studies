@@ -8,6 +8,7 @@ import {
 } from "@shared/schema";
 import { eq, or, sql, desc, asc, and, count, isNull, isNotNull, inArray, getTableColumns } from "drizzle-orm";
 import { logger } from "../utils/logger";
+import { assertOnTopicStudy } from "./study-topic-guard";
 
 // Track whether full-text search is available (set after first successful/failed query)
 let ftsAvailable: boolean | null = null;
@@ -40,6 +41,11 @@ export interface StudyFilters {
   sortOrder?: "asc" | "desc";
   sortBy?: string;
   peerReviewed?: boolean;
+  /**
+   * Include excluded (off-topic) studies. Only ever set by the controller for
+   * elevated (admin/editor) requests — every public caller gets the default.
+   */
+  includeExcluded?: boolean;
   [key: string]: any;
 }
 
@@ -62,6 +68,12 @@ export class StudyService {
   async getStudies(filters: StudyFilters = {}): Promise<PaginatedResults<Study>> {
     try {
       const whereConditions = [];
+
+      // Excluded (off-topic hydrogen-energy) studies never reach a public
+      // listing or search result.
+      if (filters.includeExcluded !== true) {
+        whereConditions.push(eq(studies.isExcluded, false));
+      }
 
       // Full-text search using PostgreSQL tsvector/tsquery when available,
       // with LIKE fallback when search_vector column doesn't exist
@@ -282,11 +294,20 @@ export class StudyService {
   async getLatestStudies(limit: number = 20): Promise<Study[]> {
      return await db.select()
         .from(studies)
+        .where(eq(studies.isExcluded, false))
         .orderBy(desc(studies.id))
         .limit(limit);
   }
 
   async createStudy(study: InsertStudy): Promise<Study> {
+    // Import guard: off-topic hydrogen-ENERGY research never enters the
+    // database (throws OffTopicStudyError → callers report it as skipped).
+    // Every manual/bulk/review-queue import path funnels through here.
+    assertOnTopicStudy(
+      { title: study.title, abstract: study.abstract, keywords: study.keywords ?? null, category: study.category, journal: study.journal },
+      "createStudy",
+    );
+
     const [insertedStudy] = await db
       .insert(studies)
       .values({ ...study, createdAt: new Date() })
@@ -533,6 +554,7 @@ export class StudyService {
       FROM studies
       WHERE publish_year IS NOT NULL
         AND publish_year >= 2000
+        AND is_excluded = false
       GROUP BY publish_year
       ORDER BY publish_year
     `);
@@ -553,6 +575,7 @@ export class StudyService {
         END as category_name,
         COUNT(*) as count
       FROM studies
+      WHERE is_excluded = false
       GROUP BY category_name
       ORDER BY count DESC
       LIMIT 10
@@ -574,10 +597,10 @@ export class StudyService {
     // body_systems is text[] — use array_to_string() instead of ILIKE directly on array
     const [cardioResult, nervousResult, metabolicResult, immuneResult] =
       await Promise.all([
-        db.execute(sql`SELECT COUNT(*) as studies FROM studies WHERE array_to_string(body_systems, ' ') ILIKE '%Cardiovascular%' OR 'cardiovascular' = ANY(keywords) OR 'heart' = ANY(keywords) OR 'blood pressure' = ANY(keywords) OR title ILIKE '%cardiovascular%' OR title ILIKE '%heart%' OR abstract ILIKE '%cardiovascular%' OR abstract ILIKE '%cardioprotect%'`),
-        db.execute(sql`SELECT COUNT(*) as studies FROM studies WHERE array_to_string(body_systems, ' ') ILIKE '%Nervous%' OR 'brain' = ANY(keywords) OR 'neurological' = ANY(keywords) OR 'cognitive' = ANY(keywords) OR title ILIKE '%brain%' OR title ILIKE '%neuro%' OR abstract ILIKE '%neurological%' OR abstract ILIKE '%neuroprotect%'`),
-        db.execute(sql`SELECT COUNT(*) as studies FROM studies WHERE array_to_string(body_systems, ' ') ILIKE '%Metabolic%' OR 'diabetes' = ANY(keywords) OR 'metabolism' = ANY(keywords) OR 'glucose' = ANY(keywords) OR title ILIKE '%metabolic%' OR title ILIKE '%diabetes%' OR abstract ILIKE '%metabolism%' OR abstract ILIKE '%glucose%'`),
-        db.execute(sql`SELECT COUNT(*) as studies FROM studies WHERE array_to_string(body_systems, ' ') ILIKE '%Immune%' OR 'immune' = ANY(keywords) OR 'inflammation' = ANY(keywords) OR 'oxidative' = ANY(keywords) OR title ILIKE '%immune%' OR title ILIKE '%inflammation%' OR abstract ILIKE '%antioxidant%' OR abstract ILIKE '%anti-inflammatory%'`)
+        db.execute(sql`SELECT COUNT(*) as studies FROM studies WHERE is_excluded = false AND (array_to_string(body_systems, ' ') ILIKE '%Cardiovascular%' OR 'cardiovascular' = ANY(keywords) OR 'heart' = ANY(keywords) OR 'blood pressure' = ANY(keywords) OR title ILIKE '%cardiovascular%' OR title ILIKE '%heart%' OR abstract ILIKE '%cardiovascular%' OR abstract ILIKE '%cardioprotect%')`),
+        db.execute(sql`SELECT COUNT(*) as studies FROM studies WHERE is_excluded = false AND (array_to_string(body_systems, ' ') ILIKE '%Nervous%' OR 'brain' = ANY(keywords) OR 'neurological' = ANY(keywords) OR 'cognitive' = ANY(keywords) OR title ILIKE '%brain%' OR title ILIKE '%neuro%' OR abstract ILIKE '%neurological%' OR abstract ILIKE '%neuroprotect%')`),
+        db.execute(sql`SELECT COUNT(*) as studies FROM studies WHERE is_excluded = false AND (array_to_string(body_systems, ' ') ILIKE '%Metabolic%' OR 'diabetes' = ANY(keywords) OR 'metabolism' = ANY(keywords) OR 'glucose' = ANY(keywords) OR title ILIKE '%metabolic%' OR title ILIKE '%diabetes%' OR abstract ILIKE '%metabolism%' OR abstract ILIKE '%glucose%')`),
+        db.execute(sql`SELECT COUNT(*) as studies FROM studies WHERE is_excluded = false AND (array_to_string(body_systems, ' ') ILIKE '%Immune%' OR 'immune' = ANY(keywords) OR 'inflammation' = ANY(keywords) OR 'oxidative' = ANY(keywords) OR title ILIKE '%immune%' OR title ILIKE '%inflammation%' OR abstract ILIKE '%antioxidant%' OR abstract ILIKE '%anti-inflammatory%')`)
       ]);
 
       const parseCount = (res: any) => parseInt(res.rows[0]?.studies || 0);
@@ -796,6 +819,7 @@ export class StudyService {
         SELECT t.name, COUNT(st.study_id) as usage_count
         FROM tags t
         INNER JOIN study_tags st ON t.id = st.tag_id
+        INNER JOIN studies s ON s.id = st.study_id AND s.is_excluded = false
         GROUP BY t.id, t.name
         ORDER BY usage_count DESC
         LIMIT ${limit}
@@ -817,7 +841,7 @@ export class StudyService {
         })
         .from(studies)
         .where(
-          sql`${studies.id} != ${studyId} AND (
+          sql`${studies.id} != ${studyId} AND ${studies.isExcluded} = false AND (
           ${studies.category} = ${category} OR 
           ${studies.title} ILIKE '%acne%' OR 
           ${studies.title} ILIKE '%skin%' OR 
@@ -842,14 +866,14 @@ export class StudyService {
           db.execute(sql`
             SELECT publish_year, COUNT(*) as count
             FROM studies
-            WHERE publish_year IS NOT NULL
+            WHERE publish_year IS NOT NULL AND is_excluded = false
             GROUP BY publish_year
             ORDER BY publish_year DESC
           `),
           db.execute(sql`
             SELECT country, COUNT(*) as count
             FROM studies
-            WHERE country IS NOT NULL AND country != ''
+            WHERE country IS NOT NULL AND country != '' AND is_excluded = false
             GROUP BY country
             ORDER BY count DESC
             LIMIT 20
@@ -857,14 +881,14 @@ export class StudyService {
           db.execute(sql`
             SELECT study_type, COUNT(*) as count
             FROM studies
-            WHERE study_type IS NOT NULL AND study_type != ''
+            WHERE study_type IS NOT NULL AND study_type != '' AND is_excluded = false
             GROUP BY study_type
             ORDER BY count DESC
           `),
           db.execute(sql`
             SELECT journal, COUNT(*) as count
             FROM studies
-            WHERE journal IS NOT NULL AND journal != ''
+            WHERE journal IS NOT NULL AND journal != '' AND is_excluded = false
             GROUP BY journal
             ORDER BY count DESC
             LIMIT 30
@@ -882,11 +906,11 @@ export class StudyService {
   async getOverview() {
       const [totalStudies, categoryCounts, countryCounts, yearRange] =
       await Promise.all([
-        db.execute(sql`SELECT COUNT(*) as count FROM studies`),
+        db.execute(sql`SELECT COUNT(*) as count FROM studies WHERE is_excluded = false`),
         db.execute(sql`
         SELECT category, COUNT(*) as count
         FROM studies
-        WHERE category IS NOT NULL AND category != ''
+        WHERE category IS NOT NULL AND category != '' AND is_excluded = false
         GROUP BY category
         ORDER BY count DESC
         LIMIT 10
@@ -894,7 +918,7 @@ export class StudyService {
         db.execute(sql`
         SELECT country, COUNT(*) as count
         FROM studies
-        WHERE country IS NOT NULL AND country != ''
+        WHERE country IS NOT NULL AND country != '' AND is_excluded = false
         GROUP BY country
         ORDER BY count DESC
         LIMIT 10
@@ -902,7 +926,7 @@ export class StudyService {
         db.execute(sql`
         SELECT MIN(publish_year) as min_year, MAX(publish_year) as max_year
         FROM studies
-        WHERE publish_year IS NOT NULL
+        WHERE publish_year IS NOT NULL AND is_excluded = false
       `),
       ]);
 

@@ -3,6 +3,9 @@ import { studies } from "../../shared/schema";
 import { eq, gte, lte, and, sql, or, like, desc, asc } from "drizzle-orm";
 import memoizee from "memoizee";
 
+// Excluded (off-topic hydrogen-energy) studies never feed a public explorer view.
+const isLive = eq(studies.isExcluded, false);
+
 interface TimelineData {
   year: number;
   count: number;
@@ -161,6 +164,7 @@ class ExplorerDataService {
             and(
               gte(studies.publishYear, startYear),
               lte(studies.publishYear, endYear),
+              isLive,
             ),
           );
 
@@ -217,7 +221,8 @@ class ExplorerDataService {
             category: studies.category,
             results: studies.results,
           })
-          .from(studies);
+          .from(studies)
+          .where(isLive);
 
         const systemsData: BodySystemData[] = [];
 
@@ -289,7 +294,7 @@ class ExplorerDataService {
           const targetStudy = await db
             .select()
             .from(studies)
-            .where(eq(studies.id, studyId))
+            .where(and(eq(studies.id, studyId), isLive))
             .limit(1);
 
           if (targetStudy.length === 0) return [];
@@ -304,6 +309,7 @@ class ExplorerDataService {
               and(
                 eq(studies.category, study.category),
                 sql`${studies.id} != ${studyId}`,
+                isLive,
               ),
             )
             .limit(10);
@@ -330,7 +336,7 @@ class ExplorerDataService {
             const relatedByKeywords = await db
               .select({ id: studies.id })
               .from(studies)
-              .where(and(or(...conditions), sql`${studies.id} != ${studyId}`))
+              .where(and(or(...conditions), sql`${studies.id} != ${studyId}`, isLive))
               .limit(10);
 
             relatedByKeywords.forEach((related) => {
@@ -351,6 +357,7 @@ class ExplorerDataService {
               citationCount: studies.citationCount,
             })
             .from(studies)
+            .where(isLive)
             .orderBy(desc(studies.citationCount))
             .limit(50);
 
@@ -397,7 +404,7 @@ class ExplorerDataService {
             title: studies.title,
           })
           .from(studies)
-          .where(gte(studies.publishYear, startYear))
+          .where(and(gte(studies.publishYear, startYear), isLive))
           .orderBy(asc(studies.publishYear));
 
         // Track topic evolution by year
@@ -481,7 +488,7 @@ class ExplorerDataService {
           })
           .from(studies)
           .where(
-            sql`${studies.country} IS NOT NULL AND ${studies.country} != ''`,
+            sql`${studies.country} IS NOT NULL AND ${studies.country} != '' AND ${studies.isExcluded} = false`,
           );
 
         const geoMap = new Map<string, GeographicData>();
@@ -531,7 +538,7 @@ class ExplorerDataService {
           sql`${studies.id} IN (${sql.join(
             studyIds.map((id) => sql`${id}`),
             sql`, `,
-          )})`,
+          )}) AND ${studies.isExcluded} = false`,
         );
 
       return selectedStudies.map((study) => ({

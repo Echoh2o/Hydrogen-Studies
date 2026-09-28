@@ -136,7 +136,7 @@ async function getLiveBodySystemHubs(): Promise<BodySystemHub[]> {
   const live = await Promise.all(
     BODY_SYSTEM_HUBS.map(async (hub) => {
       const r = await db.execute(sql`
-        SELECT 1 FROM studies WHERE (${bodySystemMatchSql(hub.slug)}) AND slug IS NOT NULL LIMIT 1
+        SELECT 1 FROM studies WHERE (${bodySystemMatchSql(hub.slug)}) AND slug IS NOT NULL AND is_excluded = false LIMIT 1
       `);
       return (r.rows || []).length > 0 ? hub : null;
     }),
@@ -259,7 +259,7 @@ async function getRelatedStudies(studyId: number, condition: string | null, limi
       SELECT slug, COALESCE(plain_language_title, title) as title, publish_year as year
       FROM studies
       WHERE array_to_string(health_conditions, ' ') ILIKE ${"%" + condition + "%"}
-        AND id != ${studyId} AND slug IS NOT NULL
+        AND id != ${studyId} AND slug IS NOT NULL AND is_excluded = false
       ORDER BY publish_year DESC NULLS LAST
       LIMIT ${limit}
     `);
@@ -296,7 +296,7 @@ async function getRecentStudies(limit = 15): Promise<{ slug: string; title: stri
   try {
     const r = await db.execute(sql`
       SELECT slug, COALESCE(plain_language_title, title) as title
-      FROM studies WHERE slug IS NOT NULL
+      FROM studies WHERE slug IS NOT NULL AND is_excluded = false
       ORDER BY created_at DESC NULLS LAST LIMIT ${limit}
     `);
     return (r.rows || []).map((row: any) => ({ slug: row.slug, title: row.title }));
@@ -325,8 +325,8 @@ export async function renderStudy(slugOrId: string): Promise<string | null> {
       practical_takeaway, how_to_apply, abstract, last_modified, created_at`;
     const isNumeric = /^\d+$/.test(slugOrId);
     const r = isNumeric
-      ? await db.execute(sql`SELECT ${studyCols} FROM studies WHERE id = ${parseInt(slugOrId)} LIMIT 1`)
-      : await db.execute(sql`SELECT ${studyCols} FROM studies WHERE slug = ${slugOrId} LIMIT 1`);
+      ? await db.execute(sql`SELECT ${studyCols} FROM studies WHERE id = ${parseInt(slugOrId)} AND is_excluded = false LIMIT 1`)
+      : await db.execute(sql`SELECT ${studyCols} FROM studies WHERE slug = ${slugOrId} AND is_excluded = false LIMIT 1`);
     const row: any = r.rows?.[0];
     if (!row) return null;
     // CLAUDE.md: empty fields never render; pipeline sentinels such as
@@ -563,7 +563,7 @@ async function renderHomepage(): Promise<string> {
     getTopConditions(),
     getRecentStudies(15),
     getRecentBlogs(10),
-    db.execute(sql`SELECT count(*) as total, count(*) FILTER (WHERE peer_reviewed = true) as reviewed FROM studies`).catch(() => ({ rows: [{ total: 0, reviewed: 0 }] })),
+    db.execute(sql`SELECT count(*) as total, count(*) FILTER (WHERE peer_reviewed = true) as reviewed FROM studies WHERE is_excluded = false`).catch(() => ({ rows: [{ total: 0, reviewed: 0 }] })),
   ]);
 
   const total = Number((statsR.rows?.[0] as any)?.total || 0);
@@ -620,7 +620,7 @@ async function renderStudiesList(): Promise<string> {
   const [studiesR, conditions] = await Promise.all([
     db.execute(sql`
       SELECT slug, COALESCE(plain_language_title, title) as title, publish_year, journal
-      FROM studies WHERE slug IS NOT NULL
+      FROM studies WHERE slug IS NOT NULL AND is_excluded = false
       ORDER BY publish_year DESC NULLS LAST LIMIT 200
     `),
     getTopConditions(),
@@ -694,6 +694,7 @@ async function renderConditionPage(slug: string): Promise<string | null> {
         SELECT slug, COALESCE(plain_language_title, title) as title, publish_year, journal, study_type
         FROM studies
         WHERE array_to_string(health_conditions, ' ') ILIKE ${"%" + cond.name + "%"} AND slug IS NOT NULL
+          AND is_excluded = false
         ORDER BY publish_year DESC NULLS LAST LIMIT 100
       `),
       getRelatedBlogs(cond.name),
@@ -753,7 +754,7 @@ async function renderBodySystemPage(slug: string): Promise<string | null> {
         SELECT slug, COALESCE(plain_language_title, title) as title, publish_year, journal
         FROM studies
         WHERE (${likeAny})
-          AND slug IS NOT NULL
+          AND slug IS NOT NULL AND is_excluded = false
         ORDER BY publish_year DESC NULLS LAST LIMIT 100
       `),
       getTopConditions(),
@@ -865,7 +866,7 @@ export async function getExploreDetailStudies(slug: string): Promise<ExploreDeta
   const searchTerm = slug.replace(/-/g, " ");
   const studiesR = await db.execute(sql`
     SELECT slug, COALESCE(plain_language_title, title) as title, publish_year, journal
-    FROM studies WHERE slug IS NOT NULL AND (
+    FROM studies WHERE slug IS NOT NULL AND is_excluded = false AND (
       LOWER(title) LIKE LOWER(${"%" + searchTerm + "%"})
       OR LOWER(array_to_string(health_conditions, ' ')) LIKE LOWER(${"%" + searchTerm + "%"})
       OR LOWER(array_to_string(body_systems, ' ')) LIKE LOWER(${"%" + searchTerm + "%"})
@@ -932,7 +933,7 @@ export async function renderHydrogenForPage(slug: string): Promise<string | null
     const [studiesR, blogsR, conditions] = await Promise.all([
       db.execute(sql`
         SELECT slug, COALESCE(plain_language_title, title) as title, publish_year, outcome
-        FROM studies WHERE slug IS NOT NULL AND (
+        FROM studies WHERE slug IS NOT NULL AND is_excluded = false AND (
           LOWER(array_to_string(health_conditions, ' ')) LIKE LOWER(${"%" + searchTerm + "%"})
           OR LOWER(title) LIKE LOWER(${"%" + searchTerm + "%"})
         )

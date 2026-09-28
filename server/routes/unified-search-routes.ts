@@ -73,6 +73,7 @@ router.get("/", searchRateLimiter, async (req: Request, res: Response) => {
       try {
         const { searchHydrogenPapers } = await import("../services/consensus-api");
         const consensusResult = await searchHydrogenPapers(query);
+        // searchHydrogenPapers already drops off-topic hydrogen-energy papers.
         response.externalPapers = consensusResult.papers.map((p) => ({
           title: p.paper_title,
           authors: p.paper_authors.join(", "),

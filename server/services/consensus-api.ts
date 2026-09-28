@@ -8,6 +8,7 @@
 
 import axios, { AxiosError } from "axios";
 import { ai, MODELS } from "./ai-provider";
+import { filterOffTopicSearchResults } from "./study-topic-guard";
 
 // --- Types ---
 
@@ -204,6 +205,11 @@ export async function searchHydrogenPapers(
   if (filters?.yearTo) {
     papers = papers.filter((p) => p.paper_publish_year <= filters.yearTo!);
   }
+
+  // Hydrogen-ENERGY papers (biohydrogen, fuel cells, electrolyzers, ...) are
+  // off-topic for a human-health database — drop them from every Consensus
+  // consumer (public search, unified search, topic synthesis).
+  papers = filterOffTopicSearchResults(papers, "consensus").kept;
 
   return { papers, total: papers.length, fromCache: result.fromCache };
 }
