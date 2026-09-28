@@ -1,5 +1,6 @@
 # Hydrogen-energy exclusion candidates — scan 2026-09-28 (shared/study-topic-filter.ts; GSC = last 90 days).
 # Review every row. To apply, once Josh approves this exact list add a line starting with the approved-by marker for josh (see script header), then run --apply.
+# approved-by: josh 2026-09-28 — in session: "Remove hydrogen energy studies." + "Adjust the code for the study finder tool so it ignores hydrogen energy studies". Exact list = the 7 rows below (the 09-23 audit's '42' was an overcount; see PR #75).
 id,slug,title,journal,year,reason,confidence,gsc_impressions_90d,gsc_clicks_90d
 3592,rational-comparison-of-biohydrogen-production-using-clostridium-species-through-dark-fermentation-during-anaerobic-batch-processes-1775650467180,Rational comparison of biohydrogen production using Clostridium species through dark fermentation during anaerobic batch processes,Journal of Biotechnology,2025,"hydrogen energy (not human health): biohydrogen, dark fermentation, hydrogen yield, biofuel",high,0,0
 3720,microbial-production-of-hydrogen-an-overview-1777577956372,Microbial Production of Hydrogen: An Overview,Critical Reviews in Microbiology,1998,"hydrogen energy (not human health): biohydrogen, hydrogen yield, renewable/clean energy, fossil fuel",high,3,0
