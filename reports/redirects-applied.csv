@@ -3119,3 +3119,12 @@ repoint-410-to-301,,/blog/how-to-use-hydrogen-water-for-fighting-infections-a-sc
 restore-410,9891,/blog/how-much-hydrogen-water-per-day,(410 deactivated; URL republished with rewritten article)
 # apply run 2026-09-24T05:07:49Z (merge approved by Josh in session: "Merge it")
 merge,9851,/blog/hydrogen-water-scientific-evidence,/blog/hydrogen-water-real-or-fake
+# apply run 2026-09-28T06:43:00Z (tablet-group merge approved by Josh in session: "Merge in tablet group approved")
+merge,9911,/blog/h2-tabs-review-full,/blog/h2-tabs-side-effects
+merge,9884,/blog/h2-tabs-review-pillar,/blog/h2-tabs-side-effects
+merge,9952,/blog/hrw-tablets-side-effects,/blog/h2-tabs-side-effects
+merge,9912,/blog/vital-reaction-review,/blog/h2-tabs-side-effects
+merge,9959,/blog/vital-reaction-side-effects,/blog/h2-tabs-side-effects
+merge,9881,/blog/vital-reaction-tablets-review-pillar,/blog/h2-tabs-side-effects
+# 2026-09-28 redirect repoint approved by Josh in session: "redirect approved"
+repoint,3475,/blog/hydrogen-water-health-benefits-for-athletes-what-2024-research-shows-565894,/hydrogen-for/athletic-performance

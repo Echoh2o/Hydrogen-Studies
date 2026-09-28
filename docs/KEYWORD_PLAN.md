@@ -27,8 +27,8 @@ https://claude.ai/artifact/CqrJPn16xeNiKMBNsn3kcE
 | Dose | how much per day 900·9; how long it lasts 70·0 | `/blog/how-much-hydrogen-water-per-day` | 1 ✅ | OK |
 | Kidneys | good for kidneys 1.0k·4 (+27 variants = 3.8k) | `/blog/is-hydrogen-water-good-for-kidneys` | 1 ✅ | **Disease** |
 | PPM | hydrogen water ppm 40·1 | `/blog/hydrogen-water-ppm-levels` | 1 ✅ (corrected) | OK |
-| Tablets & delivery | hydrogen water tablets 9.5k·30; hydrogen tablets 7.9k·29; how to make 1.2k·0 | rewrite `/blog/h2-tabs-side-effects` as a generic tablets guide (ranks #3–4, ~1% CTR) | 2 | OK (device guide) |
-| Benefits | hydrogen water benefits 12k·18; benefits of 6.8k·19; molecular hydrogen benefits 1.3k·26 | rebuild `/blog/molecular-hydrogen-benefits-guide-pillar` as evidence-graded guide | 2 | Gray → none |
+| Tablets & delivery | hydrogen water tablets 9.5k·30; hydrogen tablets 7.9k·29; how to make 1.2k·0; brand queries (h2 tabs, vital reaction, primecell h2) | `/blog/h2-tabs-side-effects` — rewritten as the generic tablets guide (09-24); 6 tablet posts merged into it (09-28) | 2 ✅ (how-to-make section pending) | OK (device guide) |
+| Benefits | hydrogen water benefits 12k·18; benefits of 6.8k·19; molecular hydrogen benefits 1.3k·26; molecular hydrogen 3.2k·18 | `/blog/molecular-hydrogen-benefits-guide-pillar` rebuilt as evidence-graded guide (09-28) | 2 ✅ | Gray → none |
 | Comparisons | ionized 500·0; vs alkaline 250·0 | refresh `/blog/hydrogen-water-vs-alkaline-water` | 2 | OK |
 | Inhalation & machines | is hydrogen flammable 4.0k·9; hydrogen machine 600·0 (#1) | `/blog/hydrogen-therapy-machine-home` + `/blog/hydrogen-inhalation-side-effects` | 2 | OK (devices) |
 | Hubs | kidney, exercise recovery, sleep, skin, fatigue intros (PLAN 4.5) | `/explore-by-condition/*` | 3 | per Appendix E |
@@ -42,7 +42,12 @@ Non-branded GSC clicks / 28d: 135 → 800 · non-branded queries in top 3: 22 �
 191 → 400 · Ahrefs organic keywords: 30 → 150 · ChatGPT citations (Brand Radar): 0 → 10.
 
 ## Open decisions
-- Brand-review posts (Kangen, H2 Tabs, Vital Reaction) — PLAN §12. Recommended: convert the
-  tablets posts into the generic guide (wave 2); move or retire the Kangen reviews.
+- Brand-review posts — PLAN §12. **Tablets resolved 2026-09-28** (Josh: "Merge in tablet group
+  approved"): h2-tabs-review-full, h2-tabs-review-pillar, hrw-tablets-side-effects,
+  vital-reaction-review, vital-reaction-side-effects, vital-reaction-tablets-review-pillar →
+  301 `/blog/h2-tabs-side-effects` (they claimed undocumented in-house ppm testing; see
+  `reports/backups/2026-09-28/README.md`). Still open: the Kangen posts (kangen-water-review,
+  -complaints, -scam-truth, -alternative-pillar, cheaper-than-kangen-water), is-hfactor-water-worth-it,
+  alkaviva-ultrawater-review.
 - ~~Merge candidate: `/blog/hydrogen-water-scientific-evidence`~~ → merged into `/blog/hydrogen-water-real-or-fake` (2026-09-23, Josh approved).
 - Named reviewer before wave 3 hubs; counsel sign-off before any sponsor card.
