@@ -66,3 +66,24 @@ and those stay. Borderline items not removed: `reports/energy-studies-2026-09-bo
 Row 8929 (bogus auto-promoted 302) was converted to 410. Traffic at stake: 173 impressions / 1 click in 90 days.
 Backup (full rows, git-ignored because it contains full abstracts): `reports/backups/study-exclusions/`.
 Revert: `npx tsx scripts/content/exclude-energy-studies.ts --ids reports/energy-studies-2026-09.csv --restore --apply`.
+
+## Benefits pages merged into the evidence-graded guide
+
+Approved in session: "Merge older pages". Survivor: `/blog/molecular-hydrogen-benefits-guide-pillar`.
+
+- `/blog/how-to-use-hydrogen-water-health-benefits-for-your-whole-body-a-science-backed-guide-632384`
+  (id 7906): 556 impressions in 28 days at position 60.9, on the same queries as the survivor. Unpublished and 301'd.
+- `/blog/hydrogen-gas-therapy-research` (id 9973): 0 impressions in 28 days. Unpublished and 301'd.
+- `/benefits`: a static page. Bots got a separate body; browsers were client-redirected to the noindexed
+  `/learn`. Now 301 → survivor. The code cleanup (sitemap, links, SPA route) is in the demographic-hubs PR.
+- Chains avoided: `/hydrogen-therapy-guide` (row 62) and 3 older consolidation 301s that pointed at `…-632384` now go straight to the survivor.
+- Not merged, still a candidate: `/blog/hydrogen-water-health-benefits-how-it-travels-your-body-200719`
+  (117 impressions in 28 days at position 37.8). It wasn't on the list Josh approved.
+- Backups: `benefits-merge/`.
+
+## Off-topic studies removed (410)
+
+Approved in session: "remove off topic studies". The two items listed as "off-topic but not energy" in
+`reports/energy-studies-2026-09-borderline.csv`: #3646 (biofuel-fermentation enzymology) and #4255
+(industrial n-caproate fermentation). List: `reports/offtopic-studies-2026-09-28.csv`. Same mechanism
+as the energy studies: `is_excluded` plus 410 rows. `excluded_reason` was corrected to "Off-topic (not human health)".
