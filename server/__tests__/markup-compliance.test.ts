@@ -170,6 +170,23 @@ describe("render-time echowater link rewriter", () => {
     expect(out).toContain("&amp;utm_medium=referral");
   });
 
+  it("marks store anchors rel=sponsored (SPA parity) without touching existing rel or other links", () => {
+    const html =
+      `<p><a href="https://echowater.com/products/echo-refresh-hydrogen-inhalation-machine">Refresh</a> ` +
+      `<a href="https://echowater.com/" rel="noopener sponsored">Echo</a> ` +
+      `<a href="https://pubmed.ncbi.nlm.nih.gov/1/">PubMed</a> ` +
+      `<a href="https://echowater.com.example.net/x">lookalike</a></p>`;
+    const out = rewriteEchoLinksInHtml(html, ctx);
+    const anchors = [...out.matchAll(/<a\b[^>]*>/g)].map((m) => m[0]);
+    expect(anchors[0]).toMatch(/ rel="sponsored noopener">$/);
+    expect(anchors[1]).toContain(`rel="noopener sponsored"`);
+    expect(anchors[1].match(/\brel=/g)).toHaveLength(1);
+    expect(anchors[2]).toBe(`<a href="https://pubmed.ncbi.nlm.nih.gov/1/">`);
+    expect(anchors[3]).not.toContain("rel=");
+    // idempotent
+    expect(rewriteEchoLinksInHtml(out, ctx)).toBe(out);
+  });
+
   it("tags markdown links and autolinks", () => {
     const md = "See [the Flask](https://echowater.com/products/echo-flask) or <https://echowater.com>. Not [this](https://example.com).";
     const out = rewriteEchoLinksInMarkdown(md, ctx);
