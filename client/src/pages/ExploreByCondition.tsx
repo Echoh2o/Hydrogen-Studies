@@ -116,7 +116,9 @@ const ExploreByCondition = () => {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center items-center py-16">
+          // min-h-screen keeps the footer below the fold until the list
+          // arrives, so it doesn't jump when it renders (CLS).
+          <div className="flex justify-center items-start py-16 min-h-screen">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <span className="ml-2 text-neutral-700">
               Loading health conditions...

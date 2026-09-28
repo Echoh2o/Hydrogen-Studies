@@ -3,9 +3,8 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useEffect, useState, lazy, Suspense, startTransition } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import CookieConsent from "@/components/ui/cookie-consent";
-import { initGA, initAhrefs } from "./lib/analytics";
 import { initErrorTracking, trackError } from "./lib/error-tracking";
 import { useAnalytics } from "./hooks/use-analytics";
 import PageLoader from "@/components/ui/page-loader";
@@ -581,13 +580,11 @@ function App() {
   const isAdminRoute = location.startsWith("/admin");
   const isHomePage = location === "/";
 
-  // Initialize error tracking and analytics
+  // Initialize error tracking. Analytics is scheduled once in main.tsx
+  // (deferred past `load` + idle — calling initGA() here would load gtag.js
+  // before LCP again).
   useEffect(() => {
     initErrorTracking();
-    startTransition(() => {
-      initGA();
-      initAhrefs();
-    });
 
     // Global error handling
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {

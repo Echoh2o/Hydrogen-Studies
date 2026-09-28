@@ -22,6 +22,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
+import { bodySystemHubPathForValue } from "@shared/explore-hubs";
 
 interface BodySystemCategory {
   name: string;
@@ -147,7 +148,9 @@ const ExploreByBodySystem = () => {
     return (
       <>
         <SiteHeader />
-        <div className="container mx-auto px-4 py-12 flex flex-col items-center justify-center min-h-[60vh]">
+        {/* min-h-screen (was 60vh): the footer stays below the fold until
+            the cards arrive, so it doesn't jump when they render (CLS). */}
+        <div className="container mx-auto px-4 py-12 flex flex-col items-center justify-start min-h-screen">
           <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
           <p className="text-neutral-600">Loading body system categories...</p>
         </div>
@@ -215,8 +218,14 @@ const ExploreByBodySystem = () => {
                   </div>
                 </CardContent>
                 <CardFooter className="flex justify-center pb-6">
+                  {/* The canonical hub (sitemap list, shared with the crawler
+                      index) when the category has one; otherwise its own
+                      long-tail page, which also resolves. */}
                   <Link
-                    href={`/explore-by-body-system/${category.name.toLowerCase().replace(/\s+/g, "-")}`}
+                    href={
+                      bodySystemHubPathForValue(category.name) ??
+                      `/explore-by-body-system/${category.name.toLowerCase().replace(/\s+/g, "-")}`
+                    }
                   >
                     <Button className="mt-2">
                       Browse Studies <ArrowRight className="h-4 w-4 ml-2" />

@@ -46,9 +46,20 @@ export const GA_CONFIG = {
   allow_ad_personalization_signals: false,
 } as const;
 
-type GaState = "idle" | "loading" | "ready" | "failed";
+/**
+ * idle    → nothing set up
+ * queued  → dataLayer + gtag stub + consent defaults exist; gtag.js not
+ *           requested yet (config not queued, track* are no-ops)
+ * loading → config queued, gtag.js requested
+ * ready   → gtag.js loaded
+ * failed  → gtag.js blocked / failed to load
+ */
+type GaState = "idle" | "queued" | "loading" | "ready" | "failed";
 let gaState: GaState = "idle";
+let gaMeasurementId = "";
 let ahrefsInitialized = false;
+let deferredLoadScheduled = false;
+let deferredLoadDone = false;
 
 /** /admin is internal tooling — never measured. */
 function isAdminPath(path: string): boolean {
@@ -69,11 +80,14 @@ function canSend(): boolean {
 }
 
 /**
- * Load GA4 for every visitor. Order matters: consent defaults (and any stored
- * choice / GPC update) are queued in dataLayer BEFORE `config`, so the first
- * hit already carries the right consent state. Idempotent.
+ * Step 1 (cheap, no network): create dataLayer + the gtag stub and queue the
+ * consent defaults plus any stored choice / GPC update. Runs at startup so a
+ * choice the visitor makes BEFORE gtag.js loads is queued (by the
+ * CONSENT_UPDATED_EVENT listener below) ahead of `config` — the first hit
+ * then carries the right consent state, exactly as when gtag.js loaded
+ * eagerly. Idempotent.
  */
-export const initGA = () => {
+export const queueGA = () => {
   if (gaState !== "idle" || typeof window === "undefined" || typeof document === "undefined") return;
 
   const measurementId = import.meta.env.VITE_GA_MEASUREMENT_ID;
@@ -92,14 +106,24 @@ export const initGA = () => {
   if (update) {
     window.gtag("consent", "update", { analytics_storage: update });
   }
+  gaMeasurementId = measurementId;
+  gaState = "queued";
+};
+
+/**
+ * Step 2: queue `config` (after every consent command so far) and request
+ * gtag.js, which replays the whole dataLayer in order.
+ */
+function loadGtag(): void {
+  if (gaState !== "queued") return;
 
   window.gtag("js", new Date());
   // Sends the initial page_view; SPA route changes: see MANUAL_SPA_PAGE_VIEWS.
-  window.gtag("config", measurementId, GA_CONFIG);
+  window.gtag("config", gaMeasurementId, GA_CONFIG);
 
   const script = document.createElement("script");
   script.async = true;
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(measurementId)}`;
+  script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(gaMeasurementId)}`;
   script.onload = () => {
     if (gaState === "loading") gaState = "ready";
   };
@@ -109,6 +133,17 @@ export const initGA = () => {
   };
   document.head.appendChild(script);
   gaState = "loading";
+}
+
+/**
+ * Load GA4 for every visitor, now. Order matters: consent defaults (and any
+ * stored choice / GPC update) are queued in dataLayer BEFORE `config`, so the
+ * first hit already carries the right consent state. Idempotent. Pages use
+ * scheduleAnalytics() (deferred); this is the immediate path.
+ */
+export const initGA = () => {
+  queueGA();
+  loadGtag();
 };
 
 /**
@@ -128,10 +163,61 @@ export const initAhrefs = () => {
   ahrefsInitialized = true;
 };
 
-/** Start both analytics tools. Called once from main.tsx, before render. */
+/** Start both analytics tools immediately. */
 export const initAnalytics = () => {
   initGA();
   initAhrefs();
+};
+
+/** Fallback delay after `load` where requestIdleCallback is missing (Safari). */
+export const ANALYTICS_IDLE_FALLBACK_MS = 1500;
+/** Upper bound on waiting for an idle period once `load` has fired. */
+export const ANALYTICS_IDLE_TIMEOUT_MS = 5000;
+
+type IdleWindow = Window & {
+  requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+};
+
+/**
+ * Start analytics without competing with the page's LCP. gtag.js (~190 KB)
+ * and the Ahrefs script used to load before first render; Lighthouse A/B
+ * with analytics blocked: hub LCP 7.0 → 4.8 s, blog 8.0 → 6.7 s.
+ *
+ * Now:
+ *  - consent defaults are queued immediately (queueGA — no network), so a
+ *    choice made before the scripts load still applies ahead of `config`;
+ *  - gtag.js + `config` (the initial page_view) and Ahrefs wait for the
+ *    window `load` event, then an idle period (requestIdleCallback, or
+ *    setTimeout 1500 ms where it is unsupported).
+ * /admin is never measured: nothing loads if the visitor is on /admin when
+ * the deferred load runs. Idempotent. Called once from main.tsx.
+ */
+export const scheduleAnalytics = () => {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+  // Landing on /admin: never measured (same as the eager init was).
+  if (deferredLoadScheduled || isAdminPath(currentPath())) return;
+  queueGA();
+  deferredLoadScheduled = true;
+
+  const run = () => {
+    deferredLoadDone = true;
+    if (isAdminPath(currentPath())) return;
+    loadGtag();
+    initAhrefs();
+  };
+  const whenIdle = () => {
+    const w = window as IdleWindow;
+    if (typeof w.requestIdleCallback === "function") {
+      w.requestIdleCallback(run, { timeout: ANALYTICS_IDLE_TIMEOUT_MS });
+    } else {
+      window.setTimeout(run, ANALYTICS_IDLE_FALLBACK_MS);
+    }
+  };
+  if (document.readyState === "complete") {
+    whenIdle();
+  } else {
+    window.addEventListener("load", whenIdle, { once: true });
+  }
 };
 
 /**
@@ -172,8 +258,9 @@ if (typeof window !== "undefined") {
     if (update === "denied") clearGaCookies();
     // Re-enabling analytics after an earlier opt-out: Ahrefs can start now.
     // (An opt-out cannot unload an already-running Ahrefs script; it stops
-    // loading from the next page load.)
-    initAhrefs();
+    // loading from the next page load.) While a deferred load is still
+    // pending, leave it to scheduleAnalytics — it reads the choice then.
+    if (!deferredLoadScheduled || deferredLoadDone) initAhrefs();
   });
 }
 
@@ -223,5 +310,8 @@ export const trackOutboundClick = (href: string, placement: string) => {
 /** Test-only: reset module state between tests. */
 export function __resetAnalyticsForTests(): void {
   gaState = "idle";
+  gaMeasurementId = "";
   ahrefsInitialized = false;
+  deferredLoadScheduled = false;
+  deferredLoadDone = false;
 }

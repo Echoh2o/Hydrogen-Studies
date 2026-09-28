@@ -1,4 +1,4 @@
-import { abstractExcerpt } from "@shared/seo-markup";
+import { exploreDetailCopy, exploreHubPath, mechanismHubMeta } from "@shared/explore-hubs";
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRoute } from "wouter";
@@ -9,8 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Helmet } from "react-helmet";
@@ -115,7 +113,9 @@ const ExploreByMechanismPage: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {mechanisms?.map((mechanism: any) => (
-                <Link key={mechanism.id} href={`/mechanisms/${mechanism.slug}`}>
+                // /mechanisms/<slug> has no route (SPA NotFound, crawler 404);
+                // the hub route is /explore-by-mechanism/<slug>.
+                <Link key={mechanism.id} href={exploreHubPath("mechanism", mechanism.slug)}>
                   <Card className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
                     <CardHeader className="p-4 pb-2 flex flex-row items-start space-x-4">
                       <div className="bg-primary/10 p-2 rounded-md">
@@ -152,196 +152,104 @@ const ExploreByMechanismPage: React.FC = () => {
 
 export default ExploreByMechanismPage;
 
-// Detail page for a specific mechanism
+const SITE_URL = "https://hydrogenstudies.com";
+
+interface ExploreHubStudy {
+  slug: string;
+  title: string;
+  publish_year: number | null;
+  journal: string | null;
+}
+
+/**
+ * /explore-by-mechanism/:mechanism — the six sitemap hubs (hydrogen-water,
+ * hydrogen-inhalation, …) are delivery modes, not rows of the `mechanisms`
+ * table. This page used to read useRoute("/mechanisms/:slug") (never
+ * matched: App mounts it at /explore-by-mechanism/:mechanism) and
+ * /api/mechanisms/:slug, so browsers got an empty H1, a broken title, no
+ * canonical and "No studies found" while crawlers got the full hub
+ * (re-audit 2026-09-28). Title, H1, intro, canonical and the study list now
+ * come from the same helpers/query as the crawler renderer.
+ */
 export const MechanismDetailPage: React.FC = () => {
-  const [, params] = useRoute("/mechanisms/:slug");
-  const slug = params?.slug || "";
+  const [, params] = useRoute("/explore-by-mechanism/:mechanism");
+  const slug = (params?.mechanism || "").toLowerCase();
+  const { name, h1, intro } = exploreDetailCopy(slug);
+  const meta = mechanismHubMeta(slug);
+  const canonicalUrl = `${SITE_URL}${meta.path}`;
 
-  // Fetch mechanism details
-  const { data: mechanismData, isLoading: mechanismLoading } = useQuery<any>({
-    queryKey: [`/api/mechanisms/${slug}`],
+  const { data, isLoading, isError } = useQuery<{ studies: ExploreHubStudy[] }>({
+    queryKey: [`/api/explore/mechanism/${slug}/studies`],
     enabled: !!slug,
   });
-
-  // Fetch studies for this mechanism
-  const { data: studiesData, isLoading: studiesLoading } = useQuery<any>({
-    queryKey: [`/api/mechanisms/${slug}/studies`],
-    enabled: !!slug,
-  });
-
-  const mechanism = mechanismData;
-  const studies = studiesData?.studies || [];
-
-  const isLoading = mechanismLoading || studiesLoading;
+  const studies = data?.studies ?? [];
 
   return (
-    <div className="container mx-auto py-10">
-      {isLoading ? (
-        <div className="space-y-6">
-          <Skeleton className="h-10 w-3/4 max-w-md" />
-          <Skeleton className="h-20 w-full max-w-2xl" />
-          <div className="grid grid-cols-1 gap-4">
-            {Array(5)
-              .fill(0)
-              .map((_, i) => (
-                <Skeleton key={i} className="h-32" />
-              ))}
+    <>
+      <SiteHeader />
+      <Helmet>
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
+        <meta property="og:title" content={meta.title} />
+        <meta property="og:description" content={meta.description} />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={canonicalUrl} />
+        <link rel="canonical" href={canonicalUrl} />
+      </Helmet>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        <PageBreadcrumb items={[
+          { label: "Home", href: "/" },
+          { label: "Mechanisms", href: "/explore-by-mechanism" },
+          { label: name },
+        ]} />
+      </div>
+      <div className="container mx-auto px-4 py-10">
+        <div className="mb-8 flex items-center space-x-4">
+          <div className="bg-primary/10 p-3 rounded-md">
+            {getMechanismIcon(slug, "h-8 w-8 text-primary")}
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold">{h1}</h1>
+            <p className="text-muted-foreground">{intro}</p>
           </div>
         </div>
-      ) : (
-        <>
-          <Helmet>
-            <title>
-              {mechanism?.name} | Hydrogen Research | HydrogenStudies.com
-            </title>
-            <meta
-              name="description"
-              content={`Explore hydrogen research studies on ${mechanism?.name.toLowerCase()} - ${mechanism?.description}`}
-            />
-          </Helmet>
 
-          <div className="mb-8 flex items-center space-x-4">
-            <div className="bg-primary/10 p-3 rounded-md">
-              {getMechanismIcon(mechanism?.slug, "h-8 w-8 text-primary")}
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold">{mechanism?.name}</h1>
-              <p className="text-muted-foreground">{mechanism?.description}</p>
-            </div>
+        {isLoading ? (
+          // min-h-screen keeps the footer below the fold until the list
+          // arrives (CLS).
+          <div className="space-y-4 min-h-screen" aria-busy="true">
+            <Skeleton className="h-8 w-64" />
+            {Array(6)
+              .fill(0)
+              .map((_, i) => (
+                <Skeleton key={i} className="h-16" />
+              ))}
           </div>
-
-          <div className="mb-6">
-            <h2 className="text-2xl font-semibold mb-4">
-              Research on {mechanism?.name}
-            </h2>
-
-            <Tabs defaultValue="all" className="w-full">
-              <TabsList className="mb-4">
-                <TabsTrigger value="all">
-                  All Studies ({studies.length})
-                </TabsTrigger>
-                <TabsTrigger value="clinical">
-                  Clinical Studies (
-                  {studies.filter((s: any) => s.studyType === "human").length})
-                </TabsTrigger>
-                <TabsTrigger value="preclinical">
-                  Preclinical (
-                  {
-                    studies.filter(
-                      (s: any) =>
-                        s.studyType === "animal" || s.studyType === "in vitro",
-                    ).length
-                  }
-                  )
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="all">
-                <div className="space-y-4">
-                  {studies.length > 0 ? (
-                    studies.map((study: any) => (
-                      <StudyCard key={study.id} study={study} />
-                    ))
-                  ) : (
-                    <div className="text-center py-10">
-                      <p className="text-muted-foreground">
-                        No studies found for this mechanism.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="clinical">
-                <div className="space-y-4">
-                  {studies.filter((s: any) => s.studyType === "human").length >
-                  0 ? (
-                    studies
-                      .filter((s: any) => s.studyType === "human")
-                      .map((study: any) => (
-                        <StudyCard key={study.id} study={study} />
-                      ))
-                  ) : (
-                    <div className="text-center py-10">
-                      <p className="text-muted-foreground">
-                        No clinical studies found for this mechanism.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="preclinical">
-                <div className="space-y-4">
-                  {studies.filter(
-                    (s: any) =>
-                      s.studyType === "animal" || s.studyType === "in vitro",
-                  ).length > 0 ? (
-                    studies
-                      .filter(
-                        (s: any) =>
-                          s.studyType === "animal" ||
-                          s.studyType === "in vitro",
-                      )
-                      .map((study: any) => (
-                        <StudyCard key={study.id} study={study} />
-                      ))
-                  ) : (
-                    <div className="text-center py-10">
-                      <p className="text-muted-foreground">
-                        No preclinical studies found for this mechanism.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-        </>
-      )}
-    </div>
-  );
-};
-
-// Study card component for displaying study info
-const StudyCard: React.FC<{ study: any }> = ({ study }) => {
-  return (
-    <Link href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}>
-      <Card className="hover:shadow-md transition-shadow">
-        <CardHeader className="pb-2">
-          <div className="flex justify-between">
-            <CardTitle className="text-lg font-medium">{study.title}</CardTitle>
-            {study.peerReviewed && (
-              <Badge className="ml-2" variant="secondary">
-                Peer Reviewed
-              </Badge>
-            )}
-          </div>
-          <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-            <span>{new Date(study.publishDate).getFullYear()}</span>
-            <span>•</span>
-            <span>{study.journal}</span>
-            {study.studyType && (
-              <>
-                <span>•</span>
-                <span className="capitalize">{study.studyType} Study</span>
-              </>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm line-clamp-2">{abstractExcerpt(study.abstract)}</p>
-
-          <div className="mt-4 flex justify-between items-center">
-            <div className="flex space-x-2">
-              {study.doi && <Badge variant="outline">DOI: {study.doi}</Badge>}
-            </div>
-            <Button variant="ghost" size="sm">
-              View Study
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
+        ) : isError ? (
+          <p className="text-red-600">Error loading studies. Please try again.</p>
+        ) : studies.length > 0 ? (
+          <section>
+            <h2 className="text-2xl font-semibold mb-4">Research Studies</h2>
+            <ul className="space-y-3">
+              {studies.map((study) => (
+                <li key={study.slug}>
+                  <Card className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      <Link href={`/study/${study.slug}`} className="font-medium text-primary hover:underline">
+                        {study.title}
+                      </Link>
+                      {study.publish_year ? (
+                        <span className="text-muted-foreground"> ({study.publish_year})</span>
+                      ) : null}
+                    </CardContent>
+                  </Card>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+      </div>
+      <Footer />
+    </>
   );
 };

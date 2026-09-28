@@ -16,6 +16,7 @@ import {
   studyOutcomes,
 } from "@shared/schema-hydrogen-fields";
 import { eq, sql } from "drizzle-orm";
+import { getExploreDetailStudies } from "../middleware/seo-body-renderer";
 
 const router = Router();
 
@@ -258,6 +259,30 @@ router.get(
     }
   },
 );
+
+/**
+ * Studies on an /explore-by-<type>/<slug> detail hub — exactly the list the
+ * crawler renderer shows for that URL (seo-body-renderer
+ * getExploreDetailStudies), so the SPA page and the bot HTML match. The six
+ * sitemap mechanism hubs (hydrogen-water, …) are delivery modes, not rows of
+ * the `mechanisms` table, so /api/mechanisms/:slug can't serve them.
+ */
+const EXPLORE_DETAIL_TYPES = new Set(["mechanism", "delivery-method", "life-stage", "benefit", "demographic"]);
+
+router.get("/api/explore/:type/:slug/studies", async (req: Request, res: Response) => {
+  const { type, slug } = req.params;
+  if (!EXPLORE_DETAIL_TYPES.has(type) || !/^[a-z0-9-]{1,120}$/.test(slug)) {
+    return res.status(404).json({ error: "Not found" });
+  }
+  try {
+    const studies = await getExploreDetailStudies(slug);
+    res.set("Cache-Control", "public, max-age=300");
+    res.json({ studies });
+  } catch (error) {
+    logger.error("Error fetching explore hub studies", error, "HydrogenRoutes", { type, slug });
+    res.status(500).json({ error: "Failed to fetch studies" });
+  }
+});
 
 /**
  * Get all delivery methods

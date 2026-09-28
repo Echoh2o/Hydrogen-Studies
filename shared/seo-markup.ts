@@ -60,13 +60,55 @@ export function withoutPlaceholders<T extends Record<string, any>>(obj: T): T {
 
 // ── Text utilities ──────────────────────────────────────────────
 
+// Tag-shaped only (a letter, "/" or "!" right after "<"), so text such as
+// "p < 0.05 and n > 10" survives. Inline formatting tags vanish without a
+// space ("H<sub>2</sub>" → "H2"); every other tag becomes a space.
+const INLINE_TAG_RE = /<\/?(?:a|abbr|b|em|i|mark|small|span|strong|sub|sup|u)\b[^<>]*>/gi;
+const ANY_TAG_RE = /<(?:\/?[a-z][a-z0-9-]*|!)[^<>]*>/gi;
+
 export function stripTags(str: string | null | undefined): string {
   if (!str) return "";
   return String(str)
-    .replace(/<[^>]*>/g, " ")
+    .replace(INLINE_TAG_RE, "")
+    .replace(ANY_TAG_RE, " ")
     .replace(/&nbsp;/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ",
+  ndash: "–", mdash: "—", lsquo: "‘", rsquo: "’", ldquo: "“", rdquo: "”",
+  hellip: "…", deg: "°", plusmn: "±", micro: "µ", times: "×",
+};
+
+/**
+ * Decode HTML character references (named subset + numeric). Source
+ * abstracts sometimes arrive entity-escaped ("&lt;b&gt;Background:&lt;/b&gt;"),
+ * which rendered as literal "<b>" text once escaped again for output.
+ */
+export function decodeHtmlEntities(str: string): string {
+  return str.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (match, code: string) => {
+    if (code[0] === "#") {
+      const n = code[1] === "x" || code[1] === "X" ? parseInt(code.slice(2), 16) : parseInt(code.slice(1), 10);
+      return Number.isFinite(n) && n > 0 && n <= 0x10ffff ? String.fromCodePoint(n) : match;
+    }
+    return NAMED_ENTITIES[code.toLowerCase()] ?? match;
+  });
+}
+
+/**
+ * Plain text of a stored HTML-ish field: tags stripped, entities decoded, and
+ * tags that only appear after decoding (double-escaped markup) stripped too.
+ * The result is text, not HTML — callers escape it for output.
+ */
+export function plainText(str: string | null | undefined): string {
+  let t = stripTags(str);
+  // Two passes cover double escaping ("&amp;lt;b&amp;gt;").
+  for (let i = 0; i < 2 && /&(?:#x[0-9a-f]+|#\d+|[a-z]+);/i.test(t); i++) {
+    t = stripTags(decodeHtmlEntities(t));
+  }
+  return t;
 }
 
 const TRAILING_STOPWORDS = new Set([
@@ -107,10 +149,22 @@ export function excerptAtWord(text: string | null | undefined, max = ABSTRACT_EX
   return `${cut}…`;
 }
 
-/** Abstract excerpt (≤300 chars incl. the ellipsis). Never the full abstract. */
+// Source databases' "no abstract" fillers — placeholders, never content.
+const NO_ABSTRACT_RE =
+  /^(?:no abstract(?: is)?(?: available| provided| found)?|abstract (?:is )?(?:not available|unavailable|not provided|not found))$/i;
+
+/**
+ * Abstract excerpt (≤300 chars incl. the ellipsis). Never the full abstract.
+ * Decodes entity-escaped markup before truncating (no literal "&lt;b&gt;"),
+ * and returns "" for "No abstract available"-style fillers so the caller
+ * omits the excerpt instead of rendering a placeholder.
+ */
 export function abstractExcerpt(abstract: string | null | undefined): string {
   if (isPlaceholder(abstract)) return "";
-  return excerptAtWord(abstract, ABSTRACT_EXCERPT_MAX);
+  const text = plainText(abstract);
+  const core = text.replace(/^[\s[(]+|[\s\]).]+$/g, "");
+  if (!core || isPlaceholder(core) || NO_ABSTRACT_RE.test(core)) return "";
+  return excerptAtWord(text, ABSTRACT_EXCERPT_MAX);
 }
 
 // ── Titles ──────────────────────────────────────────────────────
@@ -304,7 +358,7 @@ export interface BlogBylineInput {
 
 export interface BlogByline {
   author: string;
-  /** True only when a named author_name is set (→ schema Person). */
+  /** True only when author_name names a person, not a team (→ schema Person). */
   authorIsPerson: boolean;
   reviewer: string | null;
   dateLabel: "Last reviewed" | "Updated";
@@ -313,6 +367,19 @@ export interface BlogByline {
   dateText: string;
   /** Where the byline links (editorial policy). */
   href: string;
+}
+
+/**
+ * True for author names that denote a team or the publication rather than a
+ * person ("Hydrogen Studies Editorial Team", "Hydrogen Studies Staff") —
+ * schema must type those as Organization, never Person.
+ */
+export function isOrganizationAuthorName(name: string | null | undefined): boolean {
+  const n = realContent(name);
+  if (!n) return false;
+  if (n.toLowerCase() === EDITORIAL_TEAM.toLowerCase()) return true;
+  if (n.toLowerCase().startsWith(SITE_NAME.toLowerCase())) return true;
+  return /\b(?:team|staff|editors|editorial|newsroom|desk)\b/i.test(n);
 }
 
 /**
@@ -334,7 +401,9 @@ export function blogByline(blog: BlogBylineInput): BlogByline {
   const date = reviewed ?? toDate(blog.updatedAt) ?? toDate(blog.publishedAt) ?? toDate(blog.createdAt);
   return {
     author: authorName || EDITORIAL_TEAM,
-    authorIsPerson: !!authorName,
+    // A stored author_name of "Hydrogen Studies Editorial Team" is still the
+    // team, not a named person (re-audit 2026-09-28: typed Person).
+    authorIsPerson: !!authorName && !isOrganizationAuthorName(authorName),
     reviewer,
     dateLabel: reviewed ? "Last reviewed" : "Updated",
     date,
@@ -351,7 +420,7 @@ export function blogArticleJsonLd(
   const published = toDate(blog.publishedAt) ?? toDate(blog.createdAt);
   const author = by.authorIsPerson
     ? { "@type": "Person", name: by.author }
-    : { "@type": "Organization", name: EDITORIAL_TEAM, url: `${opts.siteUrl}/editorial-policy` };
+    : { "@type": "Organization", name: by.author, url: `${opts.siteUrl}/editorial-policy` };
   const webPage: Record<string, any> = { "@type": "WebPage", "@id": opts.canonical };
   if (by.reviewer) {
     webPage.reviewedBy = { "@type": "Person", name: by.reviewer };

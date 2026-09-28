@@ -12,7 +12,7 @@ import { eq, desc, isNotNull, isNull, sql, and, count, inArray, gt } from "drizz
 import { requireAdmin } from "../auth";
 import { logger } from "../utils/logger";
 import { toAbsoluteUrl } from "../utils/absolute-url";
-import { BODY_SYSTEM_HUBS, MECHANISM_HUB_SLUGS } from "../utils/explore-hubs";
+import { BODY_SYSTEM_HUBS, LIFE_STAGE_HUB_SLUGS, MECHANISM_HUB_SLUGS, exploreHubPath } from "../utils/explore-hubs";
 
 const router = Router();
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
@@ -255,7 +255,8 @@ router.get("/sitemap-pages.xml", (req: Request, res: Response) => {
     { url: "/explore-by-benefit", priority: "0.8", freq: "weekly" },
     { url: "/insights", priority: "0.7", freq: "weekly" },
     { url: "/research-analytics", priority: "0.7", freq: "weekly" },
-    { url: "/hydrogen-therapy-guide", priority: "0.9", freq: "monthly" },
+    // /hydrogen-therapy-guide 301s to /blog/hydrogen-gas-therapy-research —
+    // a sitemap lists only final 200 URLs (removal approved, re-audit 2026-09-28).
     // Programmatic hydrogen-for condition pages
     { url: "/hydrogen-for/heart-disease", priority: "0.8", freq: "weekly" },
     { url: "/hydrogen-for/diabetes", priority: "0.8", freq: "weekly" },
@@ -482,13 +483,11 @@ router.get("/sitemap-explore.xml", async (req: Request, res: Response) => {
   </url>`);
     }
 
-    // Predefined life stage pages
-    const lifeStages = [
-      "pregnancy", "infants-children", "adults", "elderly-aging", "athletes",
-    ];
-    for (const ls of lifeStages) {
+    // Predefined life stage pages — same path helper as the SPA canonical
+    // (LifeStageCategoryPage), so the two can't drift apart again.
+    for (const ls of LIFE_STAGE_HUB_SLUGS) {
       urls.push(`  <url>
-    <loc>${SITE_URL}/explore-by-life-stage/${ls}</loc>
+    <loc>${SITE_URL}${exploreHubPath("life-stage", ls)}</loc>
     <lastmod>${today}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>

@@ -29,6 +29,7 @@ import {
   studyPageTitle,
 } from "../../shared/seo-markup";
 import { getHydrogenForTopic } from "../../shared/hydrogen-for-topics";
+import { bodySystemHubName, mechanismHubMeta } from "../../shared/explore-hubs";
 import { marked } from "marked";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -439,10 +440,12 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
   // Check explore-by-body-system category pages
   const bodySystemMatch = pathname.match(/^\/explore-by-body-system\/([^/]+)$/);
   if (bodySystemMatch) {
-    const system = bodySystemMatch[1].replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    // Hub label, "System" exactly once — was "Brain Nervous System System",
+    // "Immune System System" (re-audit 2026-09-28).
+    const system = bodySystemHubName(bodySystemMatch[1]);
     return {
-      title: `Hydrogen Research: ${system} System | ${SITE_NAME}`,
-      description: `Research studies on molecular hydrogen's effects on the ${system.toLowerCase()} system. Browse clinical trials, reviews, and findings.`,
+      title: `Hydrogen Research: ${system} | ${SITE_NAME}`,
+      description: `Research studies on molecular hydrogen's effects on the ${system.toLowerCase()}. Browse clinical trials, reviews, and findings.`,
       canonical: `${SITE_URL}${pathname}`,
       ogType: "website",
       ogImage: `${SITE_URL}/logo.png`,
@@ -452,11 +455,12 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
   // Check explore-by-mechanism pages
   const mechanismMatch = pathname.match(/^\/explore-by-mechanism\/([^/]+)$/);
   if (mechanismMatch) {
-    const mechanism = mechanismMatch[1].replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    // Shared with the SPA MechanismDetailPage so both emit the same title.
+    const mechanism = mechanismHubMeta(mechanismMatch[1]);
     return {
-      title: `${mechanism} Hydrogen Therapy Research | ${SITE_NAME}`,
-      description: `Research on ${mechanism.toLowerCase()} as a hydrogen delivery mechanism. Studies, protocols, and clinical outcomes.`,
-      canonical: `${SITE_URL}${pathname}`,
+      title: mechanism.title,
+      description: mechanism.description,
+      canonical: `${SITE_URL}${mechanism.path}`,
       ogType: "website",
       ogImage: `${SITE_URL}/logo.png`,
     };
