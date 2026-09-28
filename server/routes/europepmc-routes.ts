@@ -9,6 +9,7 @@ import {
 import { studyService } from "../services/study-service";
 import { requireAdmin } from "../auth";
 import { searchRateLimiter } from "../utils/rate-limiting";
+import { filterOffTopicSearchResults, isOffTopicStudyError } from "../services/study-topic-guard";
 
 const router = express.Router();
 
@@ -45,9 +46,18 @@ router.get("/api/europepmc/search", async (req, res) => {
       parseInt(pageSize as string),
     );
 
+    // Study finder guard: hide hydrogen-ENERGY papers from search results.
+    let excludedOffTopic = 0;
+    if (results && Array.isArray((results as any).results)) {
+      const filtered = filterOffTopicSearchResults((results as any).results, "europepmc");
+      (results as any).results = filtered.kept;
+      excludedOffTopic = filtered.excludedOffTopic;
+    }
+
     res.json({
       success: true,
       data: results,
+      excludedOffTopic,
     });
   } catch (error) {
     console.error("Europe PMC search error:", error);
@@ -220,6 +230,9 @@ router.post("/api/europepmc/import/doi/:doi", requireAdmin, async (req, res) => 
       study: createdStudy,
     });
   } catch (error) {
+    if (isOffTopicStudyError(error)) {
+      return res.status(422).json({ success: false, offTopic: true, message: error.message });
+    }
     console.error("Europe PMC import error:", error);
     res.status(500).json({
       success: false,
@@ -442,6 +455,9 @@ router.post("/api/europepmc/save", requireAdmin, async (req, res) => {
       study: createdStudy,
     });
   } catch (error: any) {
+    if (isOffTopicStudyError(error)) {
+      return res.status(422).json({ success: false, offTopic: true, message: error.message });
+    }
     console.error("Europe PMC save error:", error);
     res.status(500).json({
       success: false,

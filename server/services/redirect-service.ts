@@ -217,6 +217,18 @@ function bumpHitCount(id: number): void {
 }
 
 /**
+ * Serve a real 410 Gone. Same response for every client (bots and browsers
+ * alike — CLAUDE.md: no user-agent branching). Shared by the redirects-table
+ * 410 rows and the excluded-study guard (services/excluded-studies.ts).
+ */
+export function sendGone(res: Response): void {
+  res.status(410)
+    .set("Cache-Control", "public, max-age=86400")
+    .type("text/html")
+    .send("<!doctype html><title>410 Gone</title><h1>410 Gone</h1><p>This page has been permanently retired. Browse current research at <a href=\"/studies\">hydrogenstudies.com/studies</a>.</p>");
+}
+
+/**
  * Middleware that intercepts requests and issues redirects if a match exists.
  * Mount early in the middleware chain (before routes).
  */
@@ -230,10 +242,7 @@ export function redirectMiddleware() {
     // permanently retired. Serving a real 410 (vs 404) tells Google to drop
     // it faster and is the PLAN.md 2.2 semantic ("410 the rest").
     if (decision.kind === "gone") {
-      res.status(410)
-        .set("Cache-Control", "public, max-age=86400")
-        .type("text/html")
-        .send("<!doctype html><title>410 Gone</title><h1>410 Gone</h1><p>This page has been permanently retired. Browse current research at <a href=\"/studies\">hydrogenstudies.com/studies</a>.</p>");
+      sendGone(res);
       return;
     }
     res.redirect(decision.status, decision.location);
@@ -477,10 +486,11 @@ export async function pathResolvesToLiveContent(normalizedPath: string): Promise
   const study = STUDY_PATH_RE.exec(normalizedPath);
   if (study && study[1].toLowerCase() !== "tags") {
     const slug = study[1].toLowerCase();
+    // An excluded (off-topic, 410) study is not live content.
     const [row] = await db
       .select({ id: studies.id })
       .from(studies)
-      .where(sql`lower(${studies.slug}) = ${slug}`)
+      .where(and(sql`lower(${studies.slug}) = ${slug}`, eq(studies.isExcluded, false)))
       .limit(1);
     if (row) return true;
   }
@@ -518,7 +528,7 @@ export async function getRankedSuggestions(path: string): Promise<RedirectSugges
   // ── 1. Exact slug match short-circuit ───────────────────────
   if (lastSegment.length >= 3) {
     const [s] = await db.select({ slug: studies.slug, title: studies.title, plt: studies.plainLanguageTitle })
-      .from(studies).where(eq(studies.slug, lastSegment)).limit(1);
+      .from(studies).where(and(eq(studies.slug, lastSegment), eq(studies.isExcluded, false))).limit(1);
     if (s?.slug) {
       return [{
         target: `/studies/${s.slug}`,
@@ -585,6 +595,7 @@ export async function getRankedSuggestions(path: string): Promise<RedirectSugges
              similarity(LOWER(COALESCE(plain_language_title, '')), ${query}) AS plt_sim
       FROM studies
       WHERE slug IS NOT NULL
+        AND is_excluded = false
         AND (
           similarity(COALESCE(slug, ''), ${query}) > ${MIN_TRGM_THRESHOLD}
           OR similarity(LOWER(COALESCE(title, '')), ${query}) > ${MIN_TRGM_THRESHOLD}

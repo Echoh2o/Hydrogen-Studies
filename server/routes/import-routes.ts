@@ -8,6 +8,7 @@ import path from "path";
 import fs from "fs";
 import { externalApi } from "../utils/http";
 import { logger } from "../utils/logger";
+import { checkStudyTopic } from "../services/study-topic-guard";
 
 const router = express.Router();
 
@@ -231,9 +232,11 @@ function processWorkbookData(data: Record<string, any>[]): InsertStudy[] {
 // Types for analysis results
 interface StudyAnalysis {
   study: InsertStudy;
-  status: "new" | "duplicate_doi" | "duplicate_title" | "deleted" | "empty" | "batch_duplicate";
+  status: "new" | "duplicate_doi" | "duplicate_title" | "deleted" | "empty" | "batch_duplicate" | "off_topic";
   existingId?: number;
   deletedBy?: string | null;
+  /** Why an off_topic row was skipped (hydrogen-energy classifier verdict). */
+  offTopicReason?: string | null;
 }
 
 interface AnalysisResult {
@@ -244,6 +247,8 @@ interface AnalysisResult {
   batchDuplicates: number;
   previouslyDeleted: number;
   emptyTitles: number;
+  /** Rows skipped as off-topic hydrogen-ENERGY research (never imported). */
+  offTopic: number;
   studies: StudyAnalysis[];
 }
 
@@ -254,6 +259,14 @@ async function analyzeStudies(studies: InsertStudy[]): Promise<AnalysisResult> {
   const seenTitles = new Map<string, number>(); // lowercase title -> first index
   const analyses: StudyAnalysis[] = studies.map((study, idx) => {
     if (!study.title.trim()) return { study, status: "empty" as const };
+
+    // Study finder guard: hydrogen-energy research is off-topic — skip it
+    // before any dedupe work (and never insert it).
+    const topic = checkStudyTopic(
+      { title: study.title, abstract: study.abstract, keywords: study.keywords ?? null, category: study.category, journal: study.journal },
+      "bulk-import",
+    );
+    if (topic.excluded) return { study, status: "off_topic" as const, offTopicReason: topic.reason };
 
     const lowerTitle = study.title.toLowerCase().trim();
     const doi = study.doi?.trim() || null;
@@ -328,6 +341,7 @@ async function analyzeStudies(studies: InsertStudy[]): Promise<AnalysisResult> {
     batchDuplicates: analyses.filter(a => a.status === "batch_duplicate").length,
     previouslyDeleted: analyses.filter(a => a.status === "deleted").length,
     emptyTitles: analyses.filter(a => a.status === "empty").length,
+    offTopic: analyses.filter(a => a.status === "off_topic").length,
   };
 
   return { ...counts, studies: analyses };
@@ -339,9 +353,11 @@ function buildResponse(total: number, results: {
   failed: number;
   skippedDuplicate: number;
   skippedDeleted: number;
+  skippedOffTopic: number;
   importedStudyIds: number[];
   skippedStudies?: { title: string; deletedBy: string | null }[];
   duplicateStudies?: { title: string; reason: string; existingId?: number }[];
+  offTopicStudies?: { title: string; reason: string | null }[];
   errors?: string[];
 }) {
   return {
@@ -351,9 +367,11 @@ function buildResponse(total: number, results: {
     failed: results.failed,
     skippedDuplicate: results.skippedDuplicate,
     skippedDeleted: results.skippedDeleted,
+    skippedOffTopic: results.skippedOffTopic,
     importedStudyIds: results.importedStudyIds,
     skippedStudies: results.skippedStudies,
     duplicateStudies: results.duplicateStudies,
+    offTopicStudies: results.offTopicStudies,
     errors: results.errors,
   };
 }
@@ -382,13 +400,16 @@ async function importWithAnalysis(
   const errors: string[] = [];
   const skippedStudies: { title: string; deletedBy: string | null }[] = [];
   const duplicateStudies: { title: string; reason: string; existingId?: number }[] = [];
+  const offTopicStudies: { title: string; reason: string | null }[] = [];
 
   const newStudies = analysis.studies.filter(a => a.status === "new");
   let processed = 0;
 
   // Collect skipped info
   for (const a of analysis.studies) {
-    if (a.status === "deleted") {
+    if (a.status === "off_topic") {
+      offTopicStudies.push({ title: a.study.title.substring(0, 80), reason: a.offTopicReason ?? null });
+    } else if (a.status === "deleted") {
       skippedStudies.push({ title: a.study.title.substring(0, 80), deletedBy: a.deletedBy || null });
     } else if (a.status === "duplicate_doi" || a.status === "duplicate_title") {
       duplicateStudies.push({
@@ -429,9 +450,11 @@ async function importWithAnalysis(
     failed,
     skippedDuplicate: analysis.duplicatesByDoi + analysis.duplicatesByTitle + analysis.batchDuplicates,
     skippedDeleted: analysis.previouslyDeleted,
+    skippedOffTopic: analysis.offTopic,
     importedStudyIds,
     skippedStudies: skippedStudies.length > 0 ? skippedStudies : undefined,
     duplicateStudies: duplicateStudies.length > 0 ? duplicateStudies : undefined,
+    offTopicStudies: offTopicStudies.length > 0 ? offTopicStudies : undefined,
     errors: errors.length > 0 ? errors : undefined,
   };
 }
@@ -469,6 +492,7 @@ router.post(
         batchDuplicates: analysis.batchDuplicates,
         previouslyDeleted: analysis.previouslyDeleted,
         emptyTitles: analysis.emptyTitles,
+        offTopic: analysis.offTopic,
         sampleStudies,
       });
     } catch (error) {

@@ -1320,7 +1320,7 @@ export class JobScheduler {
         .from(studies)
         .leftJoin(blogArticles, eq(studies.id, blogArticles.studyId))
         .where(
-          sql`${studies.plainLanguageTitle} IS NOT NULL AND ${studies.category} IS NOT NULL AND ${blogArticles.id} IS NULL`
+          sql`${studies.plainLanguageTitle} IS NOT NULL AND ${studies.category} IS NOT NULL AND ${blogArticles.id} IS NULL AND ${studies.isExcluded} = false`
         )
         .orderBy(sql`${opportunityExpr} DESC`, studies.id)
         .limit(MAX_BLOGS_PER_CYCLE);
@@ -1556,6 +1556,7 @@ export class JobScheduler {
         found: result.found,
         new: result.new,
         queued: result.queued,
+        skippedOffTopic: result.skippedOffTopic,
       });
     } catch (error) {
       logger.error("Research discovery error", error, "JobScheduler");
@@ -1637,7 +1638,7 @@ export class JobScheduler {
       const studiesWithoutTldr = await db
         .select({ id: studies.id, title: studies.title, abstract: studies.abstract, conclusion: studies.conclusion })
         .from(studies)
-        .where(isNull(studies.tldr))
+        .where(sql`${studies.tldr} IS NULL AND ${studies.isExcluded} = false`)
         .limit(MAX_TLDRS_PER_CYCLE);
 
       if (studiesWithoutTldr.length === 0) return;

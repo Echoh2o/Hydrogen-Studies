@@ -140,10 +140,12 @@ async function resolvePageMeta(pathname: string): Promise<PageMeta | null> {
       const slug = studySlugMatch[1];
       // Skip if it's a numeric ID (legacy route)
       if (/^\d+$/.test(slug)) {
-        const [study] = await db.select().from(studies).where(eq(studies.id, parseInt(slug))).limit(1);
+        // Excluded (off-topic) studies never render: the 410 guard in app.ts
+        // answers first; this keeps the prerender honest if reached directly.
+        const [study] = await db.select().from(studies).where(and(eq(studies.id, parseInt(slug)), eq(studies.isExcluded, false))).limit(1);
         if (study) return buildStudyMeta(study);
       } else {
-        const [study] = await db.select().from(studies).where(eq(studies.slug, slug)).limit(1);
+        const [study] = await db.select().from(studies).where(and(eq(studies.slug, slug), eq(studies.isExcluded, false))).limit(1);
         if (study) return buildStudyMeta(study);
       }
       return null;
@@ -153,7 +155,7 @@ async function resolvePageMeta(pathname: string): Promise<PageMeta | null> {
     const studiesSlugMatch = pathname.match(/^\/studies\/([^/]+)$/);
     if (studiesSlugMatch && !/^(tags)$/.test(studiesSlugMatch[1])) {
       const slug = studiesSlugMatch[1];
-      const [study] = await db.select().from(studies).where(eq(studies.slug, slug)).limit(1);
+      const [study] = await db.select().from(studies).where(and(eq(studies.slug, slug), eq(studies.isExcluded, false))).limit(1);
       if (study) return buildStudyMeta(study);
       return null;
     }
@@ -759,7 +761,7 @@ export async function prewarmBotCache(staticPath: string): Promise<void> {
     const { sql } = await import("drizzle-orm");
 
     // All study slugs
-    const studyRows = await database.execute(sql`SELECT slug FROM studies WHERE slug IS NOT NULL`);
+    const studyRows = await database.execute(sql`SELECT slug FROM studies WHERE slug IS NOT NULL AND is_excluded = false`);
     for (const row of (studyRows.rows || []) as any[]) {
       if (row.slug && !row.slug.startsWith("id/")) paths.push(`/study/${row.slug}`);
     }

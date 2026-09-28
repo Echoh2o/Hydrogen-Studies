@@ -491,8 +491,9 @@ router.get("/", async (req: Request, res: Response) => {
     const yearFrom = parseInt(req.query.yearFrom as string, 10) || 0;
     const yearTo = parseInt(req.query.yearTo as string, 10) || 0;
 
-    // Build WHERE clauses
-    const conditions: string[] = [];
+    // Build WHERE clauses. Excluded (off-topic hydrogen-energy) studies
+    // never appear on any public surface.
+    const conditions: string[] = ["s.is_excluded = false"];
     const params: any[] = [];
     let paramIndex = 1;
 
@@ -581,6 +582,7 @@ router.get("/", async (req: Request, res: Response) => {
         COUNT(*) FILTER (WHERE is_human_trial = true) as human_trials,
         COUNT(DISTINCT study_type) as type_count
       FROM studies
+      WHERE is_excluded = false
     `, []);
     const stats = statsRows[0] || { total: 0, human_trials: 0, type_count: 0 };
     const conditionCountRows = await executeRawQuery(`SELECT COUNT(*) as cnt FROM health_conditions`, []);
@@ -700,6 +702,11 @@ router.get("/study/:slug", async (req: Request, res: Response) => {
       res.status(404).send(renderErrorPage("Study not found.", 404));
       return;
     }
+    // Excluded (off-topic) study: permanently gone, same as on the main site.
+    if (studyRows[0].is_excluded) {
+      res.status(410).send(renderErrorPage("This study has been removed from the research database.", 410));
+      return;
+    }
 
     const study = studyRows[0];
     const displayTitle = study.plain_language_title || study.title;
@@ -724,7 +731,7 @@ router.get("/study/:slug", async (req: Request, res: Response) => {
         FROM studies s
         JOIN study_health_conditions shc ON shc.study_id = s.id
         JOIN health_conditions hc ON hc.id = shc.health_condition_id
-        WHERE hc.slug IN (${placeholders}) AND s.id != $1
+        WHERE hc.slug IN (${placeholders}) AND s.id != $1 AND s.is_excluded = false
         ORDER BY s.publish_year DESC NULLS LAST
         LIMIT 5
       `, [study.id, ...condIds]);
@@ -948,7 +955,7 @@ router.get("/condition/:slug", async (req: Request, res: Response) => {
       SELECT s.study_type, COUNT(*) as cnt
       FROM studies s
       JOIN study_health_conditions shc ON shc.study_id = s.id
-      WHERE shc.health_condition_id = $1 AND s.study_type IS NOT NULL
+      WHERE shc.health_condition_id = $1 AND s.study_type IS NOT NULL AND s.is_excluded = false
       GROUP BY s.study_type
       ORDER BY cnt DESC
     `, [condition.id]);
@@ -957,7 +964,8 @@ router.get("/condition/:slug", async (req: Request, res: Response) => {
     const totalCountRows = await executeRawQuery(`
       SELECT COUNT(*) as total
       FROM study_health_conditions shc
-      WHERE shc.health_condition_id = $1
+      JOIN studies s ON s.id = shc.study_id
+      WHERE shc.health_condition_id = $1 AND s.is_excluded = false
     `, [condition.id]);
     const totalStudies = parseInt(totalCountRows[0]?.total || "0", 10);
     const totalPages = Math.ceil(totalStudies / ITEMS_PER_PAGE);
@@ -970,7 +978,7 @@ router.get("/condition/:slug", async (req: Request, res: Response) => {
              s.h2_delivery_method
       FROM studies s
       JOIN study_health_conditions shc ON shc.study_id = s.id
-      WHERE shc.health_condition_id = $1
+      WHERE shc.health_condition_id = $1 AND s.is_excluded = false
       ORDER BY s.publish_year DESC NULLS LAST, s.id DESC
       LIMIT $2 OFFSET $3
     `, [condition.id, ITEMS_PER_PAGE, offset]);
@@ -1034,6 +1042,7 @@ router.get("/condition/:slug", async (req: Request, res: Response) => {
           JOIN studies s ON s.id = b.study_id
           JOIN study_health_conditions shc ON shc.study_id = s.id
           WHERE shc.health_condition_id = $1 AND b.is_published = true AND b.is_archived = false
+            AND s.is_excluded = false
           ORDER BY b.created_at DESC LIMIT 5
         `, [condition.id]);
         if (blogRows.length === 0) return "";
@@ -1083,23 +1092,24 @@ router.get("/stats", async (_req: Request, res: Response) => {
     const [byYear, byType, byCondition, byCountry, overallRows] = await Promise.all([
       executeRawQuery(`
         SELECT publish_year, COUNT(*) as cnt
-        FROM studies WHERE publish_year IS NOT NULL
+        FROM studies WHERE publish_year IS NOT NULL AND is_excluded = false
         GROUP BY publish_year ORDER BY publish_year DESC
       `, []),
       executeRawQuery(`
         SELECT study_type, COUNT(*) as cnt
-        FROM studies WHERE study_type IS NOT NULL
+        FROM studies WHERE study_type IS NOT NULL AND is_excluded = false
         GROUP BY study_type ORDER BY cnt DESC
       `, []),
       executeRawQuery(`
         SELECT hc.name, hc.slug, COUNT(*) as cnt
         FROM study_health_conditions shc
         JOIN health_conditions hc ON hc.id = shc.health_condition_id
+        JOIN studies s ON s.id = shc.study_id AND s.is_excluded = false
         GROUP BY hc.id, hc.name, hc.slug ORDER BY cnt DESC LIMIT 20
       `, []),
       executeRawQuery(`
         SELECT country, COUNT(*) as cnt
-        FROM studies WHERE country IS NOT NULL AND country != ''
+        FROM studies WHERE country IS NOT NULL AND country != '' AND is_excluded = false
         GROUP BY country ORDER BY cnt DESC LIMIT 20
       `, []),
       executeRawQuery(`
@@ -1109,6 +1119,7 @@ router.get("/stats", async (_req: Request, res: Response) => {
           MIN(publish_year) FILTER (WHERE publish_year IS NOT NULL) as earliest_year,
           MAX(publish_year) FILTER (WHERE publish_year IS NOT NULL) as latest_year
         FROM studies
+        WHERE is_excluded = false
       `, []),
     ]);
     const overall = overallRows[0] || {};
@@ -1323,7 +1334,7 @@ router.get("/sitemap.xml", async (_req: Request, res: Response) => {
     const studySlugs = await executeRawQuery(`
       SELECT slug, last_modified, publish_year
       FROM studies
-      WHERE slug IS NOT NULL AND slug != ''
+      WHERE slug IS NOT NULL AND slug != '' AND is_excluded = false
       ORDER BY publish_year DESC NULLS LAST
     `, []);
 
@@ -1334,7 +1345,7 @@ router.get("/sitemap.xml", async (_req: Request, res: Response) => {
       SELECT hc.slug, MAX(s.last_modified) as last_modified
       FROM health_conditions hc
       LEFT JOIN study_health_conditions shc ON shc.health_condition_id = hc.id
-      LEFT JOIN studies s ON s.id = shc.study_id
+      LEFT JOIN studies s ON s.id = shc.study_id AND s.is_excluded = false
       GROUP BY hc.slug, hc.name
       ORDER BY hc.name ASC
     `, []);
@@ -1421,7 +1432,7 @@ router.get("/embed/:conditionSlug", async (req: Request, res: Response) => {
       SELECT s.id, s.title, s.plain_language_title, s.slug, s.publish_year, s.study_type, s.journal
       FROM studies s
       JOIN study_health_conditions shc ON shc.study_id = s.id
-      WHERE shc.health_condition_id = $1
+      WHERE shc.health_condition_id = $1 AND s.is_excluded = false
       ORDER BY s.publish_year DESC NULLS LAST, s.id DESC
       LIMIT 5
     `, [condition.id]);
@@ -1498,7 +1509,7 @@ router.get("/export", async (req: Request, res: Response) => {
         FROM studies s
         JOIN study_health_conditions shc ON shc.study_id = s.id
         JOIN health_conditions hc ON hc.id = shc.health_condition_id
-        WHERE hc.slug = $1
+        WHERE hc.slug = $1 AND s.is_excluded = false
         ORDER BY s.publish_year DESC NULLS LAST
         LIMIT 2000
       `;
@@ -1511,6 +1522,7 @@ router.get("/export", async (req: Request, res: Response) => {
                s.peer_reviewed, s.is_human_trial,
                s.results_short, s.conclusion_short, s.slug
         FROM studies s
+        WHERE s.is_excluded = false
         ORDER BY s.publish_year DESC NULLS LAST
         LIMIT 2000
       `;

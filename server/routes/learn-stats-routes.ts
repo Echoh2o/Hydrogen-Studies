@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "../db";
 import { studies, healthConditions } from "@shared/schema";
-import { sql, count, countDistinct, eq } from "drizzle-orm";
+import { sql, count, countDistinct, eq, and } from "drizzle-orm";
 import { logger } from "../utils/logger";
 
 const router = Router();
@@ -24,11 +24,12 @@ router.get("/", async (_req, res) => {
       return res.json(cachedResult);
     }
 
-    const [totalRow] = await db.select({ value: count() }).from(studies);
+    // Excluded (off-topic) studies never count toward public stats.
+    const [totalRow] = await db.select({ value: count() }).from(studies).where(eq(studies.isExcluded, false));
     const [humanRow] = await db
       .select({ value: count() })
       .from(studies)
-      .where(eq(studies.isHumanTrial, true));
+      .where(and(eq(studies.isHumanTrial, true), eq(studies.isExcluded, false)));
     const [conditionsRow] = await db
       .select({ value: countDistinct(healthConditions.name) })
       .from(healthConditions);

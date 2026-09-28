@@ -7,6 +7,7 @@ import {
 import { studyService } from "../services/study-service";
 import { requireAdmin } from "../auth";
 import { searchRateLimiter } from "../utils/rate-limiting";
+import { filterOffTopicSearchResults, isOffTopicStudyError } from "../services/study-topic-guard";
 
 const router = express.Router();
 
@@ -34,9 +35,18 @@ router.get("/search", async (req, res) => {
       parseInt(pageSize as string) || 10,
     );
 
+    // Study finder guard: hide hydrogen-ENERGY papers from search results.
+    let excludedOffTopic = 0;
+    if (results && Array.isArray((results as any).items)) {
+      const filtered = filterOffTopicSearchResults((results as any).items, "crossref");
+      (results as any).items = filtered.kept;
+      excludedOffTopic = filtered.excludedOffTopic;
+    }
+
     res.json({
       success: true,
       data: results,
+      excludedOffTopic,
     });
   } catch (error) {
     console.error("CrossRef search error:", error);
@@ -130,6 +140,9 @@ router.post("/import/:doi", requireAdmin, async (req, res) => {
       study: createdStudy,
     });
   } catch (error) {
+    if (isOffTopicStudyError(error)) {
+      return res.status(422).json({ success: false, offTopic: true, message: error.message });
+    }
     console.error("CrossRef import error:", error);
     res.status(500).json({
       success: false,

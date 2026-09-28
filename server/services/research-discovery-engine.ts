@@ -5,6 +5,10 @@
  * and PubMed. Deduplicates by DOI (exact) and title similarity (normalized
  * Levenshtein >90%). Queues new discoveries for AI processing via the
  * pipeline_queue table.
+ *
+ * Off-topic hydrogen-ENERGY papers (biohydrogen, fuel cells, electrolyzers,
+ * ...) are dropped before the dedupe probes and never queued
+ * (shared/study-topic-filter.ts; owner request 2026-09-28).
  */
 
 import { db } from "../db";
@@ -18,6 +22,7 @@ import { searchCrossRef } from "./crossref-api";
 import { searchEuropePMC } from "./europepmc-api";
 import { externalApi } from "../utils/http";
 import { logger } from "../utils/logger";
+import { checkStudyTopic } from "./study-topic-guard";
 
 // Rotating query set — covers the breadth of hydrogen research
 const DISCOVERY_QUERIES = [
@@ -282,6 +287,8 @@ export async function runDiscovery(customQuery?: string): Promise<{
   new: number;
   duplicates: number;
   queued: number;
+  /** Hydrogen-energy papers skipped by the topic filter (never queued). */
+  skippedOffTopic: number;
 }> {
   const startTime = Date.now();
 
@@ -300,6 +307,7 @@ export async function runDiscovery(customQuery?: string): Promise<{
   let totalNew = 0;
   let totalDuplicates = 0;
   let totalQueued = 0;
+  let totalOffTopic = 0;
 
   try {
     // If a custom query is provided, run just that one; otherwise use the rotation
@@ -353,6 +361,13 @@ export async function runDiscovery(customQuery?: string): Promise<{
 
       // Check against database
       for (const result of uniqueResults) {
+        // Topic guard first — cheap, and saves the dedupe probes + all
+        // downstream AI pipeline spend on off-topic hydrogen-energy papers.
+        if (checkStudyTopic({ title: result.title, abstract: result.abstract, journal: result.journal }, `discovery:${result.sourcePlatform}`).excluded) {
+          totalOffTopic++;
+          continue;
+        }
+
         const dup = await isDuplicate(result);
         if (dup) {
           totalDuplicates++;
@@ -413,10 +428,18 @@ export async function runDiscovery(customQuery?: string): Promise<{
       new: totalNew,
       duplicates: totalDuplicates,
       queued: totalQueued,
+      skippedOffTopic: totalOffTopic,
       durationMs,
     });
 
-    return { runId: run.id, found: totalFound, new: totalNew, duplicates: totalDuplicates, queued: totalQueued };
+    return {
+      runId: run.id,
+      found: totalFound,
+      new: totalNew,
+      duplicates: totalDuplicates,
+      queued: totalQueued,
+      skippedOffTopic: totalOffTopic,
+    };
   } catch (error) {
     const durationMs = Date.now() - startTime;
     await db

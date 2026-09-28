@@ -209,6 +209,10 @@ router.post("/approve/:id", async (req, res) => {
 
     res.json({ success: true, studyId, message: "Study approved and content waterfall triggered" });
   } catch (error) {
+    // Off-topic hydrogen-energy paper: the pipeline marked it rejected.
+    if ((error as any)?.code === "OFF_TOPIC_HYDROGEN_ENERGY") {
+      return res.status(422).json({ error: (error as Error).message, offTopic: true });
+    }
     logger.error("Study approval failed", error, "PipelineRoutes");
     res.status(500).json({ error: "Approval failed" });
   }
@@ -241,7 +245,7 @@ router.post("/approve-bulk", async (req, res) => {
     }
 
     const { createStudyFromPipelineItem } = await import("../services/study-analysis-pipeline");
-    const results = { approved: 0, failed: 0, studyIds: [] as number[] };
+    const results = { approved: 0, failed: 0, skippedOffTopic: 0, studyIds: [] as number[] };
 
     for (const id of ids) {
       try {
@@ -252,8 +256,9 @@ router.post("/approve-bulk", async (req, res) => {
         triggerContentWaterfall(studyId).catch((err) =>
           logger.error("Content waterfall failed for bulk-approved study", err, "PipelineRoutes", { studyId })
         );
-      } catch {
-        results.failed++;
+      } catch (err) {
+        if ((err as any)?.code === "OFF_TOPIC_HYDROGEN_ENERGY") results.skippedOffTopic++;
+        else results.failed++;
       }
     }
 

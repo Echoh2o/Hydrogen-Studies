@@ -15,7 +15,7 @@ import {
   studyDurations,
   studyOutcomes,
 } from "@shared/schema-hydrogen-fields";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { getExploreDetailStudies } from "../middleware/seo-body-renderer";
 
 const router = Router();
@@ -84,7 +84,7 @@ router.get(
         })
         .from(studies)
         .innerJoin(studyBenefits, eq(studies.id, studyBenefits.studyId))
-        .where(eq(studyBenefits.benefitId, benefit.id));
+        .where(and(eq(studyBenefits.benefitId, benefit.id), eq(studies.isExcluded, false)));
 
       // Extract just the study data
       const result = studiesWithBenefit.map((item) => item.study);
@@ -164,7 +164,7 @@ router.get(
         })
         .from(studies)
         .innerJoin(studyDemographics, eq(studies.id, studyDemographics.studyId))
-        .where(eq(studyDemographics.demographicId, demographic.id));
+        .where(and(eq(studyDemographics.demographicId, demographic.id), eq(studies.isExcluded, false)));
 
       // Extract just the study data
       const result = studiesWithDemographic.map((item) => item.study);
@@ -244,7 +244,7 @@ router.get(
         })
         .from(studies)
         .innerJoin(studyMechanisms, eq(studies.id, studyMechanisms.studyId))
-        .where(eq(studyMechanisms.mechanismId, mechanism.id));
+        .where(and(eq(studyMechanisms.mechanismId, mechanism.id), eq(studies.isExcluded, false)));
 
       // Extract just the study data
       const result = studiesWithMechanism.map((item) => item.study);
@@ -363,7 +363,7 @@ router.get(
           studyDeliveryMethods,
           eq(studies.id, studyDeliveryMethods.studyId),
         )
-        .where(eq(studyDeliveryMethods.deliveryMethodId, deliveryMethod.id));
+        .where(and(eq(studyDeliveryMethods.deliveryMethodId, deliveryMethod.id), eq(studies.isExcluded, false)));
 
       // Extract just the study data
       const result = studiesWithDeliveryMethod.map((item) => item.study);

@@ -114,7 +114,8 @@ export async function enrichStudySummaries(
       .where(
         sql`${studies.keyFinding} IS NULL
             AND ${studies.abstract} IS NOT NULL
-            AND ${studies.abstract} != ''`,
+            AND ${studies.abstract} != ''
+            AND ${studies.isExcluded} = false`,
       )
       .limit(batchSize);
 

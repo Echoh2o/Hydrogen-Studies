@@ -220,9 +220,10 @@ export async function runImageBackfillBatch(opts: {
       .select({ id: studies.id })
       .from(studies)
       .where(
+        // Never spend image generation on an excluded (off-topic, 410) study.
         excludedStudyIds.length > 0
-          ? and(isNull(studies.imageUrl), notRecentlyFailed, notInArray(studies.id, excludedStudyIds))
-          : and(isNull(studies.imageUrl), notRecentlyFailed),
+          ? and(isNull(studies.imageUrl), notRecentlyFailed, eq(studies.isExcluded, false), notInArray(studies.id, excludedStudyIds))
+          : and(isNull(studies.imageUrl), notRecentlyFailed, eq(studies.isExcluded, false)),
       )
       .orderBy(sql`${studies.viewCount} DESC NULLS LAST, ${studies.id} ASC`)
       .limit(studyLimit);

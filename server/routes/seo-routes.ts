@@ -137,7 +137,7 @@ router.get("/llms.txt", async (req: Request, res: Response) => {
     let studyCount = 0;
     let blogCount = 0;
     try {
-      const [s] = await db.select({ n: count() }).from(studies);
+      const [s] = await db.select({ n: count() }).from(studies).where(eq(studies.isExcluded, false));
       const [b] = await db
         .select({ n: count() })
         .from(blogArticles)
@@ -301,7 +301,8 @@ router.get("/sitemap-studies.xml", async (req: Request, res: Response) => {
       return res.send(cached);
     }
 
-    // Only include studies with proper SEO slugs — exclude id-only entries
+    // Only include studies with proper SEO slugs — exclude id-only entries —
+    // and never an excluded (off-topic hydrogen-energy) study: those URLs 410.
     const allStudies = await db.select({
       id: studies.id,
       slug: studies.slug,
@@ -311,7 +312,7 @@ router.get("/sitemap-studies.xml", async (req: Request, res: Response) => {
       title: studies.title,
       publishYear: studies.publishYear,
     }).from(studies)
-      .where(isNotNull(studies.slug))
+      .where(and(isNotNull(studies.slug), eq(studies.isExcluded, false)))
       .orderBy(desc(studies.id));
 
     const urls = allStudies
@@ -892,7 +893,7 @@ seoAdminRouter.post("/blogs/generate-batch", requireAdmin, async (req: Request, 
       .select({ id: studies.id })
       .from(studies)
       .leftJoin(blogArticles, eq(studies.id, blogArticles.studyId))
-      .where(isNull(blogArticles.id))
+      .where(and(isNull(blogArticles.id), eq(studies.isExcluded, false)))
       .limit(limit);
 
     const totalWithoutBlogs = studiesWithoutBlogs.length;

@@ -215,7 +215,8 @@ async function getPersonalizedStudies(
   maxResults: number,
 ): Promise<StudyRecommendation[]> {
   const baseQuery = db.select().from(studies);
-  let whereConditions: any[] = [];
+  // Excluded (off-topic hydrogen-energy) studies are never recommended.
+  let whereConditions: any[] = [eq(studies.isExcluded, false)];
 
   // Exclude already viewed studies
   if (viewedStudies.length > 0) {
@@ -312,6 +313,7 @@ async function getSimilarStudies(
   // Find similar studies based on overlapping attributes
   let whereConditions: any[] = [
     ne(studies.id, targetStudyId), // Exclude the target study itself
+    eq(studies.isExcluded, false), // never recommend an excluded (410) study
   ];
 
   // Exclude viewed studies
@@ -379,7 +381,7 @@ async function getTrendingStudies(
   viewedStudies: number[],
   maxResults: number,
 ): Promise<StudyRecommendation[]> {
-  let whereConditions: any[] = [];
+  let whereConditions: any[] = [eq(studies.isExcluded, false)];
 
   // Exclude viewed studies
   if (viewedStudies.length > 0) {
@@ -420,7 +422,7 @@ async function getRecentStudies(
   viewedStudies: number[],
   maxResults: number,
 ): Promise<StudyRecommendation[]> {
-  let whereConditions: any[] = [];
+  let whereConditions: any[] = [eq(studies.isExcluded, false)];
 
   // Exclude viewed studies
   if (viewedStudies.length > 0) {

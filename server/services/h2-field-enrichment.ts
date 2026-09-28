@@ -97,7 +97,7 @@ export async function enrichH2Fields(
       })
       .from(studies)
       .where(
-        sql`${studies.h2DeliveryMethod} IS NULL AND ${studies.h2ExtractionAttemptedAt} IS NULL AND ${studies.abstract} IS NOT NULL AND ${studies.abstract} != ''`,
+        sql`${studies.h2DeliveryMethod} IS NULL AND ${studies.h2ExtractionAttemptedAt} IS NULL AND ${studies.abstract} IS NOT NULL AND ${studies.abstract} != '' AND ${studies.isExcluded} = false`,
       )
       .limit(batchSize);
 

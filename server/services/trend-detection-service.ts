@@ -205,6 +205,8 @@ export class TrendDetectionService {
         and(
           sql`${effectiveDate} >= ${periodStart.toISOString()}`,
           sql`${effectiveDate} <= ${periodEnd.toISOString()}`,
+          // Excluded (off-topic hydrogen-energy) studies are never trends.
+          eq(studies.isExcluded, false),
         ),
       )
       .orderBy(desc(studies.citationCount), desc(studies.viewCount));
@@ -525,7 +527,11 @@ export class TrendDetectionService {
       .innerJoin(tags, eq(studyTags.tagId, tags.id))
       .innerJoin(studies, eq(studyTags.studyId, studies.id))
       .where(
-        and(sql`${effectiveDate} >= ${startDate.toISOString()}`, sql`${effectiveDate} <= ${endDate.toISOString()}`),
+        and(
+          sql`${effectiveDate} >= ${startDate.toISOString()}`,
+          sql`${effectiveDate} <= ${endDate.toISOString()}`,
+          eq(studies.isExcluded, false),
+        ),
       );
 
     // Count keyword frequencies
@@ -653,7 +659,11 @@ export class TrendDetectionService {
       })
       .from(studies)
       .where(
-        and(sql`${effectiveDate} >= ${startDate.toISOString()}`, sql`${effectiveDate} <= ${endDate.toISOString()}`),
+        and(
+          sql`${effectiveDate} >= ${startDate.toISOString()}`,
+          sql`${effectiveDate} <= ${endDate.toISOString()}`,
+          eq(studies.isExcluded, false),
+        ),
       );
 
     const activity: Record<string, { count: number; studyIds: number[] }> = {};
@@ -678,6 +688,7 @@ export class TrendDetectionService {
           and(
             gte(studies.createdAt, startDate),
             lte(studies.createdAt, endDate),
+            eq(studies.isExcluded, false),
           ),
         ),
       db
@@ -687,6 +698,7 @@ export class TrendDetectionService {
           and(
             gte(studies.createdAt, startDate),
             lte(studies.createdAt, endDate),
+            eq(studies.isExcluded, false),
           ),
         ),
       db
@@ -699,6 +711,7 @@ export class TrendDetectionService {
           and(
             gte(studies.createdAt, startDate),
             lte(studies.createdAt, endDate),
+            eq(studies.isExcluded, false),
           ),
         )
         .groupBy(studies.category)

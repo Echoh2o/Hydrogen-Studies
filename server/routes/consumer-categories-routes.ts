@@ -171,7 +171,7 @@ router.get("/counts", async (req, res) => {
         FROM studies s
         INNER JOIN study_categories sc ON s.id = sc.study_id
         INNER JOIN categories c ON sc.category_id = c.id
-        WHERE c.name IN (
+        WHERE s.is_excluded = false AND c.name IN (
           'Cardiovascular', 'Neurological', 'Metabolic', 'Inflammation',
           'Respiratory', 'Gastrointestinal', 'Cancer Research', 'Kidney',
           'Dermatology', 'Aging', 'Fitness', 'Liver'
@@ -208,7 +208,7 @@ router.get("/counts", async (req, res) => {
       for (const [consumerName, dbCategories] of Object.entries(fallbackMapping)) {
         const placeholders = dbCategories.map((_, i) => `$${i + 1}`).join(', ');
         const result = await pool.query(
-          `SELECT COUNT(*) as count FROM studies WHERE category IN (${placeholders})`,
+          `SELECT COUNT(*) as count FROM studies WHERE is_excluded = false AND category IN (${placeholders})`,
           dbCategories
         );
         countMap[consumerName] = parseInt(result.rows[0]?.count || '0');
@@ -233,7 +233,7 @@ router.get("/counts", async (req, res) => {
       const params = keywords.flatMap(k => [`%${k}%`, `%${k}%`]);
       try {
         const result = await pool.query(
-          `SELECT COUNT(DISTINCT id) as count FROM studies WHERE ${likeClauses}`,
+          `SELECT COUNT(DISTINCT id) as count FROM studies WHERE is_excluded = false AND (${likeClauses})`,
           params
         );
         countMap[`__kw_${systemName}`] = parseInt(result.rows[0]?.count || '0');
@@ -255,7 +255,7 @@ router.get("/counts", async (req, res) => {
       const bsResults = await pool.query(`
         SELECT unnest(body_systems) as body_system, COUNT(DISTINCT id) as count
         FROM studies
-        WHERE body_systems IS NOT NULL AND array_length(body_systems, 1) > 0
+        WHERE body_systems IS NOT NULL AND array_length(body_systems, 1) > 0 AND is_excluded = false
         GROUP BY body_system
         ORDER BY count DESC
       `);
@@ -548,7 +548,7 @@ router.get("/studies", async (req, res) => {
                  publish_date as "publishDate", publish_year, category, doi,
                  image_url as "imageUrl", slug, consumer_categories
           FROM studies
-          WHERE ${likeClauses}
+          WHERE is_excluded = false AND (${likeClauses})
           ORDER BY publish_year DESC NULLS LAST, id DESC
           LIMIT 50
         `;
@@ -563,7 +563,7 @@ router.get("/studies", async (req, res) => {
           FROM studies s
           INNER JOIN study_categories sc ON s.id = sc.study_id
           INNER JOIN categories c ON sc.category_id = c.id
-          WHERE c.name = $1
+          WHERE c.name = $1 AND s.is_excluded = false
           ORDER BY s.publish_year DESC NULLS LAST, s.id DESC
           LIMIT 50
         `;
@@ -584,7 +584,7 @@ router.get("/studies", async (req, res) => {
                  publish_date as "publishDate", publish_year, category, doi,
                  image_url as "imageUrl", slug, consumer_categories
           FROM studies
-          WHERE EXISTS (
+          WHERE is_excluded = false AND EXISTS (
             SELECT 1 FROM unnest(health_conditions) AS hc
             WHERE LOWER(hc) = LOWER($1)
           )
@@ -612,7 +612,7 @@ router.get("/studies", async (req, res) => {
                      publish_date as "publishDate", publish_year, category, doi,
                      image_url as "imageUrl", slug, consumer_categories
               FROM studies
-              WHERE ${likeClauses}
+              WHERE is_excluded = false AND (${likeClauses})
               ORDER BY publish_year DESC NULLS LAST, id DESC
               LIMIT 50
             `;
@@ -646,7 +646,7 @@ router.get("/studies", async (req, res) => {
           SELECT id, title, abstract, authors, journal, publish_date as "publishDate",
                  category, doi, image_url as "imageUrl", slug
           FROM studies
-          WHERE title ILIKE ANY($1) OR abstract ILIKE ANY($2)
+          WHERE is_excluded = false AND (title ILIKE ANY($1) OR abstract ILIKE ANY($2))
           ORDER BY publish_year DESC NULLS LAST, id DESC
           LIMIT 50
         `;
@@ -699,7 +699,7 @@ router.get("/life-stages", async (req, res) => {
       lifeStages.map(async (stage) => {
         const likeTerms = stage.keywords.map((k) => `%${k}%`);
         const result = await pool.query(
-          `SELECT COUNT(*) as count FROM studies WHERE title ILIKE ANY($1) OR abstract ILIKE ANY($1)`,
+          `SELECT COUNT(*) as count FROM studies WHERE is_excluded = false AND (title ILIKE ANY($1) OR abstract ILIKE ANY($1))`,
           [likeTerms],
         );
         return { name: stage.name, count: parseInt(result.rows[0]?.count || "0"), description: stage.description };
@@ -789,7 +789,7 @@ router.get("/anchor-content/:type/:category", async (req, res) => {
       const dbCategory = categoryMap[decodedCategory];
       if (dbCategory) {
         const result = await db.select({ count: sql<number>`count(*)` }).from(studies)
-          .where(sql`LOWER(${studies.category}) LIKE ${`%${dbCategory.toLowerCase()}%`}`);
+          .where(sql`LOWER(${studies.category}) LIKE ${`%${dbCategory.toLowerCase()}%`} AND ${studies.isExcluded} = false`);
         studyCount = result[0]?.count || 0;
       }
     } catch (err) {

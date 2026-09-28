@@ -20,6 +20,12 @@ import type { PipelineQueueItem } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { ai } from "./ai-provider";
 import { logger } from "../utils/logger";
+import { checkStudyTopic, OffTopicStudyError } from "./study-topic-guard";
+
+/** Classifier input for a queued discovery item. */
+function topicInputOf(item: PipelineQueueItem) {
+  return { title: item.title, abstract: item.abstract, journal: item.journal };
+}
 
 // 3 (was 10): each item runs 6 sequential AI steps (~20-60s/item), and the
 // scheduler caps this job's whole run (see job-scheduler "pipeline-processing").
@@ -320,6 +326,22 @@ async function processItem(item: PipelineQueueItem): Promise<void> {
   let results = parseStepResults(item.stepResults);
   let currentStep = item.currentStep;
 
+  // Topic guard BEFORE any AI step: off-topic hydrogen-ENERGY papers (e.g.
+  // queued before the discovery filter existed) are rejected without spend.
+  const topic = checkStudyTopic(topicInputOf(item), "pipeline");
+  if (topic.excluded) {
+    await db
+      .update(pipelineQueue)
+      .set({
+        status: "rejected",
+        errorMessage: `Off-topic (${topic.reason})`,
+        processedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(pipelineQueue.id, item.id));
+    return;
+  }
+
   // Mark as processing
   await db
     .update(pipelineQueue)
@@ -414,6 +436,18 @@ export async function createStudyFromPipelineItem(pipelineItemId: number): Promi
 
   const item = claimed[0];
 
+  // Topic guard: never create a study for an off-topic hydrogen-ENERGY paper
+  // (items that reached awaiting_approval before the filter existed).
+  const topic = checkStudyTopic(topicInputOf(item), "pipeline-approve");
+  if (topic.excluded) {
+    await db
+      .update(pipelineQueue)
+      .set({ status: "rejected", errorMessage: `Off-topic (${topic.reason})`, updatedAt: new Date() })
+      .where(eq(pipelineQueue.id, pipelineItemId))
+      .catch(() => {});
+    throw new OffTopicStudyError(item.title, topic);
+  }
+
   try {
     const results = parseStepResults(item.stepResults);
     const studyId = await createStudyFromResults(item, results);
@@ -449,6 +483,8 @@ export async function processPipelineQueue(): Promise<{
   processed: number;
   succeeded: number;
   failed: number;
+  /** Off-topic hydrogen-energy items rejected by the topic guard. */
+  skippedOffTopic?: number;
 }> {
   // Get pending items (oldest first), limited to MAX_ITEMS_PER_CYCLE
   const pendingItems = await db
@@ -466,6 +502,7 @@ export async function processPipelineQueue(): Promise<{
 
   let succeeded = 0;
   let failed = 0;
+  let skippedOffTopic = 0;
 
   for (const item of pendingItems) {
     try {
@@ -496,6 +533,7 @@ export async function processPipelineQueue(): Promise<{
         "approved",
       ]);
       if (updated?.status && successStatuses.has(updated.status)) succeeded++;
+      else if (updated?.status === "rejected") skippedOffTopic++;
       else failed++;
     } catch (err) {
       // processItem catches its own errors — reaching here means something
@@ -511,9 +549,10 @@ export async function processPipelineQueue(): Promise<{
     processed: pendingItems.length,
     succeeded,
     failed,
+    skippedOffTopic,
   });
 
-  return { processed: pendingItems.length, succeeded, failed };
+  return { processed: pendingItems.length, succeeded, failed, skippedOffTopic };
 }
 
 /**

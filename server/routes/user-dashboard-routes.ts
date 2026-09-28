@@ -62,6 +62,8 @@ router.get("/dashboard", async (req: Request, res: Response) => {
         .where(and(
           eq(userStudyInteractions.userId, userId),
           eq(userStudyInteractions.isSaved, true),
+          // Excluded (off-topic, 410) studies drop out of dashboard links.
+          eq(studies.isExcluded, false),
         ))
         .orderBy(desc(userStudyInteractions.createdAt))
         .limit(20),
@@ -77,7 +79,7 @@ router.get("/dashboard", async (req: Request, res: Response) => {
       })
         .from(userReadingHistory)
         .innerJoin(studies, eq(studies.id, userReadingHistory.studyId))
-        .where(eq(userReadingHistory.userId, userId))
+        .where(and(eq(userReadingHistory.userId, userId), eq(studies.isExcluded, false)))
         .orderBy(desc(userReadingHistory.viewedAt))
         .limit(20),
 
