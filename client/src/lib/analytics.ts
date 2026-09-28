@@ -169,6 +169,16 @@ export const initAnalytics = () => {
   initAhrefs();
 };
 
+/**
+ * After `load`, analytics waits for the visitor's first interaction or this
+ * long, whichever comes first. `load` fires at ~0.2 s on this SPA, long before
+ * the API-driven LCP, so load + idle alone still let gtag.js compete with LCP
+ * (Lighthouse after #74: hub LCP 6.4–6.9 s vs 4.8 s with analytics blocked).
+ * Trade-off: a visit that leaves within this window without interacting
+ * records no page_view.
+ */
+export const ANALYTICS_START_DELAY_MS = 3500;
+const INTERACTION_EVENTS = ["pointerdown", "keydown", "scroll", "touchstart"] as const;
 /** Fallback delay after `load` where requestIdleCallback is missing (Safari). */
 export const ANALYTICS_IDLE_FALLBACK_MS = 1500;
 /** Upper bound on waiting for an idle period once `load` has fired. */
@@ -187,7 +197,8 @@ type IdleWindow = Window & {
  *  - consent defaults are queued immediately (queueGA — no network), so a
  *    choice made before the scripts load still applies ahead of `config`;
  *  - gtag.js + `config` (the initial page_view) and Ahrefs wait for the
- *    window `load` event, then an idle period (requestIdleCallback, or
+ *    window `load` event, then the first interaction or
+ *    ANALYTICS_START_DELAY_MS, then an idle period (requestIdleCallback, or
  *    setTimeout 1500 ms where it is unsupported).
  * /admin is never measured: nothing loads if the visitor is on /admin when
  * the deferred load runs. Idempotent. Called once from main.tsx.
@@ -213,10 +224,24 @@ export const scheduleAnalytics = () => {
       window.setTimeout(run, ANALYTICS_IDLE_FALLBACK_MS);
     }
   };
+  const afterInteractionOrDelay = () => {
+    let started = false;
+    const start = () => {
+      if (started) return;
+      started = true;
+      window.clearTimeout(timer);
+      for (const type of INTERACTION_EVENTS) window.removeEventListener(type, start, true);
+      whenIdle();
+    };
+    const timer = window.setTimeout(start, ANALYTICS_START_DELAY_MS);
+    for (const type of INTERACTION_EVENTS) {
+      window.addEventListener(type, start, { capture: true, passive: true });
+    }
+  };
   if (document.readyState === "complete") {
-    whenIdle();
+    afterInteractionOrDelay();
   } else {
-    window.addEventListener("load", whenIdle, { once: true });
+    window.addEventListener("load", afterInteractionOrDelay, { once: true });
   }
 };
 
