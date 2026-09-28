@@ -3128,3 +3128,11 @@ merge,9959,/blog/vital-reaction-side-effects,/blog/h2-tabs-side-effects
 merge,9881,/blog/vital-reaction-tablets-review-pillar,/blog/h2-tabs-side-effects
 # 2026-09-28 redirect repoint approved by Josh in session: "redirect approved"
 repoint,3475,/blog/hydrogen-water-health-benefits-for-athletes-what-2024-research-shows-565894,/hydrogen-for/athletic-performance
+# 2026-09-28 study exclusion (Josh in session: "Remove hydrogen energy studies."); scripts/content/exclude-energy-studies.ts --apply; 410 on /study/<slug>, /studies/<slug>, /study/id/<id>
+exclude-410,3592,/study/rational-comparison-of-biohydrogen-production-using-clostridium-species-through-dark-fermentation-during-anaerobic-batch-processes-1775650467180,-
+exclude-410,3720,/study/microbial-production-of-hydrogen-an-overview-1777577956372,-
+exclude-410,4120,/study/functional-microorganisms-in-hydrogen-production-mechanisms-and-applications-1777577956391,-
+exclude-410,4223,/study/the-global-hydrogen-budget-1777577956395,-
+exclude-410,4243,/study/mitigating-ammonia-inhibition-in-anaerobic-digestion-of-swine-manure-using-hydrogen-nanobubble-water-acclimation-multi-omics-insights-1782857395647,-
+exclude-410,4297,/study/existing-and-emerging-technologies-in-biohydrogen-production-mechanisms-and-influential-factors-for-sustainable-energy-transition-1788216910212,-
+exclude-410,4298,/study/hydrogen-producing-facultative-anaerobic-bacteria-isolated-from-kitchen-wastewater-for-sustainable-bioenergy-applications-1788216910213,- (was bogus auto-promoted 302 row 8929)

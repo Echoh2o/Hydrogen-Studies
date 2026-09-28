@@ -53,3 +53,16 @@ Rollback: `wave2/backup-molecular-hydrogen-benefits-guide-pillar-*.json`.
 `author_name = 'Hydrogen Studies Editorial Team'` set on the 6 wave-1 posts (what-is,
 side-effects, real-or-fake, how-much-per-day, kidneys, ppm-levels). They were published before
 the column existed (#67), so they showed no author.
+
+## Hydrogen-energy studies removed (410)
+
+Approved in session: "Remove hydrogen energy studies." Classifier `shared/study-topic-filter.ts` (#75)
+over all 2,292 studies; every flagged title read by hand. **7 studies**, listed in
+`reports/energy-studies-2026-09.csv`: biohydrogen/dark fermentation, microbial H2 production, the global
+hydrogen budget, and biogas digestion. The 23 Sep audit's "42" was an overcount: most energy-sounding
+titles are hydrogen nanomedicine (catalysts that generate H2 as a therapy) or gut-hydrogen biology,
+and those stay. Borderline items not removed: `reports/energy-studies-2026-09-borderline.csv`.
+`studies.is_excluded = true`, plus 410 rows for `/study/<slug>`, `/studies/<slug>` and `/study/id/<id>`.
+Row 8929 (bogus auto-promoted 302) was converted to 410. Traffic at stake: 173 impressions / 1 click in 90 days.
+Backup (full rows, git-ignored because it contains full abstracts): `reports/backups/study-exclusions/`.
+Revert: `npx tsx scripts/content/exclude-energy-studies.ts --ids reports/energy-studies-2026-09.csv --restore --apply`.
