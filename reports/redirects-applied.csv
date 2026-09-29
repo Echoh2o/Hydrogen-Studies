@@ -3230,3 +3230,6 @@ hub-301,-,/explore-by-condition/urinary-frequency,/explore-by-body-system/urinar
 merge,7492,/blog/how-to-use-hydrogen-water-for-anti-aging-a-science-backed-guide-617073,/explore-by-condition/skin-aging
 # 2026-09-29 wave-4 sleep hub launch (Josh: "New condition hub + 301" / "lets launch the sleep hub now"); scripts/content/launch-sleep-hub.sql
 hub-301,-,/explore-by-benefit/sleep,/explore-by-condition/sleep-quality
+# 2026-09-29 inhalation merges (Josh: "merge overlapping Inhalation")
+merge,9988,/blog/hydrogen-inhalation-dosage-guide,/blog/hydrogen-therapy-machine-home
+merge,9917,/blog/hydrogen-inhalation-benefits,/blog/molecular-hydrogen-benefits-guide-pillar
