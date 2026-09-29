@@ -1069,6 +1069,15 @@ pool.query("SELECT 1").then(async () => {
       { name: "024_add_sleep_quality_hub", up: addSleepQualityHub },
     ]);
 
+    // Hub lists cached by a prewarm that ran mid-migration would hide hub rows
+    // the migrations just added (404 for 30 min) — drop them.
+    try {
+      const { invalidateHubCaches } = await import("./middleware/seo-body-renderer");
+      invalidateHubCaches();
+    } catch (err: any) {
+      console.warn("Hub cache invalidation skipped:", err?.message ?? err);
+    }
+
     // Recover orphaned "processing" jobs — items whose worker crashed/restarted
     // mid-run. Done after migrations so the relevant tables are guaranteed
     // to exist. Non-fatal if it fails: background workers will keep running
