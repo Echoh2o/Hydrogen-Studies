@@ -127,6 +127,7 @@ import {
 } from "../middleware/seo-body-renderer";
 import { seoBotMiddleware, invalidateBotCache, resolveStaticPageMeta } from "../middleware/seo-bot-middleware";
 import { sendSpaShell, spaShellStatus } from "../middleware/explore-hub-404";
+import { CONDITION_HUB_STUDIES_HEADING, getConditionHubIntro } from "../../shared/condition-hub-intros";
 import hydrogenRoutes from "../routes/hydrogen-routes";
 import seoRoutes, { __resetSitemapCacheForTests } from "../routes/seo-routes";
 
@@ -377,9 +378,14 @@ describe("GET /api/explore/:type/:slug (SPA NotFound switch)", () => {
     expect(res.body.studies[0].excerpt).toBe("Abstract of kidney.");
 
     const body = (await renderPageBody("/explore-by-condition/kidney-health"))!;
-    expect(body).toContain("<h1>Hydrogen Research for Kidney Health</h1>");
-    expect(body).toContain("4 research studies on hydrogen therapy for kidney health.");
-    const listed = [...body.matchAll(/<a href="\/study\/([^"]+)">/g)].map((m) => m[1]);
+    // kidney-health carries the wave-3 evidence-graded intro (its own H1 and
+    // cited /study/ links), so read the study list from its section only.
+    expect(body).toContain(`<h1>${getConditionHubIntro("kidney-health")!.h1}</h1>`);
+    const start = body.indexOf(`<h2>${CONDITION_HUB_STUDIES_HEADING}</h2>`);
+    expect(start).toBeGreaterThan(-1);
+    const section = body.slice(start, body.indexOf("</section>", start));
+    expect(section).toContain("4 studies in our database.");
+    const listed = [...section.matchAll(/<a href="\/study\/([^"]+)">/g)].map((m) => m[1]);
     expect(listed).toEqual(res.body.studies.map((s: any) => s.slug));
     for (const q of state.conditionStudySql) expect(q.sql).toMatch(/is_excluded = false/);
   });
