@@ -12,14 +12,21 @@
  *  - FAQPage visibility                            #1
  *  - byline + Article JSON-LD                      #12
  *  - /hydrogen-for topic meta                      #7
+ *  - /hydrogen-for FAQ evidence guard (4–6 plain-text FAQs, no overclaims,
+ *    FAQPage == visible FAQ, sponsor card only on allowed topics)
  *  - condition-hub intro meta + FAQPage (keyword plan wave 3; full
  *    renderer coverage in condition-hub-intros.test.ts)
  */
 import { describe, it, expect, vi } from "vitest";
 
-// The condition-hub intro block renders through seo-body-renderer, which
-// imports the db module; these tests never query it (mocked-db convention).
-vi.mock("../db", () => ({ db: {}, pool: { query: () => new Promise(() => {}) } }));
+// The condition-hub intro block and the /hydrogen-for bot body render through
+// seo-body-renderer, which imports the db module. Every query returns no rows
+// (mocked-db convention): the FAQ, sponsor card and disclaimer come from the
+// shared topic record, not the database.
+vi.mock("../db", () => ({
+  db: { execute: async () => ({ rows: [] }) },
+  pool: { query: () => new Promise(() => {}) },
+}));
 
 import {
   BRIDGE_ALLOWED_TOPICS,
@@ -60,7 +67,8 @@ import {
 } from "../../shared/seo-markup";
 import { HYDROGEN_FOR_TOPICS } from "../../shared/hydrogen-for-topics";
 import { CONDITION_HUB_INTROS, conditionHubJsonLd } from "../../shared/condition-hub-intros";
-import { renderConditionHubIntroHtml } from "../middleware/seo-body-renderer";
+import { renderConditionHubIntroHtml, renderHydrogenForPage } from "../middleware/seo-body-renderer";
+import { resolveStaticPageMeta } from "../middleware/seo-bot-middleware";
 
 const UTM_RE = (campaign: string, content: string) =>
   new RegExp(
@@ -464,7 +472,6 @@ describe("/hydrogen-for topic records", () => {
       expect(t.metaTitle.endsWith(" | Hydrogen Studies"), t.slug).toBe(true);
       expect(t.metaDescription.length, t.slug).toBeGreaterThanOrEqual(140);
       expect(t.metaDescription.length, t.slug).toBeLessThanOrEqual(160);
-      expect(t.faqs.length, t.slug).toBeGreaterThan(0);
     }
   });
 
@@ -479,11 +486,12 @@ describe("/hydrogen-for topic records", () => {
   it("athletic-performance / skin-health FAQs: same questions, corrected (non-overclaiming) answers", () => {
     const athletic = HYDROGEN_FOR_TOPICS["athletic-performance"].faqs;
     const skin = HYDROGEN_FOR_TOPICS["skin-health"].faqs;
-    expect(athletic.map((f) => f.question)).toEqual([
+    // The 2026-09-29 corrections lead each page; the expansion appends.
+    expect(athletic.slice(0, 2).map((f) => f.question)).toEqual([
       "Does hydrogen water improve athletic performance?",
       "How does hydrogen water help with recovery?",
     ]);
-    expect(skin.map((f) => f.question)).toEqual([
+    expect(skin.slice(0, 2).map((f) => f.question)).toEqual([
       "Can hydrogen water improve skin health?",
       "How does hydrogen therapy help with anti-aging?",
     ]);
@@ -496,6 +504,112 @@ describe("/hydrogen-for topic records", () => {
       /improve endurance capacity|accelerate recovery|promote better skin hydration|may help reduce wrinkles|targets the most harmful free radicals/,
     );
   });
+
+  // The FAQs feed FAQPage JSON-LD, so they are this site's most-quoted health
+  // claims. Editorial rules (2026-09-29): state only what human evidence
+  // shows, with study type and size; label animal/cell findings; no
+  // treatment claims; send people with a disease to their clinician.
+  const ALL_FAQS = Object.values(HYDROGEN_FOR_TOPICS).flatMap((t) => t.faqs.map((f) => ({ slug: t.slug, ...f })));
+  const wordCount = (s: string) => s.trim().split(/\s+/).length;
+  const OVERCLAIMS: RegExp[] = [
+    /\b(several|multiple|many) (clinical |peer-reviewed )?studies (suggest|show|have shown|demonstrate)/i,
+    /\bstudies (show|have shown|demonstrate)\b/i,
+    /\bresearch suggests\b/i,
+    /\bgenerally (show|shown|considered)\b/i,
+    /\bmay (support|provide)\b/i,
+    /cross(es)? the blood-brain barrier/i,
+    /neuroprotective/i,
+    /renoprotective/i,
+    /improv\w* (renal|kidney) function/i,
+    /improv\w* symptoms in patients/i,
+    /selective antioxidant that targets/i,
+    /\bmay help\b/i,
+    /\b(anti-inflammatory|antioxidant) properties\b/i,
+    /most studied approach/i,
+    /\bcures?\b|\bheals?\b/i,
+  ];
+
+  it("every topic has 4–6 FAQs of 40–90 words, as plain self-contained text", () => {
+    for (const t of Object.values(HYDROGEN_FOR_TOPICS)) {
+      expect(t.faqs.length, t.slug).toBeGreaterThanOrEqual(4);
+      expect(t.faqs.length, t.slug).toBeLessThanOrEqual(6);
+    }
+    for (const f of ALL_FAQS) {
+      const label = `${f.slug}: ${f.question}`;
+      expect(wordCount(f.answer), label).toBeGreaterThanOrEqual(40);
+      expect(wordCount(f.answer), label).toBeLessThanOrEqual(90);
+      expect(f.question.endsWith("?"), label).toBe(true);
+      // No links, markdown, HTML or citation markers.
+      expect(f.answer, label).not.toMatch(/https?:|\]\(|\[\d+\]|\*\*|<\/?[a-z]/i);
+      expect(isPlaceholder(f.answer), label).toBe(false);
+    }
+  });
+
+  it("no FAQ answer repeats the old overclaims", () => {
+    for (const f of ALL_FAQS) {
+      for (const re of OVERCLAIMS) expect(f.answer, `${f.slug}: ${f.question}`).not.toMatch(re);
+    }
+  });
+
+  it("disease and gray-area pages point readers to a clinician", () => {
+    const CLINICIAN =
+      /\b(doctor|clinician|cardiologist|oncologist|oncology team|nephrologist|neurologist|pulmonologist|rheumatologist|dermatologist|pharmacist)\b/i;
+    for (const t of Object.values(HYDROGEN_FOR_TOPICS)) {
+      if (isBridgeAllowed(t.bridgeTopic)) continue;
+      expect(t.faqs.some((f) => CLINICIAN.test(f.answer)), t.slug).toBe(true);
+    }
+  });
+
+  it("product blurbs describe the product only (no efficacy claims)", () => {
+    for (const t of Object.values(HYDROGEN_FOR_TOPICS)) {
+      for (const p of t.products) {
+        expect(p.reason, `${t.slug}/${p.key}`).not.toMatch(
+          /recover|sore|relie[fv]|improv|boost|heal|reduc|support|protect|benefit|perform|hydrat/i,
+        );
+      }
+    }
+  });
+
+  it("FAQ questions are unique across /hydrogen-for pages and never repeat a condition-hub FAQ", () => {
+    const norm = (q: string) => q.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    const hubQuestions = new Set(Object.values(CONDITION_HUB_INTROS).flatMap((h) => h.faqs.map((f) => norm(f.question))));
+    const seen = new Set<string>();
+    for (const f of ALL_FAQS) {
+      const k = norm(f.question);
+      expect(seen.has(k), `duplicate question: ${f.question}`).toBe(false);
+      expect(hubQuestions.has(k), `repeats a condition-hub FAQ: ${f.question}`).toBe(false);
+      seen.add(k);
+    }
+  });
+
+  const escHtml = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+  it.each(Object.keys(HYDROGEN_FOR_TOPICS))(
+    "%s: FAQPage JSON-LD is exactly the FAQ the page shows; sponsor card only when allowed",
+    async (slug) => {
+      const topic = HYDROGEN_FOR_TOPICS[slug];
+      const ld = resolveStaticPageMeta(`/hydrogen-for/${slug}`)!.jsonLd as any;
+      expect(ld["@type"]).toBe("FAQPage");
+      const pairs = ld.mainEntity.map((q: any) => ({ question: q.name, answer: q.acceptedAnswer.text }));
+      expect(pairs).toEqual(topic.faqs.map(({ question, answer }) => ({ question, answer })));
+
+      const html = await renderHydrogenForPage(slug);
+      expect(html, slug).toBeTruthy();
+      expect(faqPairsIfVisible(pairs, html!), slug).toEqual(pairs);
+      for (const f of topic.faqs) expect(html, f.question).toContain(`<p>${escHtml(f.answer)}</p>`);
+
+      if (isBridgeAllowed(topic.bridgeTopic)) {
+        expect(html).toContain("From our sponsor, Echo Water");
+        expect(html!.replace(/&amp;/g, "&")).toMatch(UTM_RE("hydrogen-for", slug));
+        for (const p of topic.products) expect(html).toContain(escHtml(p.reason));
+      } else {
+        // The footer's funding disclosure stays; product content does not.
+        expect(html).not.toContain("From our sponsor");
+        expect(html).not.toMatch(/echowater\.com\/products\//);
+      }
+    },
+  );
 });
 
 // ── Keyword plan wave 3: evidence-graded condition hubs ─────────
