@@ -1,4 +1,9 @@
 import { abstractExcerpt } from "@shared/seo-markup";
+import {
+  exploreIndexCopy,
+  studyCountLabel,
+  type ExploreHubSummary,
+} from "@shared/explore-hubs";
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import AnchorContent from "@/components/AnchorContent";
@@ -12,12 +17,17 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import { Link, useRoute } from "wouter";
 import { Loader2 } from "lucide-react";
 import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
 import PageBreadcrumb from "@/components/seo/PageBreadcrumb";
+import { Skeleton } from "@/components/ui/skeleton";
+import ExploreHubDetail from "@/components/explore/ExploreHubDetail";
+
+const SITE_URL = "https://hydrogenstudies.com";
+const INDEX_PATH = "/explore-by-benefit";
 
 // Condition-focused categories
 const conditionCategories = [
@@ -67,7 +77,21 @@ interface ConsumerCategory {
   lifeStage: string[];
 }
 
+/**
+ * /explore-by-benefit. Title, description, H1, intro and the linked benefit
+ * hubs match the crawler index: the hubs come from
+ * GET /api/explore/benefit/hubs (= seo-body-renderer getLiveExploreHubs — the
+ * curated BENEFIT_HUB_SLUGS whose page lists ≥1 study), so browsers and bots
+ * link exactly the same /explore-by-benefit/<slug> URLs with the same counts.
+ * The condition / body-system / life-stage tabs below are an in-page browser
+ * (cards are buttons, not links).
+ */
 const ExploreByBenefit: React.FC = () => {
+  const copy = exploreIndexCopy("benefit");
+  const { data: hubsData, isLoading: hubsLoading } = useQuery<{ hubs: ExploreHubSummary[] }>({
+    queryKey: ["/api/explore/benefit/hubs"],
+  });
+  const hubs = hubsData?.hubs ?? [];
   const [selectedModel, setSelectedModel] = useState<string>("condition");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
@@ -211,20 +235,60 @@ const ExploreByBenefit: React.FC = () => {
         ]} />
       </div>
       <Helmet>
-        <title>Explore Studies by Health Benefit - Hydrogen Studies</title>
-        <meta name="description" content="Browse hydrogen research studies organized by health benefit. Discover how molecular hydrogen supports different aspects of health." />
-        <meta property="og:title" content="Explore Studies by Health Benefit - Hydrogen Studies" />
-        <meta property="og:description" content="Browse hydrogen research studies organized by health benefit. Discover how molecular hydrogen supports different aspects of health." />
+        <title>{copy.title}</title>
+        <meta name="description" content={copy.description} />
+        <meta property="og:title" content={copy.title} />
+        <meta property="og:description" content={copy.description} />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://hydrogenstudies.com/explore-by-benefit" />
+        <meta property="og:url" content={`${SITE_URL}${INDEX_PATH}`} />
         <meta name="twitter:card" content="summary" />
-        <link rel="canonical" href="https://hydrogenstudies.com/explore-by-benefit" />
+        <link rel="canonical" href={`${SITE_URL}${INDEX_PATH}`} />
       </Helmet>
       <div className="container mx-auto py-8">
-        <h1 className="text-3xl font-bold mb-6 text-center">
-          Explore Hydrogen Research by Health Benefits
-        </h1>
+        <h1 className="text-3xl font-bold mb-6 text-center">{copy.h1}</h1>
 
+        <p className="text-center mb-8 max-w-3xl mx-auto text-muted-foreground">
+          {copy.intro}
+        </p>
+
+        {hubsLoading ? (
+          // Reserve the grid's height so the tabs/footer don't jump (CLS).
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-12 min-h-[40vh]" aria-busy="true">
+            {Array(6)
+              .fill(0)
+              .map((_, i) => (
+                <Card key={i} className="overflow-hidden">
+                  <CardHeader className="p-4">
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-5 w-24 mt-2" />
+                  </CardHeader>
+                </Card>
+              ))}
+          </div>
+        ) : hubs.length > 0 ? (
+          <section className="mb-12" aria-label="Benefit hubs">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {hubs.map((hub) => (
+                <Link key={hub.slug} href={hub.path}>
+                  <Card className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
+                    <CardHeader className="p-4">
+                      <CardTitle className="text-xl">{hub.name}</CardTitle>
+                      <div>
+                        <Badge variant="outline" className="mt-1">
+                          {studyCountLabel(hub.studyCount)}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        <h2 className="text-2xl font-semibold mb-2 text-center">
+          Browse by Condition, Body System or Life Stage
+        </h2>
         <p className="text-center mb-8 max-w-3xl mx-auto text-muted-foreground">
           Browse hydrogen health studies organized by health conditions, body
           systems, and life stages to find research most relevant to your
@@ -472,3 +536,22 @@ const ExploreByBenefit: React.FC = () => {
 };
 
 export default ExploreByBenefit;
+
+/**
+ * /explore-by-benefit/:benefit — had no browser route (crawlers got the hub,
+ * browsers the SPA NotFound). Same shared hub page as the demographic and
+ * delivery-method hubs: title, H1, intro, canonical and study list match the
+ * crawler HTML; a slug that isn't a benefit hub renders NotFound (HTTP 404
+ * from the server too).
+ */
+export const BenefitDetailPage: React.FC = () => {
+  const [, params] = useRoute("/explore-by-benefit/:benefit");
+  const slug = (params?.benefit || "").toLowerCase();
+  return (
+    <ExploreHubDetail
+      type="benefit"
+      slug={slug}
+      parent={{ label: "Benefits", href: INDEX_PATH }}
+    />
+  );
+};

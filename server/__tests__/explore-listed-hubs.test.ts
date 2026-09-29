@@ -173,9 +173,17 @@ describe.each([
 });
 
 describe("GET /api/explore/:type/hubs guards", () => {
-  it("404s for hub types without a curated list", async () => {
-    for (const type of ["mechanism", "benefit", "nope"]) {
+  it("404s for types without a hub list", async () => {
+    for (const type of ["body-system", "nope", "benefits"]) {
       expect((await request(apiApp()).get(`/api/explore/${type}/hubs`)).status).toBe(404);
+    }
+  });
+
+  it("serves every listed type (benefit, life-stage, mechanism since the hub-404 change) and condition", async () => {
+    for (const type of ["demographic", "delivery-method", "benefit", "life-stage", "mechanism", "condition"]) {
+      const res = await request(apiApp()).get(`/api/explore/${type}/hubs`);
+      expect(res.status, type).toBe(200);
+      expect(Array.isArray(res.body.hubs), type).toBe(true);
     }
   });
 });

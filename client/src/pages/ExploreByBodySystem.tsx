@@ -47,8 +47,13 @@ const ExploreByBodySystem = () => {
       categoriesData.data &&
       categoriesData.data.body_system
     ) {
+      // Only categories that map to a canonical hub (the list the crawler
+      // index links). "Renal System", "Hematological System" and "Whole Body"
+      // have none: their slugified long-tail URLs are 404s (bots and browsers).
       // Map icons to each category
-      const mappedCategories = categoriesData.data.body_system.map(
+      const mappedCategories = categoriesData.data.body_system
+        .filter((cat: BodySystemCategory) => bodySystemHubPathForValue(cat.name) !== null)
+        .map(
         (cat: BodySystemCategory) => {
           let icon;
 
@@ -219,14 +224,9 @@ const ExploreByBodySystem = () => {
                 </CardContent>
                 <CardFooter className="flex justify-center pb-6">
                   {/* The canonical hub (sitemap list, shared with the crawler
-                      index) when the category has one; otherwise its own
-                      long-tail page, which also resolves. */}
-                  <Link
-                    href={
-                      bodySystemHubPathForValue(category.name) ??
-                      `/explore-by-body-system/${category.name.toLowerCase().replace(/\s+/g, "-")}`
-                    }
-                  >
+                      index). Categories without one are filtered out above —
+                      long-tail body-system pages are 404s. */}
+                  <Link href={bodySystemHubPathForValue(category.name)!}>
                     <Button className="mt-2">
                       Browse Studies <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>

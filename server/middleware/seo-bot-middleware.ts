@@ -34,6 +34,7 @@ import {
   exploreDetailMeta,
   exploreIndexCopy,
   mechanismHubMeta,
+  type ListedExploreHubType,
 } from "../../shared/explore-hubs";
 import { marked } from "marked";
 
@@ -267,7 +268,7 @@ export function buildBlogMeta(blog: any): PageMeta {
   };
 }
 
-function exploreIndexMeta(type: "demographic" | "delivery-method"): { title: string; description: string } {
+function exploreIndexMeta(type: ListedExploreHubType): { title: string; description: string } {
   const { title, description } = exploreIndexCopy(type);
   return { title, description };
 }
@@ -328,21 +329,14 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
       title: `Hydrogen Research by Body System | ${SITE_NAME}`,
       description: "Browse hydrogen therapy studies organized by body system — brain, heart, digestive, immune, musculoskeletal, and more."
     },
-    "/explore-by-mechanism": {
-      title: `Hydrogen Delivery Mechanisms Research | ${SITE_NAME}`,
-      description: "Explore research on different hydrogen delivery methods — hydrogen water, inhalation therapy, hydrogen-rich saline, and more."
-    },
-    "/explore-by-life-stage": {
-      title: `Hydrogen Research by Life Stage | ${SITE_NAME}`,
-      description: "Find hydrogen therapy research relevant to your life stage — pregnancy, childhood, adults, elderly, and athletes."
-    },
-    // Shared with the SPA index pages (same title/description for browsers).
+    // Shared index copy (shared/explore-hubs.ts exploreIndexCopy) — the SPA
+    // demographic, delivery-method and benefit indexes render the same
+    // title/description for browsers.
+    "/explore-by-mechanism": exploreIndexMeta("mechanism"),
+    "/explore-by-life-stage": exploreIndexMeta("life-stage"),
     "/explore-by-demographic": exploreIndexMeta("demographic"),
     "/explore-by-delivery-method": exploreIndexMeta("delivery-method"),
-    "/explore-by-benefit": {
-      title: `Hydrogen Research by Health Benefit | ${SITE_NAME}`,
-      description: "Browse hydrogen therapy research organized by health benefit — antioxidant, anti-inflammatory, neuroprotective, and more."
-    },
+    "/explore-by-benefit": exploreIndexMeta("benefit"),
     "/learn/basics": {
       title: `Hydrogen Therapy Basics | ${SITE_NAME}`,
       description: "Everything you need to know about molecular hydrogen therapy — what it is, how it works, and what the research shows."
@@ -777,7 +771,7 @@ export async function prewarmBotCache(staticPath: string): Promise<void> {
       if (row.slug) paths.push(`/blog/${row.slug}`);
     }
 
-    // All condition slugs
+    // All condition slugs (a row whose page lists no study renders no body → not cached)
     const condRows = await database.execute(sql`SELECT slug FROM health_conditions WHERE slug IS NOT NULL`);
     for (const row of (condRows.rows || []) as any[]) {
       if (row.slug) paths.push(`/explore-by-condition/${row.slug}`);

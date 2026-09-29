@@ -363,7 +363,7 @@ const HydrogenTherapyGuide = () => {
                     suitable for metabolic, digestive, and systemic conditions.
                   </p>
                   <div className="mt-6">
-                    <Link href="/explore-by-delivery-method/hydrogen-water">
+                    <Link href="/explore-by-mechanism/hydrogen-water">
                       <Button variant="outline" className="flex items-center">
                         View Hydrogen Water Studies
                         <MoveRight className="ml-2 h-4 w-4" />
@@ -413,7 +413,7 @@ const HydrogenTherapyGuide = () => {
                     for therapeutic applications.
                   </p>
                   <div className="mt-6">
-                    <Link href="/explore-by-delivery-method/hydrogen-inhalation">
+                    <Link href="/explore-by-mechanism/hydrogen-inhalation">
                       <Button variant="outline" className="flex items-center">
                         View Inhalation Studies
                         <MoveRight className="ml-2 h-4 w-4" />
@@ -463,7 +463,7 @@ const HydrogenTherapyGuide = () => {
                     absorption.
                   </p>
                   <div className="mt-6">
-                    <Link href="/explore-by-delivery-method/hydrogen-bath">
+                    <Link href="/explore-by-mechanism/hydrogen-bath">
                       <Button variant="outline" className="flex items-center">
                         View Bath Therapy Studies
                         <MoveRight className="ml-2 h-4 w-4" />
@@ -506,7 +506,7 @@ const HydrogenTherapyGuide = () => {
                     effects in underlying tissues.
                   </p>
                   <div className="mt-6">
-                    <Link href="/explore-by-delivery-method/topical-hydrogen">
+                    <Link href="/explore-by-mechanism/topical-hydrogen">
                       <Button variant="outline" className="flex items-center">
                         View Topical Application Studies
                         <MoveRight className="ml-2 h-4 w-4" />
@@ -569,7 +569,7 @@ const HydrogenTherapyGuide = () => {
                   </li>
                 </ul>
                 <div className="mt-6">
-                  <Link href="/explore-by-body-system/cardiovascular system">
+                  <Link href="/explore-by-body-system/cardiovascular">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -623,7 +623,7 @@ const HydrogenTherapyGuide = () => {
                   </li>
                 </ul>
                 <div className="mt-6">
-                  <Link href="/explore-by-body-system/nervous system">
+                  <Link href="/explore-by-body-system/brain-nervous-system">
                     <Button
                       variant="ghost"
                       size="sm"

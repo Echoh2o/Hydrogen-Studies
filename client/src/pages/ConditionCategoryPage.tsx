@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
 import { Heart, Calendar, Book, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,21 +12,23 @@ import {
 import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
-import { abstractExcerpt, excerptAtWord } from "@shared/seo-markup";
+import { excerptAtWord } from "@shared/seo-markup";
+import { retryUnlessNotFound } from "@/components/explore/ExploreHubDetail";
 
+/** Row of GET /api/explore/condition/:slug/studies (seo-body-renderer ConditionHubStudy). */
 interface Study {
-  id: number;
+  slug: string;
   title: string;
-  abstract: string;
-  publishDate: string;
-  journal: string;
-  slug?: string;
-  doi?: string | null;
-  fullText?: string | null;
-  methods?: string | null;
-  results?: string | null;
-  conclusions?: string | null;
-  imageUrl?: string | null;
+  publish_year: number | null;
+  journal: string | null;
+  study_type: string | null;
+  /** ≤300-char abstract excerpt, "" when there is no real abstract. */
+  excerpt: string;
+}
+
+interface ConditionHubStudies {
+  hub: { slug: string; name: string; description: string | null };
+  studies: Study[];
 }
 
 const ConditionCategoryPage = () => {
@@ -62,68 +64,28 @@ const ConditionCategoryPage = () => {
   const slugToTitle = (slug: string) =>
     slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   const exactCategoryName = categoryMap[decodedName] || slugToTitle(decodedName);
-  const displayName = exactCategoryName;
 
-  const [studies, setStudies] = useState<Study[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Fetch studies for this condition category using the consumer categories API
-  useEffect(() => {
-    const fetchStudies = async () => {
-      setIsLoading(true);
-      try {
-        // Use the consumer categories API with the model and category parameters
-        const response = await fetch(
-          `/api/consumer-categories/studies?model=condition&category=${encodeURIComponent(displayName)}`,
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.data) {
-            setStudies(data.data);
-          } else {
-            console.warn("No studies found or invalid response format:", data);
-            setStudies([]);
-          }
-        } else {
-          console.error(
-            "Failed API response:",
-            response.status,
-            response.statusText,
-          );
-          setError("Failed to load studies for this condition");
-          setStudies([]);
-        }
-      } catch (err) {
-        console.error(`Error fetching studies for ${displayName}:`, err);
-        setError("Error loading studies. Please try again.");
-        setStudies([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (displayName) {
-      fetchStudies();
-    }
-  }, [displayName]);
-
-  // Format a date string to a readable format
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "Date unknown";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
+  // The ONE condition-hub study query the crawler page lists too
+  // (seo-body-renderer getConditionHubStudies: name tag OR hub synonyms), so
+  // browsers and bots list the same studies in the same order. This page used
+  // to read /api/consumer-categories/studies (different matching: 50 studies
+  // on kidney-health where the crawler listed 0). Unknown hubs 404 there and
+  // App's ExploreHubGate renders NotFound.
+  const hubSlug = decodedName.toLowerCase();
+  const { data, isLoading, isError } = useQuery<ConditionHubStudies>({
+    queryKey: [`/api/explore/condition/${encodeURIComponent(hubSlug)}/studies`],
+    enabled: !!hubSlug,
+    retry: retryUnlessNotFound,
+  });
+  const studies = data?.studies ?? [];
+  const error = isError;
+  // The hub's own name ("Anxiety & Stress") once loaded — same as the crawler H1.
+  const displayName = data?.hub.name ?? exactCategoryName;
 
   // Short abstract excerpt; "" when there is no real abstract (no
   // "No abstract available" placeholder — CLAUDE.md).
   const truncateText = (text: string, maxLength: number = 200) =>
-    excerptAtWord(abstractExcerpt(text), maxLength);
+    excerptAtWord(text, maxLength);
 
   return (
     <>
@@ -184,7 +146,7 @@ const ConditionCategoryPage = () => {
                 itemListElement: studies.map((study, index) => ({
                   "@type": "ListItem",
                   position: index + 1,
-                  url: `https://hydrogenstudies.com/study/${study.slug || `id/${study.id}`}`,
+                  url: `https://hydrogenstudies.com/study/${study.slug}`,
                   name: study.title,
                 })),
               },
@@ -240,32 +202,38 @@ const ConditionCategoryPage = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   {studies.map((study) => (
                     <Card
-                      key={study.id}
+                      key={study.slug}
                       className="overflow-hidden hover:shadow-md transition-shadow duration-200"
                     >
                       <CardHeader className="pb-2">
                         <CardTitle className="text-xl">{study.title}</CardTitle>
-                        <div className="flex items-center text-sm text-neutral-500 mt-2">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          <span>{formatDate(study.publishDate)}</span>
-                          {study.journal && (
-                            <>
-                              <span className="mx-2">•</span>
-                              <Book className="h-4 w-4 mr-1" />
-                              <span>{study.journal}</span>
-                            </>
-                          )}
-                        </div>
+                        {study.publish_year || study.journal ? (
+                          <div className="flex items-center text-sm text-neutral-500 mt-2">
+                            {study.publish_year ? (
+                              <>
+                                <Calendar className="h-4 w-4 mr-1" />
+                                <span>{study.publish_year}</span>
+                              </>
+                            ) : null}
+                            {study.publish_year && study.journal ? <span className="mx-2">•</span> : null}
+                            {study.journal ? (
+                              <>
+                                <Book className="h-4 w-4 mr-1" />
+                                <span>{study.journal}</span>
+                              </>
+                            ) : null}
+                          </div>
+                        ) : null}
                       </CardHeader>
-                      {truncateText(study.abstract) && (
+                      {truncateText(study.excerpt) && (
                         <CardContent>
                           <p className="text-neutral-700">
-                            {truncateText(study.abstract)}
+                            {truncateText(study.excerpt)}
                           </p>
                         </CardContent>
                       )}
                       <CardFooter>
-                        <Link href={study.slug ? `/study/${study.slug}` : `/study/id/${study.id}`}>
+                        <Link href={`/study/${study.slug}`}>
                           <Button>View Full Study</Button>
                         </Link>
                       </CardFooter>

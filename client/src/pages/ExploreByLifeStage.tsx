@@ -1,17 +1,15 @@
-import { useState, useEffect } from "react";
+import type { ReactNode } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Baby,
   User,
-  CalendarClock,
-  Users,
   ArrowRight,
   Loader2,
   Dumbbell,
   Heart,
   Sparkles,
 } from "lucide-react";
+import { studyCountLabel, type ExploreHubSummary } from "@shared/explore-hubs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Helmet } from "react-helmet";
@@ -19,107 +17,34 @@ import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
 import PageBreadcrumb from "@/components/seo/PageBreadcrumb";
 
-interface LifeStageCategory {
-  name: string;
-  count: number;
-  description?: string;
-  icon?: React.ReactNode;
-}
+const LIFE_STAGE_ICONS: Record<string, ReactNode> = {
+  pregnancy: <Heart className="h-12 w-12 text-pink-500" />,
+  adults: <User className="h-12 w-12 text-purple-500" />,
+  athletes: <Dumbbell className="h-12 w-12 text-teal-600" />,
+};
 
-interface ApiResponse {
-  success: boolean;
-  data?: {
-    life_stage: Array<{
-      name: string;
-      count: number;
-    }>;
-  };
-  error?: string;
-}
+const LIFE_STAGE_DESCRIPTIONS: Record<string, string> = {
+  pregnancy:
+    "Research on the safety and potential benefits of hydrogen therapy during pregnancy and for maternal health.",
+  adults:
+    "Research examining hydrogen therapy for general wellness and specific health concerns in the adult population.",
+  athletes:
+    "Studies investigating how hydrogen supplementation may affect athletic performance, recovery, and sports-related health.",
+};
 
+/**
+ * /explore-by-life-stage — links exactly the hubs the crawler index links
+ * (GET /api/explore/life-stage/hubs = seo-body-renderer getLiveExploreHubs:
+ * the sitemap life-stage hubs whose page lists ≥1 study). It used to link
+ * /api/consumer-categories names (adolescents, older-adults, men's-health,
+ * women's-health, …) — none of them a hub, so those URLs are 404s.
+ */
 const ExploreByLifeStage = () => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [categories, setCategories] = useState<LifeStageCategory[]>([]);
-  const [error, setError] = useState<string | null>(null);
-
-  const { data: categoriesData } = useQuery<ApiResponse>({
-    queryKey: ["/api/consumer-categories/counts"],
+  const { data, isLoading, isError } = useQuery<{ hubs: ExploreHubSummary[] }>({
+    queryKey: ["/api/explore/life-stage/hubs"],
   });
-
-  useEffect(() => {
-    if (
-      categoriesData &&
-      categoriesData.success &&
-      categoriesData.data &&
-      categoriesData.data.life_stage
-    ) {
-      // Map icons to each category
-      const mappedCategories = categoriesData.data.life_stage.map(
-        (cat: LifeStageCategory) => {
-          let icon;
-
-          switch (cat.name) {
-            case "Adolescents":
-              icon = <Baby className="h-12 w-12 text-teal-400" />;
-              break;
-            case "Adults":
-              icon = <User className="h-12 w-12 text-purple-500" />;
-              break;
-            case "Older Adults":
-              icon = <CalendarClock className="h-12 w-12 text-amber-600" />;
-              break;
-            case "Men's Health":
-              icon = <Users className="h-12 w-12 text-blue-600" />;
-              break;
-            case "Women's Health":
-              icon = <Heart className="h-12 w-12 text-pink-500" />;
-              break;
-            case "Athletes":
-              icon = <Dumbbell className="h-12 w-12 text-teal-600" />;
-              break;
-            default:
-              icon = <Sparkles className="h-12 w-12 text-teal-500" />;
-          }
-
-          return {
-            ...cat,
-            icon,
-          };
-        },
-      );
-
-      setCategories(mappedCategories);
-      setIsLoading(false);
-    } else if (categoriesData?.error) {
-      setError("Failed to load life stage categories");
-      setIsLoading(false);
-    }
-  }, [categoriesData]);
-
-  // Add descriptions for each life stage category
-  const getLifeStageDescription = (name: string): string => {
-    const descriptions: { [key: string]: string } = {
-      "Infants & Newborns":
-        "Research on how hydrogen therapy may affect the health and development of babies in their first months of life.",
-      "Children & Adolescents":
-        "Studies investigating hydrogen's potential benefits for growth, development, and pediatric health conditions.",
-      Adults:
-        "Research examining hydrogen therapy for general wellness and specific health concerns in the adult population.",
-      "Older Adults":
-        "Studies focused on hydrogen's effects on age-related conditions, cognitive health, and overall wellness in seniors.",
-      "Pregnant Women":
-        "Research on the safety and potential benefits of hydrogen therapy during pregnancy and for maternal health.",
-      Athletes:
-        "Studies investigating how hydrogen supplementation may affect athletic performance, recovery, and sports-related health.",
-      "People with Chronic Conditions":
-        "Research focused on how hydrogen therapy may benefit those with long-term health conditions.",
-    };
-
-    return (
-      descriptions[name] ||
-      "Scientific research exploring how molecular hydrogen therapy affects individuals in this life stage."
-    );
-  };
+  const hubs = data?.hubs ?? [];
+  const error = isError ? "Failed to load life stage categories" : null;
 
   if (isLoading) {
     return (
@@ -175,25 +100,27 @@ const ExploreByLifeStage = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {categories.map((category) => (
+            {hubs.map((hub) => (
               <Card
-                key={category.name}
+                key={hub.slug}
                 className="overflow-hidden hover:shadow-md transition-shadow duration-200"
               >
-                <div className="flex justify-center pt-8">{category.icon}</div>
+                <div className="flex justify-center pt-8">
+                  {LIFE_STAGE_ICONS[hub.slug] ?? <Sparkles className="h-12 w-12 text-teal-500" />}
+                </div>
                 <CardContent className="pt-6 text-center">
-                  <h2 className="text-xl font-bold mb-2">{category.name}</h2>
+                  <h2 className="text-xl font-bold mb-2">{hub.name}</h2>
+                  {LIFE_STAGE_DESCRIPTIONS[hub.slug] ? (
+                    <p className="text-neutral-600 text-sm mb-4">{LIFE_STAGE_DESCRIPTIONS[hub.slug]}</p>
+                  ) : null}
                   <div className="flex items-center justify-center">
                     <span className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-full">
-                      {category.count}{" "}
-                      {category.count === 1 ? "study" : "studies"}
+                      {studyCountLabel(hub.studyCount)}
                     </span>
                   </div>
                 </CardContent>
                 <CardFooter className="flex justify-center pb-6">
-                  <Link
-                    href={`/explore-by-life-stage/${encodeURIComponent(category.name.toLowerCase().replace(/\s+/g, "-"))}`}
-                  >
+                  <Link href={hub.path}>
                     <Button className="mt-2">
                       Browse Studies <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>

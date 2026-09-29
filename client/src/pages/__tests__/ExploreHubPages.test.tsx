@@ -21,6 +21,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Router, Route } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
 import {
+  BENEFIT_HUB_SLUGS,
   DEMOGRAPHIC_HUB_SLUGS,
   DELIVERY_METHOD_HUB_SLUGS,
   exploreDetailCopy,
@@ -32,10 +33,16 @@ import {
 vi.mock("@/components/layout/SiteHeader", () => ({ default: () => null }));
 
 import { getQueryFn } from "@/lib/queryClient";
-import { MechanismDetailPage } from "../ExploreByMechanism";
+import ExploreByMechanismPage, { MechanismDetailPage } from "../ExploreByMechanism";
 import LifeStageCategoryPage from "../LifeStageCategoryPage";
 import ExploreByDemographicPage, { DemographicDetailPage } from "../ExploreByDemographic";
 import ExploreByDeliveryMethodPage, { DeliveryMethodDetailPage } from "../ExploreByDeliveryMethod";
+import ExploreByBenefit, { BenefitDetailPage } from "../ExploreByBenefit";
+import ExploreByLifeStage from "../ExploreByLifeStage";
+import ExploreByCondition from "../ExploreByCondition";
+import ConditionCategoryPage from "../ConditionCategoryPage";
+import ExploreByBodySystem from "../ExploreByBodySystem";
+import ExploreHubGate from "@/components/explore/ExploreHubGate";
 
 function renderAt(path: string, pattern: string, component: any) {
   const { hook } = memoryLocation({ path });
@@ -99,8 +106,8 @@ describe("LifeStageCategoryPage (/explore-by-life-stage/:category)", () => {
     fetchMock.mockImplementation(async () =>
       new Response(JSON.stringify({ success: true, data: [] }), { status: 200 }),
     );
-    renderAt("/explore-by-life-stage/elderly-aging", "/explore-by-life-stage/:category", LifeStageCategoryPage);
-    await waitFor(() => expect(canonical()).toBe("https://hydrogenstudies.com/explore-by-life-stage/elderly-aging"));
+    renderAt("/explore-by-life-stage/adults", "/explore-by-life-stage/:category", LifeStageCategoryPage);
+    await waitFor(() => expect(canonical()).toBe("https://hydrogenstudies.com/explore-by-life-stage/adults"));
     expect(document.head.innerHTML).not.toContain("hydrogenstudies.com/life-stage/");
   });
 
@@ -267,5 +274,256 @@ describe("ExploreByDeliveryMethodPage (/explore-by-delivery-method)", () => {
     const copy = exploreIndexCopy("delivery-method");
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(copy.h1);
     await waitFor(() => expect(document.title).toBe(copy.title));
+  });
+});
+
+// ── Benefit hubs + unknown-hub NotFound (2026-09-28, hub-404 change) ──
+//
+// /explore-by-benefit/:slug rendered for crawlers but had no browser route.
+// Unknown hub slugs must render the site's NotFound (noindex) — the server
+// sends those URLs with HTTP 404 and the explore APIs answer 404.
+
+function respond404() {
+  return new Response(JSON.stringify({ error: "Not found" }), { status: 404 });
+}
+
+const robots = () => document.head.querySelector('meta[name="robots"]')?.getAttribute("content");
+
+describe("BenefitDetailPage (/explore-by-benefit/:benefit)", () => {
+  it.each([...BENEFIT_HUB_SLUGS])("%s: H1, intro, title and canonical match the crawler HTML", async (slug) => {
+    fetchMock.mockImplementation(async () => respondJson({ studies: hubStudies }));
+    renderAt(`/explore-by-benefit/${slug}`, "/explore-by-benefit/:benefit", BenefitDetailPage);
+
+    const { h1, intro } = exploreDetailCopy(slug);
+    const meta = exploreDetailMeta("benefit", slug);
+    expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent(h1);
+    expect(screen.getByText(intro)).toBeInTheDocument();
+    await waitFor(() => expect(document.title).toBe(meta.title));
+    await waitFor(() => expect(canonical()).toBe(`https://hydrogenstudies.com/explore-by-benefit/${slug}`));
+    expect(fetchMock).toHaveBeenCalledWith(`/api/explore/benefit/${slug}/studies`, expect.anything());
+  });
+
+  it("lists the crawler's studies from the shared endpoint", async () => {
+    fetchMock.mockImplementation(async () => respondJson({ studies: hubStudies }));
+    const { container } = renderAt("/explore-by-benefit/antioxidant", "/explore-by-benefit/:benefit", BenefitDetailPage);
+    expect(await screen.findByText("Hydrogen water in elite athletes")).toBeInTheDocument();
+    expect(hrefsIn(container, 'a[href^="/study/"]')).toEqual(["/study/athletes-trial-1", "/study/athletes-trial-2"]);
+    // Breadcrumb parent = the crawler's ("Benefits" → /explore-by-benefit).
+    expect(hrefsIn(container, 'a[href="/explore-by-benefit"]').length).toBeGreaterThan(0);
+  });
+
+  it("reserves the viewport while the list loads (CLS)", async () => {
+    fetchMock.mockImplementation(() => new Promise(() => {}));
+    renderAt("/explore-by-benefit/antioxidant", "/explore-by-benefit/:benefit", BenefitDetailPage);
+    await screen.findByRole("heading", { level: 1 });
+    expect(document.querySelector('[aria-busy="true"]')!.className).toContain("min-h-screen");
+  });
+});
+
+describe.each([
+  { label: "benefit", url: "/explore-by-benefit/xyzzy", pattern: "/explore-by-benefit/:benefit", Page: BenefitDetailPage },
+  { label: "demographic", url: "/explore-by-demographic/xyzzy", pattern: "/explore-by-demographic/:demographic", Page: DemographicDetailPage },
+  { label: "delivery-method", url: "/explore-by-delivery-method/tablets", pattern: "/explore-by-delivery-method/:method", Page: DeliveryMethodDetailPage },
+  { label: "mechanism", url: "/explore-by-mechanism/antioxidant", pattern: "/explore-by-mechanism/:mechanism", Page: MechanismDetailPage },
+])("unknown $label hub", ({ url, pattern, Page }) => {
+  it("renders the site's NotFound page with noindex — never an empty hub", async () => {
+    fetchMock.mockImplementation(async () => respond404());
+    renderAt(url, pattern, Page);
+    expect(await screen.findByRole("heading", { level: 1, name: "Page Not Found" })).toBeInTheDocument();
+    await waitFor(() => expect(robots()).toBe("noindex, follow"));
+    expect(screen.queryByText(/Hydrogen Therapy Research$/)).toBeNull();
+    // A 404 is an answer, not a transient error: no retry.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("ExploreHubGate (condition / body-system / life-stage hub pages)", () => {
+  function Child() {
+    return <h1>Real hub page</h1>;
+  }
+  const gated = (type: "condition" | "body-system" | "life-stage") =>
+    function Gated({ params }: { params: { slug: string } }) {
+      return (
+        <ExploreHubGate type={type} slug={params.slug}>
+          <Child />
+        </ExploreHubGate>
+      );
+    };
+
+  it.each([
+    ["condition", "general-health-conditions"],
+    ["body-system", "molecular"],
+    ["life-stage", "adolescents"],
+  ] as const)("%s/%s: a 404 from /api/explore/:type/:slug renders NotFound (noindex)", async (type, slug) => {
+    fetchMock.mockImplementation(async () => respond404());
+    renderAt(`/explore-by-${type}/${slug}`, `/explore-by-${type}/:slug`, gated(type));
+    expect(await screen.findByRole("heading", { level: 1, name: "Page Not Found" })).toBeInTheDocument();
+    await waitFor(() => expect(robots()).toBe("noindex, follow"));
+    expect(screen.queryByText("Real hub page")).toBeNull();
+    expect(fetchMock).toHaveBeenCalledWith(`/api/explore/${type}/${slug}`, expect.anything());
+  });
+
+  it("a real hub renders its page (no waiting on the check)", async () => {
+    let resolve!: (r: Response) => void;
+    fetchMock.mockImplementation(() => new Promise<Response>((r) => (resolve = r)));
+    renderAt("/explore-by-condition/type-2-diabetes", "/explore-by-condition/:slug", gated("condition"));
+    expect(screen.getByText("Real hub page")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith("/api/explore/condition/type-2-diabetes", expect.anything()),
+    );
+    resolve(respondJson({ type: "condition", slug: "type-2-diabetes", path: "/explore-by-condition/type-2-diabetes" }));
+    await waitFor(() => expect(screen.getByText("Real hub page")).toBeInTheDocument());
+    expect(screen.queryByText("Page Not Found")).toBeNull();
+  });
+
+  it("a server error keeps the page (only a 404 means 'no such hub')", async () => {
+    fetchMock.mockImplementation(async () => new Response("boom", { status: 500 }));
+    renderAt("/explore-by-condition/type-2-diabetes", "/explore-by-condition/:slug", gated("condition"));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.getByText("Real hub page")).toBeInTheDocument();
+    expect(screen.queryByText("Page Not Found")).toBeNull();
+  });
+});
+
+// ── Index pages link exactly the crawler index's hubs ───────────
+
+describe("ExploreByBenefit (/explore-by-benefit)", () => {
+  const hubs = [
+    { slug: "antioxidant", name: "Antioxidant", path: "/explore-by-benefit/antioxidant", studyCount: 80 },
+    { slug: "longevity", name: "Longevity", path: "/explore-by-benefit/longevity", studyCount: 1 },
+  ];
+
+  it("links exactly GET /api/explore/benefit/hubs, with counts; title/H1/canonical = crawler index", async () => {
+    fetchMock.mockImplementation(async (url: string) =>
+      url === "/api/explore/benefit/hubs"
+        ? respondJson({ hubs })
+        : respondJson({ success: true, data: { condition: [], body_system: [], life_stage: [] } }),
+    );
+    const { container } = renderAt("/explore-by-benefit", "/explore-by-benefit", ExploreByBenefit);
+    expect(await screen.findByText("Antioxidant")).toBeInTheDocument();
+    expect(hrefsIn(container, 'a[href^="/explore-by-benefit/"]')).toEqual(hubs.map((h) => h.path));
+    expect(screen.getByText("80 studies")).toBeInTheDocument();
+    expect(screen.getByText("1 study")).toBeInTheDocument();
+    const copy = exploreIndexCopy("benefit");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(copy.h1);
+    expect(screen.getByText(copy.intro)).toBeInTheDocument();
+    await waitFor(() => expect(document.title).toBe(copy.title));
+    await waitFor(() => expect(canonical()).toBe("https://hydrogenstudies.com/explore-by-benefit"));
+    // The in-page tabs browser is still there (E2E: "shows three categorization tabs").
+    expect(screen.getByRole("tab", { name: /condition/i })).toBeInTheDocument();
+  });
+
+  it("reserves the hub grid's height while loading (CLS)", async () => {
+    fetchMock.mockImplementation(() => new Promise(() => {}));
+    renderAt("/explore-by-benefit", "/explore-by-benefit", ExploreByBenefit);
+    await screen.findByRole("heading", { level: 1 });
+    const busy = document.querySelector('[aria-busy="true"]');
+    expect(busy!.className).toContain("min-h-[40vh]");
+  });
+});
+
+describe.each([
+  {
+    type: "life-stage",
+    Page: ExploreByLifeStage,
+    hubs: [
+      { slug: "pregnancy", name: "Pregnancy", path: "/explore-by-life-stage/pregnancy", studyCount: 17 },
+      { slug: "athletes", name: "Athletes", path: "/explore-by-life-stage/athletes", studyCount: 12 },
+    ],
+    stale: /\/explore-by-life-stage\/(adolescents|older-adults|men|women)/,
+  },
+  {
+    type: "mechanism",
+    Page: ExploreByMechanismPage,
+    hubs: [
+      { slug: "hydrogen-water", name: "Hydrogen Water", path: "/explore-by-mechanism/hydrogen-water", studyCount: 75 },
+      { slug: "hydrogen-gas", name: "Hydrogen Gas", path: "/explore-by-mechanism/hydrogen-gas", studyCount: 100 },
+    ],
+    stale: /\/explore-by-mechanism\/(antioxidant|gene-expression)/,
+  },
+  {
+    type: "condition",
+    Page: ExploreByCondition,
+    hubs: [
+      { slug: "oxidative-stress", name: "Oxidative Stress", path: "/explore-by-condition/oxidative-stress", studyCount: 2356 },
+      { slug: "type-2-diabetes", name: "Type 2 Diabetes", path: "/explore-by-condition/type-2-diabetes", studyCount: 265 },
+    ],
+    stale: /\/explore-by-condition\/heart-disease-hypertension/,
+  },
+])("/explore-by-$type index", ({ type, Page, hubs, stale }) => {
+  it("links only GET /api/explore/:type/hubs (the crawler index's list)", async () => {
+    fetchMock.mockImplementation(async (url: string) =>
+      url === `/api/explore/${type}/hubs`
+        ? respondJson({ hubs })
+        : url === "/api/mechanisms"
+          ? respondJson([{ id: 1, slug: "antioxidant", name: "Antioxidant", studyCount: 3 }])
+          : respondJson({
+              success: true,
+              data: {
+                condition: [{ name: "Heart Disease & Hypertension", count: 0 }],
+                body_system: [],
+                life_stage: [{ name: "Adolescents", count: 0 }, { name: "Older Adults", count: 0 }],
+              },
+            }),
+    );
+    const { container } = renderAt(`/explore-by-${type}`, `/explore-by-${type}`, Page);
+    expect((await screen.findAllByText(hubs[0].name)).length).toBeGreaterThan(0);
+    const linked = Array.from(new Set(hrefsIn(container, `a[href^="/explore-by-${type}/"]`)));
+    expect(linked.sort()).toEqual(hubs.map((h) => h.path).sort());
+    expect(container.innerHTML).not.toMatch(stale);
+    expect(fetchMock).toHaveBeenCalledWith(`/api/explore/${type}/hubs`, expect.anything());
+  });
+});
+
+describe("ExploreByBodySystem (/explore-by-body-system)", () => {
+  it("links canonical hubs only — categories without one ('Whole Body', 'Renal System') are not linked", async () => {
+    fetchMock.mockImplementation(async () =>
+      respondJson({
+        success: true,
+        data: {
+          condition: [],
+          life_stage: [],
+          body_system: [
+            { name: "Cardiovascular System", count: 65 },
+            { name: "Nervous System", count: 512 },
+            { name: "Renal System", count: 7 },
+            { name: "Whole Body", count: 60 },
+          ],
+        },
+      }),
+    );
+    const { container } = renderAt("/explore-by-body-system", "/explore-by-body-system", ExploreByBodySystem);
+    expect(await screen.findByText("Cardiovascular System")).toBeInTheDocument();
+    expect(hrefsIn(container, 'a[href^="/explore-by-body-system/"]').sort()).toEqual([
+      "/explore-by-body-system/brain-nervous-system",
+      "/explore-by-body-system/cardiovascular",
+    ]);
+    expect(screen.queryByText("Whole Body")).toBeNull();
+  });
+});
+
+describe("ConditionCategoryPage (/explore-by-condition/:category) — the crawler's study list", () => {
+  const payload = {
+    hub: { slug: "kidney-health", name: "Kidney Health", description: null },
+    studies: [
+      { slug: "kidney-1", title: "Hydrogen protects the kidney", publish_year: 2024, journal: "J K", study_type: "animal", excerpt: "Renal injury was reduced." },
+      { slug: "kidney-2", title: "H2 in dialysis patients", publish_year: null, journal: null, study_type: null, excerpt: "" },
+    ],
+  };
+
+  it("lists GET /api/explore/condition/:slug/studies (the shared query), not consumer categories", async () => {
+    fetchMock.mockImplementation(async () => respondJson(payload));
+    const { container } = renderAt("/explore-by-condition/kidney-health", "/explore-by-condition/:category", ConditionCategoryPage);
+    expect(await screen.findByText("Hydrogen protects the kidney")).toBeInTheDocument();
+    expect(hrefsIn(container, 'a[href^="/study/"]')).toEqual(["/study/kidney-1", "/study/kidney-2"]);
+    expect(screen.getByText("Renal injury was reduced.")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith("/api/explore/condition/kidney-health/studies", expect.anything());
+    const urls = fetchMock.mock.calls.map((c) => String(c[0]));
+    expect(urls.some((u) => u.startsWith("/api/consumer-categories/"))).toBe(false);
+    // The hub's own name (same as the crawler H1).
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Kidney Health");
+    // No placeholder for the study with no year/journal/excerpt.
+    expect(container.innerHTML).not.toMatch(/Date unknown|No abstract/i);
   });
 });
