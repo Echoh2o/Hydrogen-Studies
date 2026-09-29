@@ -57,4 +57,27 @@ describe("logger", () => {
     expect(output).toContain("userId");
     expect(output).toContain("123");
   });
+
+  it("masks customer emails in messages, nested data and error text", async () => {
+    process.env.NODE_ENV = "production";
+    const { logger } = await import("../utils/logger");
+    logger.info("Order created for jane.doe@example.com", "Shopify", {
+      email: "jane.doe@example.com",
+      order: { customer: { email: "b@shop.co.uk" }, tags: ["x@y.io"] },
+      totalPrice: "297.65",
+    });
+    logger.error("Sync failed", new Error("duplicate: sam+test@gmail.com"), "Shopify");
+    const out = (console.log as any).mock.calls[0][0] + (console.error as any).mock.calls[0][0];
+    expect(out).not.toMatch(/jane\.doe@|b@shop|x@y\.io|sam\+test@/);
+    expect(out).toContain("j***@example.com");
+    expect(out).toContain("b***@shop.co.uk");
+    expect(out).toContain("s***@gmail.com");
+    expect(out).toContain("297.65");
+  });
+
+  it("maskEmail leaves non-email text alone", async () => {
+    const { maskEmail } = await import("../utils/logger");
+    expect(maskEmail("no pii here, v1.2@3 nope")).toBe("no pii here, v1.2@3 nope");
+    expect(maskEmail("a@b.com and cc@dd.org")).toBe("a***@b.com and c***@dd.org");
+  });
 });
