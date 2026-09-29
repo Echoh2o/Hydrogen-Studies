@@ -54,7 +54,7 @@ export const CONDITION_HUB_TERMS: Readonly<Record<string, readonly string[]>> = 
     "inflammation", "inflammatory", "anti-inflammatory", "cytokine", "nf-kb", "nf-κb", "il-6", "tnf",
     "c-reactive protein", "nlrp3", "inflammasome",
   ],
-  // Wave 4 (2026-10-05): precise phrases only — bare "sleep" adds ~13
+  // Wave 4 (2026-09-29): precise phrases only — bare "sleep" adds ~13
   // sleep-apnea animal models and no human studies; "anesthe"/"melatonin"
   // are mostly off-topic (scratchpad sleep-terms census, 2026-09-29).
   "sleep-quality": [

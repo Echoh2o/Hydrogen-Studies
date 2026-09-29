@@ -1,11 +1,11 @@
--- Wave 4 launch (on/after 2026-10-05, AFTER the PR with migration 024 has deployed).
+-- Wave 4 launch (2026-09-29, AFTER the PR with migration 024 has deployed).
 -- Approved by Josh 2026-09-29: "set up the sleep hub for wave 4" + "New condition hub + 301".
 -- Run: railway run -- sh -c 'psql "$DATABASE_PUBLIC_URL" -X -f scripts/content/launch-sleep-hub.sql'
 \set ON_ERROR_STOP on
 begin;
 -- 1. One sleep hub: the benefit hub that went live 2026-09-28 (no traffic) 301s to the condition hub.
 insert into redirects (from_path, to_path, status_code, is_active, note)
-  select '/explore-by-benefit/sleep', '/explore-by-condition/sleep-quality', 301, true, 'wave 4 2026-10-05: single sleep hub (Josh approved 2026-09-29)'
+  select '/explore-by-benefit/sleep', '/explore-by-condition/sleep-quality', 301, true, 'wave 4 2026-09-29: single sleep hub (Josh approved 2026-09-29)'
   where not exists (select 1 from redirects where lower(from_path) = '/explore-by-benefit/sleep');
 update redirects set to_path = '/explore-by-condition/sleep-quality', status_code = 301, is_active = true where lower(from_path) = '/explore-by-benefit/sleep';
 insert into redirect_actions_log (action, from_path, to_path, status_code, actor, note) values ('hub-301', '/explore-by-benefit/sleep', '/explore-by-condition/sleep-quality', 301, 'claude-code (approved: josh 2026-09-29 ''New condition hub + 301'')', 'wave 4 launch');

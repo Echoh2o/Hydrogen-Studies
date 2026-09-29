@@ -102,7 +102,7 @@ export const DELIVERY_METHOD_HUB_SLUGS: readonly string[] = [
  * longevity 3.
  */
 // "sleep" moved to the /explore-by-condition/sleep-quality hub (wave 4,
-// 2026-10-05; /explore-by-benefit/sleep 301s there — owner approved).
+// 2026-09-29; /explore-by-benefit/sleep 301s there — owner approved).
 export const BENEFIT_HUB_SLUGS: readonly string[] = [
   "antioxidant", "neuroprotective", "cardioprotective", "radioprotective",
   "exercise-performance", "endurance", "wound-healing", "longevity",

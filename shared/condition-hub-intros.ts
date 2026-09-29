@@ -512,7 +512,7 @@ This page covers sleep quality in adults. Insomnia and sleep apnea are medical c
     ],
     ownerLink: { href: "/blog/molecular-hydrogen-benefits-guide-pillar#can-hydrogen-water-help-with-sleep-mood-or-stress", label: "Can hydrogen water help with sleep, mood or stress? From our evidence-graded benefits guide" },
     bridgeTopic: null,
-    lastReviewed: "2026-10-05",
+    lastReviewed: "2026-09-29",
   },
 };
 
