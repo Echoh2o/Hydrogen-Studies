@@ -6,6 +6,7 @@
  */
 
 import { db } from "../db";
+import { headingId } from "../../shared/heading-id";
 import { sql } from "drizzle-orm";
 import { sanitizeArticleHtml } from "../utils/sanitize-html";
 import { marked } from "marked";
@@ -88,10 +89,6 @@ function esc(str: string | null | undefined): string {
 function truncate(str: string, max: number): string {
   if (!str || str.length <= max) return str || "";
   return str.substring(0, max - 3) + "...";
-}
-
-function slugify(str: string): string {
-  return str.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
 function fmtDate(d: string | Date | null | undefined): string {
@@ -484,8 +481,12 @@ export function renderBylineHtml(by: BlogByline): string {
  */
 function markdownToHtml(md: string): string {
   const html = marked.parse(md, { async: false }) as string;
-  return html.replace(/<h([23])>([^<]+)<\/h\1>/g,
-    (_m, lvl, text) => `<h${lvl} id="${slugify(text)}">${text}</h${lvl}>`);
+  // Same id rule as the SPA (shared/heading-id): visible text with inline
+  // tags stripped and entities decoded.
+  return html.replace(/<h([23])>([\s\S]*?)<\/h\1>/g, (m, lvl, inner) => {
+    const id = headingId(inner.replace(/<[^>]*>/g, ""));
+    return id ? `<h${lvl} id="${id}">${inner}</h${lvl}>` : m;
+  });
 }
 
 // ── Data queries ──────────────────────────────────────────────

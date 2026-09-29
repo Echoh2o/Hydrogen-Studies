@@ -30,3 +30,8 @@ Backups and published copies: `wave2-leftovers/`.
 - PR #84 was merged. Migration 024 added the hub row and it went live at 04:54 UTC. The 30-minute delay came from a boot cache warm-up that ran before the migration; it's fixed in this PR (hub caches are invalidated after migrations).
 - `scripts/content/launch-sleep-hub.sql`: adds the 301 `/explore-by-benefit/sleep` → `/explore-by-condition/sleep-quality` and tags 6 cited human trials "Sleep Quality".
 - The benefits guide's sleep section now includes the null double-blind jelly trial (Higashikawa 2026) and links to the hub (`reports/content/wave4/benefits-guide`).
+
+## Overlapping inhalation posts merged (Josh: "merge overlapping Inhalation")
+- `/blog/hydrogen-inhalation-dosage-guide` (id 9988) was merged into `/blog/hydrogen-therapy-machine-home`. The machine guide now has a table of the hydrogen doses used in 10 human studies.
+- `/blog/hydrogen-inhalation-benefits` (id 9917) was merged into `/blog/molecular-hydrogen-benefits-guide-pillar`, which covers inhaled-hydrogen trials in its evidence table.
+- Both had tiny search traffic (under 30 impressions in 90 days) and no inbound links or redirects. Backups: `inhalation-merge/`.
