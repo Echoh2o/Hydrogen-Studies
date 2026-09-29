@@ -6,7 +6,7 @@ import { generateBlogArticlesForStudy } from "./blog-generator-enhanced";
 import { getCrossRefArticleByDOI } from "./crossref-api";
 import { db } from "../db";
 import { studies, blogArticles } from "@shared/schema";
-import { eq, sql, asc, isNotNull } from "drizzle-orm";
+import { and, eq, sql, asc, isNotNull } from "drizzle-orm";
 import { logger } from "../utils/logger";
 import { withAdvisoryLock } from "../utils/advisory-lock";
 
@@ -1000,7 +1000,19 @@ export class JobScheduler {
         firstErrors: summary.firstErrors.length > 0 ? summary.firstErrors : undefined,
       });
     } catch (err) {
-      logger.error("Shopify customer reconcile error", err, "JobScheduler");
+      // A failed run waits the full interval too — without this a rejected
+      // token retried every scheduler tick (~9 min), logging the same 401.
+      this.lastShopifyReconcileCheck = new Date();
+      const message = err instanceof Error ? err.message : String(err);
+      if (/\b(401|403)\b/.test(message)) {
+        logger.warn(
+          "Shopify customer reconcile skipped: SHOPIFY_ACCESS_TOKEN was rejected — rotate it in Railway (retrying in 24h)",
+          "JobScheduler",
+          { error: message.slice(0, 200) },
+        );
+      } else {
+        logger.error("Shopify customer reconcile error", err, "JobScheduler");
+      }
     }
   }
 
@@ -1675,10 +1687,21 @@ export class JobScheduler {
    * Job 10: Study Metadata Freshness Check
    * Runs once per week on Sundays — re-fetches metadata for the oldest-checked studies
    * from CrossRef to detect updates (corrected abstracts, new authors, updated titles, etc.).
-   * Processes 100 studies per run, ordered by lastModified ASC (NULLs first).
+   * Processes 100 studies per run, ordered by freshness_checked_at ASC (NULLs
+   * first = never checked); every attempt is stamped, so failures rotate too.
    */
   private async runMetadataFreshnessJob() {
     try {
+      // The in-memory marker resets on every deploy, which re-ran this job
+      // (100 CrossRef calls) on every boot — fall back to the newest
+      // freshness_checked_at in the DB.
+      if (!this.lastFreshnessCheck) {
+        const latest = await db
+          .select({ at: sql<Date | null>`max(${studies.freshnessCheckedAt})` })
+          .from(studies);
+        const at = latest[0]?.at;
+        if (at) this.lastFreshnessCheck = new Date(at);
+      }
       if (this.lastFreshnessCheck) {
         const elapsed = Date.now() - this.lastFreshnessCheck.getTime();
         if (elapsed < this.FRESHNESS_CHECK_INTERVAL_MS) return;
@@ -1690,7 +1713,7 @@ export class JobScheduler {
 
       logger.info("Running study metadata freshness check", "JobScheduler");
 
-      // Query 100 studies with DOIs, ordered by lastModified ASC (NULLs first = never checked)
+      // Query 100 studies with DOIs, least recently checked first (NULLs = never checked)
       const staleStudies = await db
         .select({
           id: studies.id,
@@ -1703,8 +1726,8 @@ export class JobScheduler {
           doi: studies.doi,
         })
         .from(studies)
-        .where(isNotNull(studies.doi))
-        .orderBy(asc(studies.lastModified))
+        .where(and(isNotNull(studies.doi), eq(studies.isExcluded, false)))
+        .orderBy(sql`${studies.freshnessCheckedAt} ASC NULLS FIRST`, asc(studies.id))
         .limit(100);
 
       if (staleStudies.length === 0) {
@@ -1732,8 +1755,8 @@ export class JobScheduler {
           checked++;
 
           if (!crossrefResponse?.message) {
-            // Touch lastModified so this study rotates to the back of the queue
-            await db.update(studies).set({ lastModified: new Date() }).where(eq(studies.id, study.id));
+            // Rotate to the back of the queue (no metadata change → lastModified untouched)
+            await db.update(studies).set({ freshnessCheckedAt: new Date() }).where(eq(studies.id, study.id));
             continue;
           }
 
@@ -1842,11 +1865,13 @@ export class JobScheduler {
             }
           }
 
-          // Always touch lastModified to rotate this study to the back of the queue
-          changes.lastModified = new Date();
+          // Rotate this study to the back of the queue on every attempt; bump
+          // lastModified (which feeds sitemap <lastmod>) only on a real change.
+          changes.freshnessCheckedAt = new Date();
 
           // Apply updates
           if (changedFields.length > 0) {
+            changes.lastModified = new Date();
             await db.update(studies).set(changes).where(eq(studies.id, study.id));
             updated++;
             changedStudies.push({ id: study.id, fields: changedFields });
@@ -1855,11 +1880,17 @@ export class JobScheduler {
               changedFields,
             });
           } else {
-            // Just update lastModified timestamp to rotate queue
-            await db.update(studies).set({ lastModified: new Date() }).where(eq(studies.id, study.id));
+            await db.update(studies).set({ freshnessCheckedAt: new Date() }).where(eq(studies.id, study.id));
           }
         } catch (studyError) {
           failed++;
+          // Rotate failures too (e.g. a DOI CrossRef doesn't index → 404):
+          // otherwise the same studies head the queue every run.
+          await db
+            .update(studies)
+            .set({ freshnessCheckedAt: new Date() })
+            .where(eq(studies.id, study.id))
+            .catch(() => {});
           logger.warn("Freshness check failed for study", "JobScheduler:Freshness", {
             studyId: study.id,
             error: studyError instanceof Error ? studyError.message : String(studyError),
