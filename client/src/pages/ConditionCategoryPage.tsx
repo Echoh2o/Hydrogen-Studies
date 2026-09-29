@@ -21,6 +21,7 @@ import {
 } from "@shared/condition-hub-intros";
 import { retryUnlessNotFound } from "@/components/explore/ExploreHubDetail";
 import { ConditionHubIntro, ConditionHubOwnerGuide } from "@/components/explore/ConditionHubIntro";
+import { useScrollToHash } from "@/hooks/use-scroll-to-hash";
 
 const SITE_URL = "https://hydrogenstudies.com";
 
@@ -88,6 +89,8 @@ const ConditionCategoryPage = () => {
   });
   const studies = data?.studies ?? [];
   const error = isError;
+  // Section links into the intro/FAQ/sources, after the study list settles.
+  useScrollToHash(!isLoading);
   // The hub's own name ("Anxiety & Stress") once loaded — same as the crawler H1.
   const displayName = data?.hub.name ?? exactCategoryName;
 

@@ -26,6 +26,7 @@ import {
 import { trackOutboundClick } from "@/lib/analytics";
 import { useEchoPageContext } from "@/hooks/use-echo-link";
 import { buildBlogMarkdownComponents } from "@/components/blog/markdown-components";
+import { useScrollToHash } from "@/hooks/use-scroll-to-hash";
 import { Byline } from "@/components/blog/Byline";
 
 const SITE_URL = "https://hydrogenstudies.com";
@@ -143,6 +144,9 @@ function BlogPageContent() {
     queryKey: [`/api/studies/${blog?.studyId}`],
     enabled: !!blog?.studyId,
   });
+
+  // Section links (…#is-hydrogen-flammable) once the article has rendered.
+  useScrollToHash(!!blog && !isLoading);
 
   // Show loading state
   if (isLoading) {
