@@ -2,9 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Baby,
   User,
-  CalendarClock,
   ArrowRight,
   Loader2,
   Dumbbell,
@@ -21,21 +19,15 @@ import PageBreadcrumb from "@/components/seo/PageBreadcrumb";
 
 const LIFE_STAGE_ICONS: Record<string, ReactNode> = {
   pregnancy: <Heart className="h-12 w-12 text-pink-500" />,
-  "infants-children": <Baby className="h-12 w-12 text-teal-400" />,
   adults: <User className="h-12 w-12 text-purple-500" />,
-  "elderly-aging": <CalendarClock className="h-12 w-12 text-amber-600" />,
   athletes: <Dumbbell className="h-12 w-12 text-teal-600" />,
 };
 
 const LIFE_STAGE_DESCRIPTIONS: Record<string, string> = {
   pregnancy:
     "Research on the safety and potential benefits of hydrogen therapy during pregnancy and for maternal health.",
-  "infants-children":
-    "Studies investigating hydrogen's potential benefits for growth, development, and pediatric health conditions.",
   adults:
     "Research examining hydrogen therapy for general wellness and specific health concerns in the adult population.",
-  "elderly-aging":
-    "Studies focused on hydrogen's effects on age-related conditions, cognitive health, and overall wellness in seniors.",
   athletes:
     "Studies investigating how hydrogen supplementation may affect athletic performance, recovery, and sports-related health.",
 };

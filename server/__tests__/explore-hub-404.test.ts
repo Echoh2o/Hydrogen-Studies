@@ -221,7 +221,8 @@ describe("exploreHubExists — one rule per hub type", () => {
     ["mechanism", "hydrogen-bath", true],
     ["mechanism", "antioxidant", false],
     ["life-stage", "pregnancy", true],
-    ["life-stage", "infants-children", true],
+    ["life-stage", "infants-children", false],
+    ["life-stage", "elderly-aging", false],
     ["life-stage", "adolescents", false],
     ["life-stage", "older-adults", false],
     // demographic / delivery-method / benefit: curated AND ≥1 study

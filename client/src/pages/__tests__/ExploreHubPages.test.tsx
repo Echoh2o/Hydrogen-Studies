@@ -106,8 +106,8 @@ describe("LifeStageCategoryPage (/explore-by-life-stage/:category)", () => {
     fetchMock.mockImplementation(async () =>
       new Response(JSON.stringify({ success: true, data: [] }), { status: 200 }),
     );
-    renderAt("/explore-by-life-stage/elderly-aging", "/explore-by-life-stage/:category", LifeStageCategoryPage);
-    await waitFor(() => expect(canonical()).toBe("https://hydrogenstudies.com/explore-by-life-stage/elderly-aging"));
+    renderAt("/explore-by-life-stage/adults", "/explore-by-life-stage/:category", LifeStageCategoryPage);
+    await waitFor(() => expect(canonical()).toBe("https://hydrogenstudies.com/explore-by-life-stage/adults"));
     expect(document.head.innerHTML).not.toContain("hydrogenstudies.com/life-stage/");
   });
 

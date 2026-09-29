@@ -495,9 +495,7 @@ router.get("/sitemap-explore.xml", async (req: Request, res: Response) => {
 
     // Predefined life stage pages — same path helper as the SPA canonical
     // (LifeStageCategoryPage), so the two can't drift apart again. All valid
-    // hubs (exploreHubExists); infants-children and elderly-aging list no
-    // study (2026-09-28) — proposed for removal in
-    // reports/hub-404-impact-2026-09-28.csv, pending owner approval.
+    // hubs (exploreHubExists).
     for (const ls of LIFE_STAGE_HUB_SLUGS) {
       urls.push(`  <url>
     <loc>${SITE_URL}${exploreHubPath("life-stage", ls)}</loc>

@@ -55,9 +55,13 @@ export const MECHANISM_HUB_SLUGS: readonly string[] = [
   "hydrogen-bath", "topical-hydrogen", "hydrogen-gas",
 ];
 
-/** Life-stage hubs advertised in sitemap-explore.xml. */
+/**
+ * Life-stage hubs advertised in sitemap-explore.xml. infants-children and
+ * elderly-aging were removed 2026-09-28 (0 studies; owner approved 404 +
+ * sitemap removal — reports/hub-404-impact-2026-09-28.csv).
+ */
 export const LIFE_STAGE_HUB_SLUGS: readonly string[] = [
-  "pregnancy", "infants-children", "adults", "elderly-aging", "athletes",
+  "pregnancy", "adults", "athletes",
 ];
 
 /**
