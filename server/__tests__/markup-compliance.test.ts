@@ -500,10 +500,10 @@ describe("/hydrogen-for topic records", () => {
 
 // ── Keyword plan wave 3: evidence-graded condition hubs ─────────
 
-describe("condition hub intro records (/explore-by-condition, wave 3)", () => {
+describe("condition hub intro records (/explore-by-condition, waves 3–4)", () => {
   it("meta title ≤ 60 incl. suffix, description 140–160, no product bridge", () => {
     expect(Object.keys(CONDITION_HUB_INTROS).sort()).toEqual([
-      "chronic-fatigue", "exercise-recovery", "kidney-health", "skin-aging",
+      "chronic-fatigue", "exercise-recovery", "kidney-health", "skin-aging", "sleep-quality",
     ]);
     for (const r of Object.values(CONDITION_HUB_INTROS)) {
       expect(r.metaTitle.length, r.slug).toBeLessThanOrEqual(60);

@@ -17,6 +17,7 @@ import {
   CONDITION_HUB_OWNER_GUIDE_LEAD,
   CONDITION_HUB_SOURCES_HEADING,
   CONDITION_HUB_STUDIES_HEADING,
+  conditionHubByline,
 } from "@shared/condition-hub-intros";
 
 vi.mock("@/components/layout/SiteHeader", () => ({ default: () => null }));
@@ -24,12 +25,13 @@ vi.mock("@/components/layout/SiteHeader", () => ({ default: () => null }));
 import { getQueryFn } from "@/lib/queryClient";
 import ConditionCategoryPage from "../ConditionCategoryPage";
 
-const SLUGS = ["kidney-health", "chronic-fatigue", "exercise-recovery", "skin-aging"];
+const SLUGS = ["kidney-health", "chronic-fatigue", "exercise-recovery", "skin-aging", "sleep-quality"];
 const OLD = {
   "kidney-health": { name: "Kidney Health", description: "The functional integrity of the kidneys. Hydrogen may protect against kidney damage from various causes including ischemia and toxins." },
   "chronic-fatigue": { name: "Chronic Fatigue", description: "Persistent exhaustion not relieved by rest. Hydrogen may support energy production through mitochondrial function improvement." },
   "exercise-recovery": { name: "Exercise Recovery", description: "The process of muscle repair and adaptation after physical exercise. Hydrogen water may reduce exercise-induced oxidative stress and accelerate recovery." },
   "skin-aging": { name: "Skin Aging", description: "The progressive deterioration of skin structure and function. Hydrogen water bathing may reduce UV damage and improve skin elasticity." },
+  "sleep-quality": { name: "Sleep Quality", description: "Research on molecular hydrogen and sleep in adults, from small drinking, jelly and inhalation trials to animal studies." },
 } as Record<string, { name: string; description: string }>;
 
 const fetchMock = vi.fn();
@@ -98,7 +100,7 @@ describe.each(SLUGS)("ConditionCategoryPage with an evidence-graded intro — %s
     expect(h1s).toHaveLength(1);
     expect(norm(h1s[0].textContent)).toBe(r.h1);
     const byline = container.querySelector("p.byline")!;
-    expect(norm(byline.textContent)).toBe("By Hydrogen Studies Editorial Team · Updated September 29, 2026");
+    expect(norm(byline.textContent)).toBe(`By Hydrogen Studies Editorial Team · Updated ${conditionHubByline(r).dateText}`);
     expect(byline.querySelector("time")!.getAttribute("datetime")).toBe(`${r.lastReviewed}T00:00:00.000Z`);
     const text = norm(container.textContent);
     expect(text).not.toContain(OLD[slug].description);

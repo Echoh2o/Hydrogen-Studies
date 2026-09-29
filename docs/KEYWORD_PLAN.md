@@ -31,7 +31,8 @@ https://claude.ai/artifact/CqrJPn16xeNiKMBNsn3kcE
 | Benefits | hydrogen water benefits 12k·18; benefits of 6.8k·19; molecular hydrogen benefits 1.3k·26; molecular hydrogen 3.2k·18 | `/blog/molecular-hydrogen-benefits-guide-pillar` rebuilt as evidence-graded guide (09-28) | 2 ✅ | Gray → none |
 | Comparisons | ionized 500·0; vs alkaline 250·0 | refresh `/blog/hydrogen-water-vs-alkaline-water` | 2 | OK |
 | Inhalation & machines | is hydrogen flammable 4.0k·9; hydrogen machine 600·0 (#1) | `/blog/hydrogen-therapy-machine-home` + `/blog/hydrogen-inhalation-side-effects` | 2 | OK (devices) |
-| Hubs | kidney, exercise recovery, sleep, skin, fatigue intros (PLAN 4.5) | `/explore-by-condition/*` | 3 | per Appendix E |
+| Hubs | kidney, exercise recovery, skin, fatigue intros (PLAN 4.5) | `/explore-by-condition/{kidney-health,exercise-recovery,skin-aging,chronic-fatigue}` (shared/condition-hub-intros.ts) | 3 ✅ (09-29) | none (counsel first) |
+| Sleep | hydrogen water before bed 60·–; does hydrogen water help you sleep 10 | new `/explore-by-condition/sleep-quality` hub (+ 301 from /explore-by-benefit/sleep) | 4 (launch 10-05) | none (counsel first) |
 | Devices | bottle benefits 1.6k·14; do bottles work 450·6 | `/products` → honest device guide, lift noindex | 4 | OK after counsel |
 | Research | human studies 250·8; hydrogen water studies 150·42 | `/studies`, researcher profiles, dose dataset | 4 | OK |
 | Head term | hydrogen water 26k·28 | earned via the trio above + internal links | months 2–3 | OK |
