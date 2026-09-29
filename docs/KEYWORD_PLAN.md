@@ -27,10 +27,10 @@ https://claude.ai/artifact/CqrJPn16xeNiKMBNsn3kcE
 | Dose | how much per day 900·9; how long it lasts 70·0 | `/blog/how-much-hydrogen-water-per-day` | 1 ✅ | OK |
 | Kidneys | good for kidneys 1.0k·4 (+27 variants = 3.8k) | `/blog/is-hydrogen-water-good-for-kidneys` | 1 ✅ | **Disease** |
 | PPM | hydrogen water ppm 40·1 | `/blog/hydrogen-water-ppm-levels` | 1 ✅ (corrected) | OK |
-| Tablets & delivery | hydrogen water tablets 9.5k·30; hydrogen tablets 7.9k·29; how to make 1.2k·0; brand queries (h2 tabs, vital reaction, primecell h2) | `/blog/h2-tabs-side-effects` — rewritten as the generic tablets guide (09-24); 6 tablet posts merged into it (09-28) | 2 ✅ (how-to-make section pending) | OK (device guide) |
+| Tablets & delivery | hydrogen water tablets 9.5k·30; hydrogen tablets 7.9k·29; how to make 1.2k·0; brand queries (h2 tabs, vital reaction, primecell h2) | `/blog/h2-tabs-side-effects` — rewritten as the generic tablets guide (09-24); 6 tablet posts merged into it (09-28) | 2 ✅ (how-to-make section added 09-29) | OK (device guide) |
 | Benefits | hydrogen water benefits 12k·18; benefits of 6.8k·19; molecular hydrogen benefits 1.3k·26; molecular hydrogen 3.2k·18 | `/blog/molecular-hydrogen-benefits-guide-pillar` rebuilt as evidence-graded guide (09-28) | 2 ✅ | Gray → none |
-| Comparisons | ionized 500·0; vs alkaline 250·0 | refresh `/blog/hydrogen-water-vs-alkaline-water` | 2 | OK |
-| Inhalation & machines | is hydrogen flammable 4.0k·9; hydrogen machine 600·0 (#1) | `/blog/hydrogen-therapy-machine-home` + `/blog/hydrogen-inhalation-side-effects` | 2 | OK (devices) |
+| Comparisons | ionized 500·0; vs alkaline 250·0 | refresh `/blog/hydrogen-water-vs-alkaline-water` | 2 ✅ (09-29) | OK |
+| Inhalation & machines | is hydrogen flammable 4.0k·9; hydrogen machine 600·0 (#1) | `/blog/hydrogen-therapy-machine-home` (device guide + "Is hydrogen flammable?") + `/blog/hydrogen-inhalation-side-effects` | 2 ✅ (09-29) | OK (devices) |
 | Hubs | kidney, exercise recovery, skin, fatigue intros (PLAN 4.5) | `/explore-by-condition/{kidney-health,exercise-recovery,skin-aging,chronic-fatigue}` (shared/condition-hub-intros.ts) | 3 ✅ (09-29) | none (counsel first) |
 | Sleep | hydrogen water before bed 60·–; does hydrogen water help you sleep 10 | new `/explore-by-condition/sleep-quality` hub (+ 301 from /explore-by-benefit/sleep) | 4 ✅ (09-29) | none (counsel first) |
 | Devices | bottle benefits 1.6k·14; do bottles work 450·6 | `/products` → honest device guide, lift noindex | 4 | OK after counsel |

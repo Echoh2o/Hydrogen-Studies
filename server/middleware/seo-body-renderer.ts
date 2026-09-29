@@ -356,6 +356,16 @@ export async function exploreHubExists(type: string, slug: string): Promise<bool
 /** Listed hub types whose every curated slug is advertised in sitemap-explore. */
 const SITEMAP_LISTED_HUB_TYPES: ReadonlySet<ListedExploreHubType> = new Set<ListedExploreHubType>(["mechanism", "life-stage"]);
 
+/**
+ * Drop the cached hub lists. Called once boot migrations finish: the bot-cache
+ * prewarm can run while migrations are still going, and a hub row a migration
+ * adds (e.g. 024 sleep-quality) would otherwise 404 until the 30-minute cache
+ * expired (2026-09-29).
+ */
+export function invalidateHubCaches(): void {
+  __resetConditionHubsForTests();
+}
+
 /** Test-only: drop the cached hub lists. */
 export function __resetConditionHubsForTests(): void {
   _conditionHubSummaries = null;

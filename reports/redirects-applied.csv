@@ -3228,3 +3228,5 @@ hub-301,-,/explore-by-condition/ulcerative-colitis,/explore-by-condition/gut-hea
 hub-301,-,/explore-by-condition/urinary-frequency,/explore-by-body-system/urinary-renal
 # 2026-09-29 anti-aging post merged into skin-aging hub (Josh: "301 to the skin-aging hub"); 16 inbound consolidation 301s repointed to the hub
 merge,7492,/blog/how-to-use-hydrogen-water-for-anti-aging-a-science-backed-guide-617073,/explore-by-condition/skin-aging
+# 2026-09-29 wave-4 sleep hub launch (Josh: "New condition hub + 301" / "lets launch the sleep hub now"); scripts/content/launch-sleep-hub.sql
+hub-301,-,/explore-by-benefit/sleep,/explore-by-condition/sleep-quality

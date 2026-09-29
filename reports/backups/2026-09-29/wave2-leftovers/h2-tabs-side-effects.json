@@ -1,0 +1,147 @@
+{
+  "slug": "h2-tabs-side-effects",
+  "title": "Hydrogen Tablets: Side Effects, Magnesium, and What Studies Show",
+  "summary": "What hydrogen tablets contain, side effects reported in six human studies, how much magnesium they add (vs the 350 mg limit), how to compare brands, how to make hydrogen water at home safely, and who should be cautious.",
+  "metaTitle": "Hydrogen Tablets: Side Effects & Evidence",
+  "metaDescription": "Hydrogen tablets: side effects reported in human trials, how much magnesium each tablet adds vs the 350 mg daily limit, and who should be cautious.",
+  "questionAnswerPairs": [
+    {
+      "question": "Do hydrogen tablets have side effects?",
+      "answer": "Some people report digestive effects such as diarrhea or stomach pain. In the largest trial, these were about as common with placebo tablets that also contained magnesium. Smaller trials reported few or no side effects, but they were short and small. The magnesium in the tablets is the main thing to watch."
+    },
+    {
+      "question": "How many hydrogen tablets can I take a day?",
+      "answer": "Trials used 2 to 5 tablets a day and didn't test more. The practical limit is magnesium: the adult upper limit is 350 mg a day from supplements, including tablets. At 80 mg per tablet, four tablets supply 320 mg, so check your label and count other magnesium supplements."
+    },
+    {
+      "question": "Can hydrogen tablets cause diarrhea?",
+      "answer": "They can. Too much supplemental magnesium can cause diarrhea, nausea and cramping, and diarrhea is why the 350 mg limit exists. In the 675-person COVID-19 trial, diarrhea or abdominal pain was reported by 44 people on hydrogen tablets and 48 on placebo tablets that also contained magnesium."
+    },
+    {
+      "question": "Are hydrogen tablets safe if I have kidney disease?",
+      "answer": "Ask your nephrologist first. Kidneys that don't work well can't clear extra magnesium, which raises the risk of magnesium toxicity. No tablet trial we found tested safety in people with kidney disease."
+    },
+    {
+      "question": "What are the benefits of hydrogen tablets?",
+      "answer": "The evidence is limited and mixed. A 24-week trial in 60 adults with metabolic syndrome reported better cholesterol and blood sugar markers than placebo, but a 675-person trial found no benefit for COVID-19, and most other tablet studies were small. None establish that tablets treat or prevent any disease."
+    },
+    {
+      "question": "How do you make hydrogen water at home?",
+      "answer": "Use a product made for it: drop a magnesium hydrogen tablet into water in a closed bottle, or use an electrolysis bottle or generator with the water its maker recommends. Drink it within minutes of making or opening it, and store it only in a sealed metal container. Don't mix your own chemicals, electrolyze salt water or collect hydrogen gas. To see how much you made, use hydrogen-specific test drops, not an ORP meter."
+    }
+  ],
+  "targetKeywords": [
+    "hydrogen tablets",
+    "hydrogen water tablets",
+    "molecular hydrogen tablets",
+    "h2 tabs",
+    "hydrogen tablets side effects",
+    "h2 tablets benefits and side effects",
+    "hydrogen pills side effects",
+    "molecular hydrogen tablets side effects",
+    "hydrogen tablets benefits",
+    "hydrogen tablets magnesium",
+    "h2 tabs review",
+    "vital reaction hydrogen tablets",
+    "primecell h2",
+    "drink hrw tablets side effects",
+    "how to make hydrogen water",
+    "how to make hydrogen water at home",
+    "diy hydrogen water",
+    "how is hydrogen water made"
+  ],
+  "internalLinks": [
+    "/blog/how-much-hydrogen-water-per-day",
+    "/blog/hydrogen-therapy-machine-home",
+    "/blog/hydrogen-water-ppm-levels",
+    "/blog/hydrogen-water-real-or-fake",
+    "/blog/hydrogen-water-side-effects",
+    "/blog/hydrogen-water-vs-alkaline-water",
+    "/blog/is-hydrogen-water-good-for-kidneys",
+    "/blog/what-is-hydrogen-water",
+    "/editorial-policy",
+    "/explore-by-mechanism/hydrogen-water",
+    "/methodology",
+    "/study/acute-supplementation-with-molecular-hydrogen-benefits-submaximal-exercise-indices-randomized-double-blinded-placebo-controlled-crossover-pilot-study-1775650467139",
+    "/study/can-hydrogen-water-enhance-oxygen-saturation-in-patients-with-chronic-lung-disease-a-non-randomized-observational-pilot-study-1775650467171",
+    "/study/convenient-methods-for-ingestion-of-molecular-hydrogen-drinking-injection-and-inhalation-1777577956377",
+    "/study/dependencies-of-hydrogen-water-on-mineral-based-hardness-temperatures-and-the-container-materials-and-effects-of-the-oral-washing-and-drinking-1775650467137",
+    "/study/effects-of-hydrogen-rich-water-on-blood-uric-acid-in-patients-with-hyperuricemia-a-randomized-placebo-controlled-trial-1775650467174",
+    "/study/electrolyzed-reduced-water-review-ii-safety-concerns-and-effectiveness-as-a-source-of-hydrogen-water-1777577956390",
+    "/study/hydrogen-rich-water-decreases-muscle-damage-and-improves-power-endurance-in-elite-athletes-a-randomized-double-blinded-placebo-controlled-trial-1775650467178",
+    "/study/molecular-hydrogen-for-outpatients-with-covid-19-hydro-covid-a-phase-3-randomised-triple-blinded-pragmatic-placebo-controlled-multicentre-trial-1775650467174",
+    "/study/the-effect-of-adjuvant-therapy-with-molecular-hydrogen-on-endogenous-coenzyme-q10-levels-and-platelet-mitochondrial-bioenergetics-in-patients-with-non-alcoholic-fatty-liver-disease-1775650467170",
+    "/study/the-effects-of-24-week-high-concentration-hydrogen-rich-water-on-body-composition-blood-lipid-profiles-and-inflammation-biomarkers-in-men-and-women-with-metabolic-syndrome-a-randomized-controlled-trial-1775650467136",
+    "/study/the-effects-of-8-week-hydrogen-rich-water-consumption-on-appetite-body-composition-sleep-quality-and-circulating-glucagon-like-peptide-1-in-obese-men-and-women-hydrappet-a-randomized-controlled-trial-1775650467179"
+  ],
+  "newSectionSources": [
+    {
+      "n": 1,
+      "pmid": "30918832",
+      "doi": "10.15280/jlm.2019.9.1.36",
+      "verifiedVia": "PMC full text (PMC6425901), re-checked 2026-09-28: 500 mL beaker ~10 mg/L -> 1.6 mg/L within 30 min; 80 mg Mg per tablet"
+    },
+    {
+      "n": 11,
+      "pmid": "32541131",
+      "doi": "10.4103/2045-9912.285559",
+      "verifiedVia": "PubMed get_article_metadata + PMC full text (PMC7885711)"
+    },
+    {
+      "n": 12,
+      "pmid": "26504515",
+      "doi": "10.1186/s13618-015-0034-2",
+      "verifiedVia": "PubMed get_article_metadata + PMC full text (PMC4620630)"
+    },
+    {
+      "n": 13,
+      "pmid": "36498838",
+      "doi": "10.3390/ijms232314508",
+      "verifiedVia": "PubMed get_article_metadata + PMC full text (PMC9736533)"
+    },
+    {
+      "n": 15,
+      "url": "https://cameochemicals.noaa.gov/chemical/8729",
+      "verifiedVia": "fetched 2026-09-28: LEL 4%, UEL 75% (USCG 1999); 'burns with a pale blue, almost invisible flame'"
+    }
+  ],
+  "claims": [
+    {
+      "claim": "Portable electrolysis generator: ~0.8-1.0 mg/L from tap/mineral water; purified water very little; harder water slightly less (960->870 ug/L); similar output 1.5-30 C, lower at 40-50 C.",
+      "sources": [
+        11
+      ]
+    },
+    {
+      "claim": "Plastic and glass lost ~half the H2 in 4 h; aluminum and stainless steel held it for 12 h.",
+      "sources": [
+        11
+      ]
+    },
+    {
+      "claim": "Pressure-resistant PET bottles with a sealed H2-generating agent: ~7 ppm (Method I) and ~10 ppm (Method II), held >=7 days sealed; significant drop within 1 h of opening; drink within 2 h; minimize air space; agent never contacts drinking water; H2 measured by methylene-blue/platinum-colloid titration.",
+      "sources": [
+        12
+      ]
+    },
+    {
+      "claim": "Ionizers need ~50 mg/L source-water minerals; scale cut ~1 mg/L to <0.01 mg/L within 2 weeks, citric acid restored; chloride -> chlorine species at anode; Pt-coated electrodes can leach under harsh settings; fully dissolved H2 can't be ignited; ORP can't measure H2.",
+      "sources": [
+        13
+      ]
+    },
+    {
+      "claim": "Hydrogen in air: LEL 4%, UEL 75%; almost invisible flame.",
+      "sources": [
+        15
+      ]
+    },
+    {
+      "claim": "Baking soda + acid releases CO2, not H2 (textbook chemistry: NaHCO3 + H+ -> Na+ + H2O + CO2).",
+      "sources": [],
+      "note": "uncited general chemistry; answers a Google 'People also ask' question"
+    }
+  ],
+  "wordCount": 3657,
+  "newSectionWordCount": 519
+}
