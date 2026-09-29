@@ -21,6 +21,7 @@ import { pool } from "./db";
 import { jobScheduler } from "./services/job-scheduler";
 import { stopHealthMonitoring } from "./utils/health-monitoring";
 import { seoBotMiddleware, prewarmBotCache, isBot } from "./middleware/seo-bot-middleware";
+import { sendSpaShell } from "./middleware/explore-hub-404";
 import { generalApiRateLimiter } from "./utils/rate-limiting";
 import path from "path";
 import fs from "fs";
@@ -123,7 +124,7 @@ async function setupServer() {
     // SPA fallback — serve index.html for all non-API GET requests
     // Log 404s only for paths that don't match known SPA routes
     const knownSpaRoutes = /^\/(study|studies|blog|explore-by-|hydrogen-for|learn|admin|search|advanced-search|about|benefits|contact|products|recommendations|privacy|terms|disclaimer|editorial-policy|methodology|insights|research-analytics|login|register|my-dashboard|this-week|recent)\b/;
-    app.get("*", (req, res) => {
+    app.get("*", async (req, res) => {
       // Log paths that aren't known SPA routes — these are likely real 404s
       if (!knownSpaRoutes.test(req.path) && req.path !== "/") {
         import("./services/redirect-service").then(({ log404 }) => {
@@ -133,7 +134,10 @@ async function setupServer() {
 
       const indexPath = path.join(staticPath, "index.html");
       if (fs.existsSync(indexPath)) {
-        res.sendFile(indexPath);
+        // An /explore-by-<type>/<slug> whose hub doesn't exist gets the same
+        // shell with HTTP 404 (the SPA renders NotFound + noindex) — the
+        // status crawlers get from the bot middleware for the same URL.
+        await sendSpaShell(req, res, indexPath);
       } else {
         res.status(500).send("index.html not found. Build may have failed.");
       }

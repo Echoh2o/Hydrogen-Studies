@@ -8,6 +8,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
 import PageBreadcrumb from "@/components/seo/PageBreadcrumb";
+import NotFound from "@/pages/not-found";
+import { ApiError } from "@/lib/queryClient";
 
 const SITE_URL = "https://hydrogenstudies.com";
 
@@ -20,7 +22,7 @@ export interface ExploreHubStudy {
 }
 
 interface ExploreHubDetailProps {
-  type: "delivery-method" | "demographic";
+  type: "delivery-method" | "demographic" | "benefit";
   /** Route param; lowercased here, as the studies API and canonical expect. */
   slug: string;
   /** Breadcrumb parent — the same label/link the crawler breadcrumb uses. */
@@ -29,7 +31,7 @@ interface ExploreHubDetailProps {
 }
 
 /**
- * /explore-by-{demographic,delivery-method}/:slug as a browser renders it.
+ * /explore-by-{demographic,delivery-method,benefit}/:slug as a browser renders it.
  *
  * These pages used to read taxonomy tables (/api/demographics/:slug,
  * /api/delivery-methods/:slug — both empty in production; the demographic
@@ -38,6 +40,10 @@ interface ExploreHubDetailProps {
  * hub. Title, H1, intro, canonical and the study list now come from the same
  * helpers/query as the crawler renderer (shared/explore-hubs.ts +
  * GET /api/explore/:type/:slug/studies), like the mechanism hubs (#74).
+ *
+ * A slug that isn't a hub (the studies API answers 404 — the same predicate
+ * that makes the server send this shell with HTTP 404 and crawlers a hard 404)
+ * renders the site's NotFound page (noindex), never an empty hub.
  */
 export default function ExploreHubDetail({ type, slug: rawSlug, parent, icon }: ExploreHubDetailProps) {
   const slug = rawSlug.toLowerCase();
@@ -45,11 +51,14 @@ export default function ExploreHubDetail({ type, slug: rawSlug, parent, icon }: 
   const meta = exploreDetailMeta(type, slug);
   const canonicalUrl = `${SITE_URL}${meta.path}`;
 
-  const { data, isLoading, isError } = useQuery<{ studies: ExploreHubStudy[] }>({
+  const { data, isLoading, isError, error } = useQuery<{ studies: ExploreHubStudy[] }>({
     queryKey: [`/api/explore/${type}/${slug}/studies`],
     enabled: !!slug,
+    retry: retryUnlessNotFound,
   });
   const studies = data?.studies ?? [];
+
+  if (!slug || isNotFoundError(error)) return <NotFound />;
 
   return (
     <>
@@ -117,4 +126,17 @@ export default function ExploreHubDetail({ type, slug: rawSlug, parent, icon }: 
       <Footer />
     </>
   );
+}
+
+/** True for the 404 an explore API answers when the hub doesn't exist. */
+export function isNotFoundError(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 404;
+}
+
+/**
+ * react-query `retry`: a 404 is an answer (the hub doesn't exist → NotFound
+ * right away); anything else gets the app's usual single retry.
+ */
+export function retryUnlessNotFound(failureCount: number, error: unknown): boolean {
+  return !isNotFoundError(error) && failureCount < 1;
 }

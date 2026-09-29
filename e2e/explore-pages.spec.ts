@@ -49,22 +49,48 @@ test.describe("Explore Pages - Deep Tests", () => {
       expect(body).toMatch(/inhalation/i);
     });
 
+    // The hub route is /explore-by-delivery-method/<slug> (/delivery-methods/*
+    // was never routed — these tests used to pass on the NotFound page).
     test("delivery method detail page loads", async ({ page }) => {
-      await page.goto("/delivery-methods/drinking-water");
+      const res = await page.goto("/explore-by-delivery-method/drinking-water");
+      expect(res?.status()).toBe(200);
       await page.waitForLoadState("networkidle");
 
-      const body = await page.textContent("body");
-      expect(body).toMatch(/drinking|water|hydrogen/i);
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+        "Drinking Water — Hydrogen Therapy Research",
+      );
+      await expect(page).toHaveTitle("Drinking Water: Hydrogen Research | Hydrogen Studies");
     });
 
-    test("delivery method detail has study tabs", async ({ page }) => {
-      await page.goto("/delivery-methods/drinking-water");
+    test("delivery method detail lists its studies", async ({ page }) => {
+      await page.goto("/explore-by-delivery-method/drinking-water");
       await page.waitForLoadState("networkidle");
 
-      // Should have tab triggers for All/Clinical/Preclinical
-      const tabs = page.locator("[role='tab']");
-      const count = await tabs.count();
-      expect(count).toBeGreaterThanOrEqual(2);
+      // The hub renders the crawler's study list (GET /api/explore/…/studies):
+      // a "Research Studies" section of links to /study/<slug>.
+      await expect(page.getByRole("heading", { name: "Research Studies" })).toBeVisible();
+      const studyLinks = page.locator('main a[href^="/study/"]');
+      expect(await studyLinks.count()).toBeGreaterThanOrEqual(1);
+      await expect(page.getByText(/No studies found/i)).toHaveCount(0);
+    });
+  });
+
+  test.describe("Unknown explore hubs", () => {
+    test("/explore-by-demographic/xyzzy is a 404 with the NotFound page (noindex)", async ({ page }) => {
+      const res = await page.goto("/explore-by-demographic/xyzzy");
+      expect(res?.status()).toBe(404);
+      await page.waitForLoadState("networkidle");
+
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText("Page Not Found");
+      await expect(page.locator('meta[name="robots"][content*="noindex"]').first()).toHaveCount(1);
+    });
+
+    test("crawlers get the same 404 for an unknown hub", async ({ request }) => {
+      const res = await request.get("/explore-by-demographic/xyzzy", {
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" },
+      });
+      expect(res.status()).toBe(404);
+      expect(await res.text()).toMatch(/<meta name="robots" content="noindex/);
     });
   });
 

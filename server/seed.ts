@@ -155,6 +155,9 @@ const studiesData = [
     mechanisms: ["Lactate Reduction", "Antioxidant", "Mitochondrial Function"],
     keywords: ["hydrogen water", "athletes", "exercise", "muscle fatigue", "lactate"],
     tags: ["clinical trial", "sports", "athletes", "exercise"],
+    // Real studies carry a delivery method; with it the fixture DB has a
+    // /explore-by-delivery-method/drinking-water hub (≥1 study), as production does.
+    h2DeliveryMethod: "Drinking water",
     methods: "Randomized double-blind crossover study with 10 elite male soccer players. Subjects drank 1500ml HRW or placebo before exercise testing.",
     results: "HRW significantly reduced blood lactate levels during exercise. Peak torque of knee extension did not decrease after exercise in the HRW group.",
     conclusion: "Adequate hydration with hydrogen-rich water pre-exercise reduces blood lactate levels and improves muscle function in elite athletes.",

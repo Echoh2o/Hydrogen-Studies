@@ -11,6 +11,7 @@
  * `/study/<slug>/` served Googlebot a hard 404 (browsers got a 200 SPA shell)
  * because nothing normalized case or trailing slashes.
  */
+import { gt } from "drizzle-orm";
 import { db } from "../db";
 import { healthConditions } from "@shared/schema";
 import { BODY_SYSTEM_HUBS, MECHANISM_HUB_SLUGS } from "../utils/explore-hubs";
@@ -151,9 +152,13 @@ export async function getSearchHubIndex(): Promise<HubIndex> {
   if (hubIndexLoading) return hubIndexLoading;
   hubIndexLoading = (async () => {
     try {
+      // Never map a search term to a condition row with no studies: a
+      // condition hub exists only when its page lists ≥1 study
+      // (seo-body-renderer exploreHubExists) — otherwise it is a 404.
       const rows = await db
         .select({ slug: healthConditions.slug, name: healthConditions.name })
-        .from(healthConditions);
+        .from(healthConditions)
+        .where(gt(healthConditions.studyCount, 0));
       const conditionHubs = rows
         .filter((r) => r.slug)
         .map((r) => ({ names: [r.name, r.slug], path: `/explore-by-condition/${r.slug}` }));

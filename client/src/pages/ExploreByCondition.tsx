@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
+import type { ExploreHubSummary } from "@shared/explore-hubs";
 import { Heart, ArrowRight, Loader2 } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { Button } from "@/components/ui/button";
@@ -13,74 +14,23 @@ import {
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
 
-interface Condition {
-  name: string;
-  count: number;
-}
-
+/**
+ * /explore-by-condition — links exactly the condition hubs the crawler index
+ * links (GET /api/explore/condition/hubs = seo-body-renderer
+ * getConditionHubSummaries: health_conditions rows with studies, most-studied
+ * first). It used to link /api/consumer-categories names ("Heart Disease &
+ * Hypertension" → /explore-by-condition/heart-disease-hypertension), none of
+ * which is a hub: crawlers got a 404 there, and browsers now do too.
+ */
 const ExploreByCondition = () => {
-  const [conditions, setConditions] = useState<Condition[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data, isLoading, isError } = useQuery<{ hubs: ExploreHubSummary[] }>({
+    queryKey: ["/api/explore/condition/hubs"],
+  });
+  const conditions = data?.hubs ?? [];
+  const error = isError;
 
-  // Health conditions categories and counts
-  useEffect(() => {
-    setIsLoading(true);
-    setError(null);
-
-    const fetchCategories = async () => {
-      try {
-        // Try to fetch from API
-        const response = await fetch("/api/consumer-categories/counts");
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.data && data.data.condition) {
-            setConditions(
-              data.data.condition.sort(
-                (a: Condition, b: Condition) => b.count - a.count,
-              ),
-            );
-          } else {
-            // If no condition data, use predefined list
-            useStandardConditions();
-          }
-        } else {
-          // If API fails, use predefined list
-          useStandardConditions();
-        }
-      } catch (err) {
-        console.error("Failed to fetch categories:", err);
-        setError("Failed to load health conditions. Using default categories.");
-        useStandardConditions();
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    const useStandardConditions = () => {
-      const standardConditions = [
-        { name: "General Wellness", count: 1139 },
-        { name: "Brain & Mental Health", count: 34 },
-        { name: "Energy & Metabolism", count: 22 },
-        { name: "Breathing & Lungs", count: 19 },
-        { name: "Heart Health", count: 18 },
-        { name: "Skin Health", count: 17 },
-        { name: "Digestive Health", count: 16 },
-        { name: "Cancer Support", count: 10 },
-        { name: "Kidney Health", count: 8 },
-        { name: "Liver Health", count: 8 },
-        { name: "Athletic Performance", count: 3 },
-      ];
-      setConditions(standardConditions);
-    };
-
-    fetchCategories();
-  }, []);
-
-  // Group conditions into top conditions and others
+  // Top conditions (most studied) highlighted; the full list below.
   const topConditions = conditions.slice(0, 6);
-  const otherConditions = conditions.slice(6);
 
   return (
     <>
@@ -138,10 +88,9 @@ const ExploreByCondition = () => {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
               {topConditions.map((condition) => {
-                const slug = condition.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
                 return (
                 <Card
-                  key={condition.name}
+                  key={condition.slug}
                   className="shadow-md hover:shadow-lg transition-shadow duration-200"
                 >
                   <CardHeader className="pb-2">
@@ -151,16 +100,14 @@ const ExploreByCondition = () => {
                   </CardHeader>
                   <CardContent>
                     <p className="text-neutral-600">
-                      Explore {condition.count}{" "}
-                      {condition.count === 1 ? "study" : "studies"} on how
+                      Explore {condition.studyCount}{" "}
+                      {condition.studyCount === 1 ? "study" : "studies"} on how
                       hydrogen therapy may benefit{" "}
                       {condition.name.toLowerCase()} conditions.
                     </p>
                   </CardContent>
                   <CardFooter>
-                    <Link
-                      href={`/explore-by-condition/${slug}`}
-                    >
+                    <Link href={condition.path}>
                       <Button className="w-full">
                         Search Studies
                         <ArrowRight className="h-4 w-4 ml-2" />
@@ -178,11 +125,10 @@ const ExploreByCondition = () => {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {conditions.map((condition) => {
-                const slug = condition.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
                 return (
                 <Link
-                  key={condition.name}
-                  href={`/explore-by-condition/${slug}`}
+                  key={condition.slug}
+                  href={condition.path}
                   className="block"
                 >
                   <div className="bg-white p-4 rounded-lg border border-neutral-200 hover:border-primary hover:bg-primary/5 transition-colors duration-200">
@@ -191,7 +137,7 @@ const ExploreByCondition = () => {
                         {condition.name}
                       </h3>
                       <span className="bg-primary/10 text-primary text-xs font-medium px-2 py-1 rounded-full">
-                        {condition.count}
+                        {condition.studyCount}
                       </span>
                     </div>
                   </div>

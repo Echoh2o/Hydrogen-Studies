@@ -1,11 +1,15 @@
-import { exploreDetailCopy, exploreHubPath, mechanismHubMeta } from "@shared/explore-hubs";
+import {
+  exploreDetailCopy,
+  mechanismHubMeta,
+  studyCountLabel,
+  type ExploreHubSummary,
+} from "@shared/explore-hubs";
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRoute } from "wouter";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -15,47 +19,39 @@ import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
 import PageBreadcrumb from "@/components/seo/PageBreadcrumb";
+import NotFound from "@/pages/not-found";
+import { isNotFoundError, retryUnlessNotFound } from "@/components/explore/ExploreHubDetail";
 
 // Icons for mechanisms
-import {
-  Zap,
-  Dna,
-  HeartPulse,
-  Shield,
-  Droplets,
-  RefreshCw,
-  BarChart,
-  Brain,
-} from "lucide-react";
+import { Zap, HeartPulse, Shield, Droplets } from "lucide-react";
 
 const getMechanismIcon = (slug: string, className: string = "") => {
   switch (slug) {
-    case "antioxidant-effects":
-      return <Shield className={className} />;
-    case "gene-expression":
-      return <Dna className={className} />;
-    case "mitochondrial-function":
-      return <Zap className={className} />;
-    case "anti-inflammatory":
-      return <HeartPulse className={className} />;
-    case "cell-signaling":
+    case "hydrogen-water":
+    case "hydrogen-bath":
       return <Droplets className={className} />;
-    case "redox-regulation":
-      return <RefreshCw className={className} />;
-    case "metabolic-pathways":
-      return <BarChart className={className} />;
-    case "neuroprotection":
-      return <Brain className={className} />;
+    case "hydrogen-inhalation":
+    case "hydrogen-gas":
+      return <Zap className={className} />;
+    case "hydrogen-rich-saline":
+      return <HeartPulse className={className} />;
     default:
       return <Shield className={className} />;
   }
 };
 
+/**
+ * /explore-by-mechanism — links exactly the hubs the crawler index links
+ * (GET /api/explore/mechanism/hubs = seo-body-renderer getLiveExploreHubs):
+ * the sitemap mechanism hubs whose page lists ≥1 study. It used to link rows
+ * of the `mechanisms` table (empty in production), whose slugs aren't hubs —
+ * those URLs are 404s.
+ */
 const ExploreByMechanismPage: React.FC = () => {
-  // Fetch all mechanisms
-  const { data: mechanisms, isLoading: mechanismsLoading } = useQuery<any>({
-    queryKey: ["/api/mechanisms"],
+  const { data, isLoading: mechanismsLoading } = useQuery<{ hubs: ExploreHubSummary[] }>({
+    queryKey: ["/api/explore/mechanism/hubs"],
   });
+  const hubs = data?.hubs ?? [];
 
   return (
     <>
@@ -96,7 +92,8 @@ const ExploreByMechanismPage: React.FC = () => {
           </div>
 
           {mechanismsLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            // Reserve the grid's height so the footer doesn't jump (CLS).
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 min-h-[50vh]" aria-busy="true">
               {Array(8)
                 .fill(0)
                 .map((_, i) => (
@@ -112,32 +109,20 @@ const ExploreByMechanismPage: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {mechanisms?.map((mechanism: any) => (
-                // /mechanisms/<slug> has no route (SPA NotFound, crawler 404);
-                // the hub route is /explore-by-mechanism/<slug>.
-                <Link key={mechanism.id} href={exploreHubPath("mechanism", mechanism.slug)}>
+              {hubs.map((hub) => (
+                <Link key={hub.slug} href={hub.path}>
                   <Card className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
                     <CardHeader className="p-4 pb-2 flex flex-row items-start space-x-4">
                       <div className="bg-primary/10 p-2 rounded-md">
-                        {getMechanismIcon(
-                          mechanism.slug,
-                          "h-6 w-6 text-primary",
-                        )}
+                        {getMechanismIcon(hub.slug, "h-6 w-6 text-primary")}
                       </div>
                       <div>
-                        <CardTitle className="text-xl">
-                          {mechanism.name}
-                        </CardTitle>
+                        <CardTitle className="text-xl">{hub.name}</CardTitle>
                         <Badge variant="outline" className="mt-1">
-                          {mechanism.studyCount} studies
+                          {studyCountLabel(hub.studyCount)}
                         </Badge>
                       </div>
                     </CardHeader>
-                    <CardContent className="p-4 pt-2">
-                      <CardDescription className="line-clamp-3 text-sm">
-                        {mechanism.description}
-                      </CardDescription>
-                    </CardContent>
                   </Card>
                 </Link>
               ))}
@@ -178,11 +163,16 @@ export const MechanismDetailPage: React.FC = () => {
   const meta = mechanismHubMeta(slug);
   const canonicalUrl = `${SITE_URL}${meta.path}`;
 
-  const { data, isLoading, isError } = useQuery<{ studies: ExploreHubStudy[] }>({
+  const { data, isLoading, isError, error } = useQuery<{ studies: ExploreHubStudy[] }>({
     queryKey: [`/api/explore/mechanism/${slug}/studies`],
     enabled: !!slug,
+    retry: retryUnlessNotFound,
   });
   const studies = data?.studies ?? [];
+
+  // Not one of the mechanism hubs: the studies API 404s (same predicate as
+  // the server's HTTP 404 for this URL) → the site's NotFound page (noindex).
+  if (!slug || isNotFoundError(error)) return <NotFound />;
 
   return (
     <>

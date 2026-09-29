@@ -41,6 +41,11 @@ vi.mock("../db", () => {
       execute: async (q: any) => {
         const { sql, params } = dialect.sqlToQuery(q);
         if (/FROM health_conditions/i.test(sql)) return { rows: state.conditionHubs };
+        // A condition hub exists when its page lists ≥1 study (the shared
+        // condition-hub query, counted) — every hub row here has studies.
+        if (/count\(\*\)/i.test(sql) && /FROM studies/i.test(sql) && /health_conditions/i.test(sql)) {
+          return { rows: [{ n: 1 }] };
+        }
         if (/SELECT 1 FROM studies/i.test(sql) && /body_systems/i.test(sql)) {
           return { rows: params.some((p) => state.emptyHubPatterns.includes(p as string)) ? [] : [{ "?column?": 1 }] };
         }

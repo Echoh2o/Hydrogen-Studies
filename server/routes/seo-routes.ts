@@ -12,7 +12,8 @@ import { eq, desc, isNotNull, isNull, sql, and, count, inArray, gt } from "drizz
 import { requireAdmin } from "../auth";
 import { logger } from "../utils/logger";
 import { toAbsoluteUrl } from "../utils/absolute-url";
-import { BODY_SYSTEM_HUBS, LIFE_STAGE_HUB_SLUGS, MECHANISM_HUB_SLUGS, exploreHubPath } from "../utils/explore-hubs";
+import { LIFE_STAGE_HUB_SLUGS, MECHANISM_HUB_SLUGS, exploreHubPath } from "../utils/explore-hubs";
+import { getConditionHubSummaries, getLiveBodySystemHubs } from "../middleware/seo-body-renderer";
 
 const router = Router();
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
@@ -57,6 +58,11 @@ function setCache(key: string, content: string): void {
     }
   }
   sitemapCache[key] = { content, timestamp: Date.now() };
+}
+
+/** Test-only: drop every cached sitemap. */
+export function __resetSitemapCacheForTests(): void {
+  for (const k of Object.keys(sitemapCache)) delete sitemapCache[k];
 }
 
 function xmlHeader(): string {
@@ -413,13 +419,14 @@ router.get("/sitemap-categories.xml", async (req: Request, res: Response) => {
       return res.send(cached);
     }
 
-    // Generate condition URLs from health_conditions — the same table the
-    // crawler-facing renderer validates slugs against — so every URL here
-    // resolves to a real page (see seo-body-renderer.ts).
-    const conditions = await db.select({
+    // Condition URLs = the condition hubs that exist (a health_conditions row
+    // with studies — seo-body-renderer getConditionHubSummaries, the same
+    // predicate the renderer and the SPA 404 use), so every URL here is a 200.
+    const hubSlugs = new Set((await getConditionHubSummaries()).map((h) => h.slug));
+    const conditions = (await db.select({
       slug: healthConditions.slug,
       createdAt: healthConditions.createdAt,
-    }).from(healthConditions);
+    }).from(healthConditions)).filter((c) => c.slug && hubSlugs.has(c.slug));
 
     const urls = conditions.map(c => {
       const lastmod = formatDate(c.createdAt);
@@ -463,9 +470,11 @@ router.get("/sitemap-explore.xml", async (req: Request, res: Response) => {
     const urls: string[] = [];
     const today = formatDate(new Date());
 
-    // Body system explore pages — same list the renderer resolves
-    // (server/utils/explore-hubs.ts), so every advertised URL returns 200.
-    for (const { slug: bs } of BODY_SYSTEM_HUBS) {
+    // Only hubs that exist (seo-body-renderer exploreHubExists) — every other
+    // hub URL is a 404 for bots and browsers, so every advertised URL is a 200.
+    // Body system explore pages: the canonical hubs with ≥1 study (a canonical
+    // hub without studies has always been a crawler 404).
+    for (const { slug: bs } of await getLiveBodySystemHubs()) {
       urls.push(`  <url>
     <loc>${SITE_URL}/explore-by-body-system/${bs}</loc>
     <lastmod>${today}</lastmod>
@@ -474,7 +483,7 @@ router.get("/sitemap-explore.xml", async (req: Request, res: Response) => {
   </url>`);
     }
 
-    // Predefined mechanism pages
+    // Predefined mechanism pages (all valid hubs — exploreHubExists)
     for (const m of MECHANISM_HUB_SLUGS) {
       urls.push(`  <url>
     <loc>${SITE_URL}/explore-by-mechanism/${m}</loc>
@@ -485,7 +494,10 @@ router.get("/sitemap-explore.xml", async (req: Request, res: Response) => {
     }
 
     // Predefined life stage pages — same path helper as the SPA canonical
-    // (LifeStageCategoryPage), so the two can't drift apart again.
+    // (LifeStageCategoryPage), so the two can't drift apart again. All valid
+    // hubs (exploreHubExists); infants-children and elderly-aging list no
+    // study (2026-09-28) — proposed for removal in
+    // reports/hub-404-impact-2026-09-28.csv, pending owner approval.
     for (const ls of LIFE_STAGE_HUB_SLUGS) {
       urls.push(`  <url>
     <loc>${SITE_URL}${exploreHubPath("life-stage", ls)}</loc>
