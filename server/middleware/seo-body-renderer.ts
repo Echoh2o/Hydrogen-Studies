@@ -30,9 +30,21 @@ import {
   studySourceLink,
   studyUpdatedAt,
   withoutPlaceholders,
+  type BlogByline,
 } from "../../shared/seo-markup";
 import { isBridgeAllowed } from "../../shared/bridge-policy";
 import { getHydrogenForTopic } from "../../shared/hydrogen-for-topics";
+import {
+  CONDITION_HUB_FAQ_HEADING,
+  CONDITION_HUB_OWNER_GUIDE_LEAD,
+  CONDITION_HUB_SOURCES_HEADING,
+  CONDITION_HUB_STUDIES_HEADING,
+  conditionHubByline,
+  conditionHubSourceId,
+  conditionHubSourceLinks,
+  getConditionHubIntro,
+  type ConditionHubIntro,
+} from "../../shared/condition-hub-intros";
 import { getLiveBlogPredicate } from "../services/live-blog-index";
 import { conditionHubTermsPattern } from "../utils/condition-hub-terms";
 import {
@@ -436,19 +448,34 @@ export function renderBlogBylineHtml(b: {
   published_at?: string | Date | null;
   created_at?: string | Date | null;
 }): string {
-  const by = blogByline({
+  return renderBylineHtml(blogByline({
     authorName: b.author_name,
     reviewerName: b.reviewer_name,
     lastReviewed: b.last_reviewed,
     updatedAt: b.updated_at,
     publishedAt: b.published_at,
     createdAt: b.created_at,
-  });
+  }));
+}
+
+/** Byline markup for a resolved byline — the bot twin of the SPA's <Byline>. */
+export function renderBylineHtml(by: BlogByline): string {
   let h = `<p class="byline">By <a href="${by.href}">${esc(by.author)}</a>`;
   if (by.reviewer) h += ` · Reviewed by ${esc(by.reviewer)}`;
   if (by.date) h += ` · ${by.dateLabel} <time datetime="${isoDate(by.date)}">${esc(by.dateText)}</time>`;
   h += `</p>\n`;
   return h;
+}
+
+/**
+ * Markdown → HTML for crawler bodies (PLAN.md 1.5): marked, then slug ids on
+ * h2/h3 so in-page anchors work. Callers sanitize (sanitizeArticleHtml) and
+ * demote any body <h1> (demoteH1InHtml) — the page's only H1 is its title.
+ */
+function markdownToHtml(md: string): string {
+  const html = marked.parse(md, { async: false }) as string;
+  return html.replace(/<h([23])>([^<]+)<\/h\1>/g,
+    (_m, lvl, text) => `<h${lvl} id="${slugify(text)}">${text}</h${lvl}>`);
 }
 
 // ── Data queries ──────────────────────────────────────────────
@@ -693,9 +720,7 @@ export async function renderBlog(slugOrId: string): Promise<string | null> {
         /(\*\*|^#{1,3} |\n#{1,3} |\]\()/m.test(raw);
       if (looksLikeMarkdown) {
         try {
-          raw = marked.parse(raw, { async: false }) as string;
-          raw = raw.replace(/<h([23])>([^<]+)<\/h\1>/g,
-            (_m, lvl, text) => `<h${lvl} id="${slugify(text)}">${text}</h${lvl}>`);
+          raw = markdownToHtml(raw);
         } catch {
           // fall through with the original content — sanitizer still applies
         }
@@ -882,6 +907,45 @@ export async function renderBlogList(): Promise<string> {
   return h;
 }
 
+/**
+ * Evidence-graded intro of a condition hub (shared/condition-hub-intros.ts),
+ * the crawler twin of ConditionCategoryPage's intro: H1, byline ("Updated" —
+ * no named reviewer), the intro (markdown → HTML through the blog-body path),
+ * the visible FAQ its FAQPage JSON-LD describes, and the numbered sources the
+ * intro's "[n]" refs point to.
+ */
+export function renderConditionHubIntroHtml(intro: ConditionHubIntro): string {
+  let h = `<article>\n<h1>${esc(intro.h1)}</h1>\n`;
+  h += renderBylineHtml(conditionHubByline(intro));
+  const body = demoteH1InHtml(sanitizeArticleHtml(markdownToHtml(intro.introMarkdown)));
+  h += `<div class="hub-intro">${body}</div>\n`;
+  if (intro.faqs.length > 0) {
+    h += `<section aria-labelledby="faq"><h2 id="faq">${esc(CONDITION_HUB_FAQ_HEADING)}</h2>`;
+    for (const faq of intro.faqs) h += `<h3>${esc(faq.question)}</h3><p>${esc(faq.answer)}</p>`;
+    h += `</section>\n`;
+  }
+  if (intro.sources.length > 0) {
+    h += `<section aria-labelledby="sources"><h2 id="sources">${esc(CONDITION_HUB_SOURCES_HEADING)}</h2><ol>`;
+    for (const s of intro.sources) {
+      h += `<li id="${conditionHubSourceId(s.n)}">${esc(s.citation)}`;
+      conditionHubSourceLinks(s).forEach((link, i) => {
+        const attrs = link.external ? ` target="_blank" rel="noopener noreferrer"` : "";
+        h += `${i === 0 ? " " : " · "}<a href="${esc(link.href)}"${attrs}>${esc(link.label)}</a>`;
+      });
+      h += `</li>`;
+    }
+    h += `</ol></section>\n`;
+  }
+  h += `</article>\n`;
+  return h;
+}
+
+/** "Read the full guide: <owner page>" — after the study list. */
+export function renderConditionHubOwnerGuideHtml(intro: ConditionHubIntro): string {
+  return `<section class="owner-guide"><p><strong>${esc(CONDITION_HUB_OWNER_GUIDE_LEAD)}</strong> ` +
+    `<a href="${esc(intro.ownerLink.href)}">${esc(intro.ownerLink.label)}</a></p></section>\n`;
+}
+
 async function renderConditionPage(slug: string): Promise<string | null> {
   try {
     // Not a hub (no health_conditions row, or a row whose page lists no
@@ -901,25 +965,40 @@ async function renderConditionPage(slug: string): Promise<string | null> {
     ]);
 
     const studies = hubStudies.studies;
+    // Evidence-graded hubs (keyword plan wave 3) — same record the SPA
+    // page renders (ConditionCategoryPage.tsx).
+    const intro = getConditionHubIntro(slug);
+
+    let studyItems = "";
+    for (const s of studies) {
+      studyItems += `<li><a href="/study/${esc(s.slug)}">${esc(s.title)}</a>`;
+      const meta = [s.publish_year, s.journal, s.study_type].filter(Boolean).join(", ");
+      if (meta) studyItems += ` — ${esc(String(meta))}`;
+      studyItems += `</li>`;
+    }
 
     let h = breadcrumbs([
       { label: "Home", href: "/" },
       { label: "Health Conditions", href: "/explore-by-condition" },
       { label: cond.name },
     ]);
-    h += `<h1>Hydrogen Research for ${esc(cond.name)}</h1>\n`;
-    if (cond.description) h += `<p>${esc(cond.description)}</p>\n`;
-    h += `<p>${studies.length} research stud${studies.length === 1 ? "y" : "ies"} on hydrogen therapy for ${esc(cond.name.toLowerCase())}.</p>\n`;
-
-    if (studies.length > 0) {
-      h += `<section><h2>Research Studies</h2><ul>`;
-      for (const s of studies) {
-        h += `<li><a href="/study/${esc(s.slug)}">${esc(s.title)}</a>`;
-        const meta = [s.publish_year, s.journal, s.study_type].filter(Boolean).join(", ");
-        if (meta) h += ` — ${esc(String(meta))}`;
-        h += `</li>`;
+    if (intro) {
+      // The reviewed intro REPLACES health_conditions.description and the
+      // generic count line: they contradicted it ("Hydrogen water bathing
+      // may reduce UV damage…"). No sponsor/product block (bridgeTopic null).
+      h += renderConditionHubIntroHtml(intro);
+      if (studies.length > 0) {
+        h += `<section><h2>${esc(CONDITION_HUB_STUDIES_HEADING)}</h2>`;
+        h += `<p>${studyCountLabel(studies.length)} in our database.</p><ul>${studyItems}</ul></section>\n`;
       }
-      h += `</ul></section>\n`;
+      h += renderConditionHubOwnerGuideHtml(intro);
+    } else {
+      h += `<h1>Hydrogen Research for ${esc(cond.name)}</h1>\n`;
+      if (cond.description) h += `<p>${esc(cond.description)}</p>\n`;
+      h += `<p>${studies.length} research stud${studies.length === 1 ? "y" : "ies"} on hydrogen therapy for ${esc(cond.name.toLowerCase())}.</p>\n`;
+      if (studies.length > 0) {
+        h += `<section><h2>Research Studies</h2><ul>${studyItems}</ul></section>\n`;
+      }
     }
 
     if (relatedBlogs.length > 0) {

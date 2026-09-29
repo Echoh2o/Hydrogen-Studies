@@ -21,12 +21,12 @@ import {
   blogArticleJsonLd,
   blogByline,
   blogPageTitle,
-  isoDate,
   realContent,
 } from "@shared/seo-markup";
 import { trackOutboundClick } from "@/lib/analytics";
 import { useEchoPageContext } from "@/hooks/use-echo-link";
 import { buildBlogMarkdownComponents } from "@/components/blog/markdown-components";
+import { Byline } from "@/components/blog/Byline";
 
 const SITE_URL = "https://hydrogenstudies.com";
 
@@ -314,19 +314,7 @@ function BlogPageContent() {
               {blog.title}
             </h1>
             {/* Byline — same copy as the bot renderer (renderBlogBylineHtml). */}
-            <p className="byline text-sm text-neutral-600 mb-2">
-              By{" "}
-              <Link href={byline.href} className="underline hover:text-teal-700">
-                {byline.author}
-              </Link>
-              {byline.reviewer && <> · Reviewed by {byline.reviewer}</>}
-              {byline.date && (
-                <>
-                  {" "}· {byline.dateLabel}{" "}
-                  <time dateTime={isoDate(byline.date)}>{byline.dateText}</time>
-                </>
-              )}
-            </p>
+            <Byline byline={byline} />
             <div className="flex items-center text-neutral-500 text-sm mb-6">
               {blog.createdAt && (
                 <span className="flex items-center mr-4">

@@ -12,8 +12,15 @@
  *  - FAQPage visibility                            #1
  *  - byline + Article JSON-LD                      #12
  *  - /hydrogen-for topic meta                      #7
+ *  - condition-hub intro meta + FAQPage (keyword plan wave 3; full
+ *    renderer coverage in condition-hub-intros.test.ts)
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+
+// The condition-hub intro block renders through seo-body-renderer, which
+// imports the db module; these tests never query it (mocked-db convention).
+vi.mock("../db", () => ({ db: {}, pool: { query: () => new Promise(() => {}) } }));
+
 import {
   BRIDGE_ALLOWED_TOPICS,
   isBridgeAllowed,
@@ -52,6 +59,8 @@ import {
   withoutPlaceholders,
 } from "../../shared/seo-markup";
 import { HYDROGEN_FOR_TOPICS } from "../../shared/hydrogen-for-topics";
+import { CONDITION_HUB_INTROS, conditionHubJsonLd } from "../../shared/condition-hub-intros";
+import { renderConditionHubIntroHtml } from "../middleware/seo-body-renderer";
 
 const UTM_RE = (campaign: string, content: string) =>
   new RegExp(
@@ -464,6 +473,56 @@ describe("/hydrogen-for topic records", () => {
     expect(allowed).toEqual(["athletic-performance"]);
     for (const t of Object.values(HYDROGEN_FOR_TOPICS)) {
       if (!isBridgeAllowed(t.bridgeTopic)) expect(t.products, t.slug).toEqual([]);
+    }
+  });
+
+  it("athletic-performance / skin-health FAQs: same questions, corrected (non-overclaiming) answers", () => {
+    const athletic = HYDROGEN_FOR_TOPICS["athletic-performance"].faqs;
+    const skin = HYDROGEN_FOR_TOPICS["skin-health"].faqs;
+    expect(athletic.map((f) => f.question)).toEqual([
+      "Does hydrogen water improve athletic performance?",
+      "How does hydrogen water help with recovery?",
+    ]);
+    expect(skin.map((f) => f.question)).toEqual([
+      "Can hydrogen water improve skin health?",
+      "How does hydrogen therapy help with anti-aging?",
+    ]);
+    expect(athletic[0].answer).toMatch(/^Not for most measures\. .*didn't improve VO2max, endurance or strength/);
+    expect(athletic[1].answer).toMatch(/^The evidence is limited\./);
+    expect(skin[0].answer).toMatch(/^It hasn't been shown in people\./);
+    expect(skin[1].answer).toMatch(/^That's not established\./);
+    const answers = [...athletic, ...skin].map((f) => f.answer).join(" ");
+    expect(answers).not.toMatch(
+      /improve endurance capacity|accelerate recovery|promote better skin hydration|may help reduce wrinkles|targets the most harmful free radicals/,
+    );
+  });
+});
+
+// ── Keyword plan wave 3: evidence-graded condition hubs ─────────
+
+describe("condition hub intro records (/explore-by-condition, wave 3)", () => {
+  it("meta title ≤ 60 incl. suffix, description 140–160, no product bridge", () => {
+    expect(Object.keys(CONDITION_HUB_INTROS).sort()).toEqual([
+      "chronic-fatigue", "exercise-recovery", "kidney-health", "skin-aging",
+    ]);
+    for (const r of Object.values(CONDITION_HUB_INTROS)) {
+      expect(r.metaTitle.length, r.slug).toBeLessThanOrEqual(60);
+      expect(r.metaTitle.endsWith(" | Hydrogen Studies"), r.slug).toBe(true);
+      expect(r.metaDescription.length, r.slug).toBeGreaterThanOrEqual(140);
+      expect(r.metaDescription.length, r.slug).toBeLessThanOrEqual(160);
+      expect(isBridgeAllowed(r.bridgeTopic), r.slug).toBe(false);
+    }
+  });
+
+  it("FAQPage JSON-LD only for the FAQ the page shows (same records, every question visible)", () => {
+    for (const r of Object.values(CONDITION_HUB_INTROS)) {
+      const ld = conditionHubJsonLd(r, { canonical: `https://hydrogenstudies.com/explore-by-condition/${r.slug}`, siteUrl: "https://hydrogenstudies.com" });
+      const faqLd = ld.find((x) => x["@type"] === "FAQPage")!;
+      const visible = renderConditionHubIntroHtml(r);
+      const pairs = faqLd.mainEntity.map((q: any) => ({ question: q.name, answer: q.acceptedAnswer.text }));
+      expect(faqPairsIfVisible(pairs, visible), r.slug).toEqual(pairs);
+      // One H1, and the intro's headings are H2s.
+      expect((visible.match(/<h1\b/g) ?? []).length, r.slug).toBe(1);
     }
   });
 });

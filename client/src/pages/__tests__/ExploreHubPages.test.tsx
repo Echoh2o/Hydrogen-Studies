@@ -516,7 +516,12 @@ describe("ConditionCategoryPage (/explore-by-condition/:category) — the crawle
     fetchMock.mockImplementation(async () => respondJson(payload));
     const { container } = renderAt("/explore-by-condition/kidney-health", "/explore-by-condition/:category", ConditionCategoryPage);
     expect(await screen.findByText("Hydrogen protects the kidney")).toBeInTheDocument();
-    expect(hrefsIn(container, 'a[href^="/study/"]')).toEqual(["/study/kidney-1", "/study/kidney-2"]);
+    // kidney-health carries the wave-3 intro (<article>), whose citations
+    // link /study/ pages too; the study list is everything outside it.
+    const listed = Array.from(container.querySelectorAll<HTMLAnchorElement>('a[href^="/study/"]'))
+      .filter((a) => !a.closest("article"))
+      .map((a) => a.getAttribute("href"));
+    expect(listed).toEqual(["/study/kidney-1", "/study/kidney-2"]);
     expect(screen.getByText("Renal injury was reduced.")).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith("/api/explore/condition/kidney-health/studies", expect.anything());
     const urls = fetchMock.mock.calls.map((c) => String(c[0]));

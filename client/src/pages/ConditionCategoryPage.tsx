@@ -13,7 +13,16 @@ import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
 import { excerptAtWord } from "@shared/seo-markup";
+import { studyCountLabel } from "@shared/explore-hubs";
+import {
+  CONDITION_HUB_STUDIES_HEADING,
+  conditionHubJsonLd,
+  getConditionHubIntro,
+} from "@shared/condition-hub-intros";
 import { retryUnlessNotFound } from "@/components/explore/ExploreHubDetail";
+import { ConditionHubIntro, ConditionHubOwnerGuide } from "@/components/explore/ConditionHubIntro";
+
+const SITE_URL = "https://hydrogenstudies.com";
 
 /** Row of GET /api/explore/condition/:slug/studies (seo-body-renderer ConditionHubStudy). */
 interface Study {
@@ -87,10 +96,36 @@ const ConditionCategoryPage = () => {
   const truncateText = (text: string, maxLength: number = 200) =>
     excerptAtWord(text, maxLength);
 
+  // Evidence-graded hubs (keyword plan wave 3): title, meta, H1, byline,
+  // intro, FAQ, sources and JSON-LD from the record the crawler renders too
+  // (seo-bot-middleware / seo-body-renderer). It replaces the generic copy
+  // and the health_conditions description, which contradicted it. No
+  // sponsor/product content (bridgeTopic null).
+  const intro = getConditionHubIntro(hubSlug);
+  const introCanonical = intro ? `${SITE_URL}/explore-by-condition/${intro.slug}` : "";
+
   return (
     <>
       <SiteHeader />
       <div className="container mx-auto px-4 py-8">
+        {intro ? (
+          <Helmet>
+            <title>{intro.metaTitle}</title>
+            <meta name="description" content={intro.metaDescription} />
+            <link rel="canonical" href={introCanonical} />
+            <meta property="og:title" content={intro.metaTitle} />
+            <meta property="og:description" content={intro.metaDescription} />
+            <meta property="og:type" content="website" />
+            <meta property="og:url" content={introCanonical} />
+            <meta property="og:image" content={`${SITE_URL}/logo.png`} />
+            <meta name="twitter:card" content="summary_large_image" />
+            <meta name="twitter:title" content={intro.metaTitle} />
+            <meta name="twitter:description" content={intro.metaDescription} />
+            {conditionHubJsonLd(intro, { canonical: introCanonical, siteUrl: SITE_URL }).map((ld) => (
+              <script key={ld["@type"]} type="application/ld+json">{JSON.stringify(ld)}</script>
+            ))}
+          </Helmet>
+        ) : (
         <Helmet>
           <title>{`Hydrogen Therapy for ${displayName} | Research on Health Benefits & Treatment`}</title>
           <meta
@@ -157,6 +192,7 @@ const ConditionCategoryPage = () => {
             })}
           </script>
         </Helmet>
+        )}
 
         <div className="mb-8">
           <Link href="/explore-by-condition">
@@ -170,17 +206,28 @@ const ConditionCategoryPage = () => {
           </Link>
         </div>
 
-        <div className="text-center mb-12">
-          <h1 className="text-3xl font-bold text-primary mb-4 flex items-center justify-center">
-            <Heart className="h-8 w-8 mr-3 text-red-500" />
-            Hydrogen Studies for {displayName}
-          </h1>
-          <p className="text-neutral-600 max-w-2xl mx-auto">
-            Explore scientific research investigating the effects of hydrogen
-            therapy on {displayName.toLowerCase()}
-            conditions. Learn about methodologies, results, and key findings.
-          </p>
-        </div>
+        {intro ? (
+          <ConditionHubIntro intro={intro} />
+        ) : (
+          <div className="text-center mb-12">
+            <h1 className="text-3xl font-bold text-primary mb-4 flex items-center justify-center">
+              <Heart className="h-8 w-8 mr-3 text-red-500" />
+              Hydrogen Studies for {displayName}
+            </h1>
+            <p className="text-neutral-600 max-w-2xl mx-auto">
+              Explore scientific research investigating the effects of hydrogen
+              therapy on {displayName.toLowerCase()}
+              conditions. Learn about methodologies, results, and key findings.
+            </p>
+          </div>
+        )}
+
+        {intro && !isLoading && !error && studies.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold mb-2">{CONDITION_HUB_STUDIES_HEADING}</h2>
+            <p className="text-neutral-600">{studyCountLabel(studies.length)} in our database.</p>
+          </div>
+        )}
 
         {isLoading ? (
           // min-h-screen: keeps the footer below the fold until the results
@@ -267,6 +314,8 @@ const ConditionCategoryPage = () => {
             )}
           </>
         )}
+
+        {intro && <ConditionHubOwnerGuide intro={intro} />}
       </div>
       <Footer />
     </>

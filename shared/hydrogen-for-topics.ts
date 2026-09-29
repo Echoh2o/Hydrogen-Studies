@@ -123,8 +123,8 @@ export const HYDROGEN_FOR_TOPICS: Record<string, HydrogenForTopic> = {
       { key: "revive", name: "Echo Revive Hydrogen Bath Water Machine", reason: "Hydrogen baths for muscle recovery and soreness relief" },
     ],
     faqs: [
-      { question: "Does hydrogen water improve athletic performance?", answer: "Several studies have shown that hydrogen-rich water may reduce exercise-induced fatigue, decrease blood lactate levels, and improve endurance capacity in athletes." },
-      { question: "How does hydrogen water help with recovery?", answer: "Research suggests hydrogen water may accelerate recovery by reducing muscle damage markers (like creatine kinase), lowering oxidative stress from intense exercise, and supporting anti-inflammatory processes." },
+      { question: "Does hydrogen water improve athletic performance?", answer: "Not for most measures. Two meta-analyses of small randomized trials in healthy adults (402 and 597 participants) found hydrogen made exercise feel slightly easier and lowered blood lactate a little, but it didn't improve VO2max, endurance or strength. Most trials were small and short." },
+      { question: "How does hydrogen water help with recovery?", answer: "The evidence is limited. A few small crossover trials found slightly less muscle soreness or lower creatine kinase, a muscle-damage marker, after hard exercise, while other trials found no difference. The individual studies are on our exercise recovery research hub." },
     ],
   },
   "skin-health": {
@@ -138,8 +138,8 @@ export const HYDROGEN_FOR_TOPICS: Record<string, HydrogenForTopic> = {
       "Research on molecular hydrogen and skin: UV exposure, oxidative stress and visible signs of aging. Study designs, results and the limits of the evidence today.",
     products: [],
     faqs: [
-      { question: "Can hydrogen water improve skin health?", answer: "Studies suggest molecular hydrogen may help protect skin from UV damage, reduce oxidative stress that contributes to aging, and promote better skin hydration and elasticity." },
-      { question: "How does hydrogen therapy help with anti-aging?", answer: "Hydrogen acts as a selective antioxidant that targets the most harmful free radicals responsible for cellular aging. Research shows it may help reduce wrinkles, improve skin tone, and protect against environmental skin damage." },
+      { question: "Can hydrogen water improve skin health?", answer: "It hasn't been shown in people. Cell and mouse studies suggest molecular hydrogen may reduce UV-related oxidative stress, but human studies are tiny and mostly uncontrolled, and the one randomized trial that measured facial skin (40 adults aged 70 and over, six months of hydrogen water) found no difference." },
+      { question: "How does hydrogen therapy help with anti-aging?", answer: "That's not established. The idea that hydrogen is a selective antioxidant comes mainly from cell and animal research, and later chemistry work questioned it. We found no placebo-controlled trial showing that drinking, bathing in or applying hydrogen reduces wrinkles or improves skin tone in people." },
     ],
   },
   "gut-health": {

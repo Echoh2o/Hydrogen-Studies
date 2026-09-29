@@ -29,6 +29,7 @@ import {
   studyPageTitle,
 } from "../../shared/seo-markup";
 import { getHydrogenForTopic } from "../../shared/hydrogen-for-topics";
+import { conditionHubJsonLd, getConditionHubIntro } from "../../shared/condition-hub-intros";
 import {
   bodySystemHubName,
   exploreDetailMeta,
@@ -428,6 +429,21 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
   // Check explore-by-condition category pages
   const conditionMatch = pathname.match(/^\/explore-by-condition\/([^/]+)$/);
   if (conditionMatch) {
+    // Evidence-graded hubs (shared/condition-hub-intros.ts): title,
+    // description and JSON-LD from the record the SPA page renders too. The
+    // FAQ is visible on the page (bot body + SPA), so FAQPage is allowed.
+    const intro = getConditionHubIntro(conditionMatch[1]);
+    if (intro) {
+      const canonical = canonicalForCondition(intro.slug);
+      return {
+        title: intro.metaTitle,
+        description: intro.metaDescription,
+        canonical,
+        ogType: "website",
+        ogImage: `${SITE_URL}/logo.png`,
+        jsonLd: conditionHubJsonLd(intro, { canonical, siteUrl: SITE_URL }),
+      };
+    }
     const category = conditionMatch[1].replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
     return {
       title: `Hydrogen Research for ${category} | ${SITE_NAME}`,
