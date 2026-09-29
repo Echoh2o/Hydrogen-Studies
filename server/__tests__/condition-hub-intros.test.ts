@@ -72,7 +72,7 @@ import {
 import { invalidateBotCache, resolveStaticPageMeta, seoBotMiddleware } from "../middleware/seo-bot-middleware";
 
 const SITE = "https://hydrogenstudies.com";
-const SLUGS = ["kidney-health", "chronic-fatigue", "exercise-recovery", "skin-aging"];
+const SLUGS = ["kidney-health", "chronic-fatigue", "exercise-recovery", "skin-aging", "sleep-quality"];
 const GOOGLEBOT = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)";
 
 /** What the seed (007_seed_health_conditions) stores — must never render on these hubs. */
@@ -92,6 +92,10 @@ const OLD_DESCRIPTIONS: Record<string, { name: string; description: string }> = 
   "skin-aging": {
     name: "Skin Aging",
     description: "The progressive deterioration of skin structure and function. Hydrogen water bathing may reduce UV damage and improve skin elasticity.",
+  },
+  "sleep-quality": {
+    name: "Sleep Quality",
+    description: "Research on molecular hydrogen and sleep in adults, from small drinking, jelly and inhalation trials to animal studies.",
   },
 };
 
@@ -144,7 +148,7 @@ beforeEach(() => {
 // ── The shared records ──────────────────────────────────────────
 
 describe("shared/condition-hub-intros records", () => {
-  it("covers exactly the 4 wave-3 hubs; lookup is case-insensitive", () => {
+  it("covers exactly the wave-3 and wave-4 hubs; lookup is case-insensitive", () => {
     expect(Object.keys(CONDITION_HUB_INTROS).sort()).toEqual([...SLUGS].sort());
     for (const slug of SLUGS) {
       expect(CONDITION_HUB_INTROS[slug].slug).toBe(slug);
@@ -274,7 +278,7 @@ describe("crawler body (seo-body-renderer) for hubs with an intro", () => {
     const r = CONDITION_HUB_INTROS[slug];
     const html = await body(slug);
     expect(count(html, /<h1\b/g)).toBe(1);
-    expect(html).toContain(`<h1>${r.h1}</h1>\n<p class="byline">By <a href="/editorial-policy">${EDITORIAL_TEAM}</a> · Updated <time datetime="${r.lastReviewed}T00:00:00.000Z">September 29, 2026</time></p>`);
+    expect(html).toContain(`<h1>${r.h1}</h1>\n<p class="byline">By <a href="/editorial-policy">${EDITORIAL_TEAM}</a> · Updated <time datetime="${r.lastReviewed}T00:00:00.000Z">${conditionHubByline(r).dateText}</time></p>`);
     expect(html).not.toContain("Last reviewed");
     expect(html).not.toContain("Reviewed by");
   });
