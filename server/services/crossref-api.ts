@@ -64,9 +64,12 @@ export async function getCrossRefArticleByDOI(doi: string): Promise<any> {
 
     return response.data;
   } catch (error) {
-    // A 404 here is routine (DOI not indexed by CrossRef) — one concise line,
-    // not the full axios object.
-    console.error(`Error fetching CrossRef data for DOI ${doi}: ${describeHttpError(error)}`);
+    // A 404 here is routine (DOI not indexed by CrossRef — e.g. CNKI/Wanfang
+    // DOIs): a warning, not an error. One concise line, not the axios object.
+    const status = (error as { response?: { status?: number } })?.response?.status;
+    const line = `CrossRef lookup failed for DOI ${doi}: ${describeHttpError(error)}`;
+    if (status === 404) console.warn(line);
+    else console.error(line);
     throw error;
   }
 }

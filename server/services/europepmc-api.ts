@@ -2,6 +2,21 @@ import { externalApi, describeHttpError } from "../utils/http";
 import type { InsertStudy } from "@shared/schema";
 
 /**
+ * Europe PMC outage breaker: after a 5xx (e.g. 503 "Search service is
+ * temporarily unavailable"), searches return empty for a few minutes instead
+ * of hammering the API — the research-discovery job fires several queries per
+ * run, and each failure used to log the whole axios error object (hundreds of
+ * lines).
+ */
+export const EUROPE_PMC_BREAKER_MS = 10 * 60 * 1000;
+let europePmcDownUntil = 0;
+
+/** Test-only: reset the outage breaker. */
+export function __resetEuropePmcBreakerForTests(): void {
+  europePmcDownUntil = 0;
+}
+
+/**
  * Search Europe PMC for articles
  * @param query Search query string
  * @param page Page number (1-based)
@@ -13,6 +28,10 @@ export async function searchEuropePMC(
   page: number = 1,
   pageSize: number = 10,
 ): Promise<{ results: any[]; total: number }> {
+  if (Date.now() < europePmcDownUntil) {
+    // Outage breaker open (see EUROPE_PMC_BREAKER_MS): skip quietly.
+    return { results: [], total: 0 };
+  }
   try {
     console.log(
       `Searching EuropePMC for: "${query}", page ${page}, size ${pageSize}`,
@@ -110,7 +129,17 @@ export async function searchEuropePMC(
       total,
     };
   } catch (error) {
-    console.error("Error searching Europe PMC:", error);
+    // One concise line — logging the axios error object dumped hundreds of
+    // lines (sockets, headers, config) per failure.
+    const status = (error as { response?: { status?: number } })?.response?.status;
+    if (status !== undefined && status >= 500) {
+      europePmcDownUntil = Date.now() + EUROPE_PMC_BREAKER_MS;
+      console.warn(
+        `Europe PMC unavailable (${describeHttpError(error)}); pausing Europe PMC searches for ${EUROPE_PMC_BREAKER_MS / 60000} min`,
+      );
+    } else {
+      console.error(`Error searching Europe PMC for "${query}": ${describeHttpError(error)}`);
+    }
     return {
       results: [],
       total: 0,
