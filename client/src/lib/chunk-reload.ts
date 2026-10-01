@@ -16,6 +16,22 @@
 const RELOAD_FLAG_KEY = "hs.chunk-reload-attempted";
 const RELOAD_FLAG_TTL_MS = 30_000;
 
+/**
+ * In-memory marker that a reload has already been scheduled in this page
+ * lifetime. The same chunk error is often seen by several handlers (the
+ * error boundary's getDerivedStateFromError AND componentDidCatch, plus the
+ * global error/unhandledrejection listeners). Without this, the first call
+ * sets the sessionStorage flag and every later call mistakes it for a
+ * "reload already happened" loop guard, returning false and reporting the
+ * error even though the page is about to refresh.
+ */
+let reloadPending = false;
+
+/** True once a stale-chunk reload has been scheduled for this page. */
+export function isReloadPending(): boolean {
+  return reloadPending;
+}
+
 const CHUNK_ERROR_PATTERNS = [
   "Failed to fetch dynamically imported module",
   "is not a valid JavaScript MIME type",
@@ -44,6 +60,8 @@ export function isChunkLoadError(err: unknown): boolean {
 export function reloadOnceForStaleChunk(err: unknown): boolean {
   if (!isChunkLoadError(err)) return false;
   if (typeof window === "undefined") return false;
+  // A reload is already on its way — treat repeat sightings as handled.
+  if (reloadPending) return true;
 
   try {
     const prev = sessionStorage.getItem(RELOAD_FLAG_KEY);
@@ -60,6 +78,7 @@ export function reloadOnceForStaleChunk(err: unknown): boolean {
     return false;
   }
 
+  reloadPending = true;
   // Small delay so any in-flight logging/telemetry flushes.
   setTimeout(() => window.location.reload(), 100);
   return true;
