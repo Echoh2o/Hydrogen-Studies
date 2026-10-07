@@ -116,6 +116,8 @@ describe("isBot — AI crawler detection", () => {
     "Perplexity-User/1.0",
     "CCBot/2.0 (https://commoncrawl.org/faq/)",
     "meta-externalagent/1.1",
+    "Mozilla/5.0 (compatible; AhrefsSiteAudit/6.1; +http://ahrefs.com/robot/site-audit)",
+    "Mozilla/5.0 (compatible; SiteAuditBot/0.97; +http://www.semrush.com/bot.html)",
   ])("treats %s as a bot", (ua) => {
     expect(isBot(ua)).toBe(true);
   });
