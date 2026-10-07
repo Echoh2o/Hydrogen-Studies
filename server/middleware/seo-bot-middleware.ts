@@ -96,6 +96,9 @@ const BOT_PATTERNS = [
   /amazonbot/i, /mistralai-user/i, /cohere/i, /youbot/i, /diffbot/i,
   /yeti/i,               // Naver (Korea)
   /seznambot/i, /qwant/i, /mojeekbot/i, /coccocbot/i,
+  // SEO site-audit crawlers (2026-10-06): AhrefsSiteAudit isn't matched by
+  // /ahrefsbot/, so Ahrefs audited the SPA shell (health score 1).
+  /ahrefssiteaudit/i, /siteauditbot/i,
   // Generic tail: catches well-behaved crawlers we haven't named. Real browser
   // UAs never contain these tokens, and a false positive is harmless — the
   // "penalty" is being served real prerendered content.

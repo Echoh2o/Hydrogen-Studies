@@ -9,8 +9,9 @@
  *   1. Sync freshness — last SUCCESSFUL gsc/ga4 sync older than 26h is a
  *      critical alert (the exact failure mode that went unnoticed 47 days).
  *   2. Click decay — sitewide GSC clicks, trailing 7 days vs the prior
- *      28-day daily average; a >30% drop is a high alert. Top pages by
- *      prior-period clicks are also checked individually (>50% drop).
+ *      28-day daily average, both anchored to the latest synced date; a >30%
+ *      drop is a high alert. Top live pages by prior-period clicks are also
+ *      checked individually (>50% drop); redirected/410'd URLs are skipped.
  *   3. Index visibility — share of published blog articles that appeared in
  *      any search result in the last 90 days (informational; the
  *      consolidation work is expected to move this number).
@@ -83,15 +84,22 @@ export async function runOrganicHealthCheck(): Promise<OrganicHealthReport> {
   }
 
   // ── 2. Sitewide click decay ───────────────────────────────────────────
+  // Windows end at the latest synced GSC date, not today: GSC lags ~2-3
+  // days, so a today-anchored "trailing 7d" always contains empty days and
+  // read as a phantom ~30-40% drop (the 65% alert of 2026-10-06 was ~27%).
   try {
     const decay = rowsOf(
       await db.execute(sql`
+        WITH bounds AS (SELECT MAX(date::date) AS latest FROM gsc_query_metrics)
         SELECT
-          COALESCE(SUM(clicks) FILTER (WHERE date::date > current_date - 7), 0)::int AS recent7,
-          COALESCE(SUM(clicks) FILTER (
-            WHERE date::date <= current_date - 7 AND date::date > current_date - 35
+          b.latest::text AS latest,
+          COALESCE(SUM(m.clicks) FILTER (WHERE m.date::date > b.latest - 7), 0)::int AS recent7,
+          COALESCE(SUM(m.clicks) FILTER (
+            WHERE m.date::date <= b.latest - 7 AND m.date::date > b.latest - 35
           ), 0)::int AS prior28
-        FROM gsc_query_metrics
+        FROM bounds b
+        LEFT JOIN gsc_query_metrics m ON m.date::date > b.latest - 35
+        GROUP BY b.latest
       `),
     )[0];
 
@@ -99,6 +107,7 @@ export async function runOrganicHealthCheck(): Promise<OrganicHealthReport> {
     const priorDaily = Number(decay?.prior28 ?? 0) / 28;
     summary.clicksRecent7d = Number(decay?.recent7 ?? 0);
     summary.clicksPrior28d = Number(decay?.prior28 ?? 0);
+    summary.gscLatestDate = decay?.latest ?? null;
 
     if (priorDaily >= 1) {
       const drop = 1 - recentDaily / priorDaily;
@@ -123,19 +132,27 @@ export async function runOrganicHealthCheck(): Promise<OrganicHealthReport> {
   try {
     const pages = rowsOf(
       await db.execute(sql`
-        WITH prior AS (
-          SELECT page, SUM(clicks)::int AS prior_clicks
-          FROM gsc_query_metrics
-          WHERE date::date <= current_date - 7 AND date::date > current_date - 35
-          GROUP BY page
+        WITH bounds AS (SELECT MAX(date::date) AS latest FROM gsc_query_metrics),
+        prior AS (
+          SELECT m.page, SUM(m.clicks)::int AS prior_clicks
+          FROM gsc_query_metrics m, bounds b
+          WHERE m.date::date <= b.latest - 7 AND m.date::date > b.latest - 35
+            -- Pages we deliberately 301'd/410'd lose clicks by design.
+            AND NOT EXISTS (
+              SELECT 1 FROM redirects r
+              WHERE r.is_active
+                AND r.from_path = lower(regexp_replace(
+                  regexp_replace(m.page, '^https?://[^/]+', ''), '[?#].*$', ''))
+            )
+          GROUP BY m.page
           ORDER BY 2 DESC
           LIMIT 10
         ),
         recent AS (
-          SELECT page, SUM(clicks)::int AS recent_clicks
-          FROM gsc_query_metrics
-          WHERE date::date > current_date - 7
-          GROUP BY page
+          SELECT m.page, SUM(m.clicks)::int AS recent_clicks
+          FROM gsc_query_metrics m, bounds b
+          WHERE m.date::date > b.latest - 7
+          GROUP BY m.page
         )
         SELECT p.page, p.prior_clicks, COALESCE(r.recent_clicks, 0) AS recent_clicks
         FROM prior p LEFT JOIN recent r USING (page)
