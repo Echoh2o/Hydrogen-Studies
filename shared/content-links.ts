@@ -38,13 +38,25 @@ const HREF_ATTR_RE = /(\bhref\s*=\s*)(["'])([^"']*)\2/gi;
 
 // ── echowater.com UTM normalization ─────────────────────────────
 
-/** Add/normalize UTMs on every echowater.com href in an HTML fragment. */
+const ANCHOR_OPEN_RE = /<a\b([^>]*)>/gi;
+
+/**
+ * Add/normalize UTMs on every echowater.com href in an HTML fragment, and mark
+ * store anchors that carry no rel as rel="sponsored noopener" — the crawler
+ * twin of the SPA's markdown <a> override (buildBlogMarkdownComponents), so
+ * in-body store links in bot HTML match what browsers get.
+ */
 export function rewriteEchoLinksInHtml(html: string, ctx: EchoUtmContext): string {
   if (!html || !/echowater\.com/i.test(html)) return html;
-  return html.replace(HREF_ATTR_RE, (match, prefix: string, _q: string, value: string) => {
+  const tagged = html.replace(HREF_ATTR_RE, (match, prefix: string, _q: string, value: string) => {
     const href = decodeAttr(value);
     if (!isEchoUrl(href)) return match;
     return `${prefix}"${encodeAttr(buildEchoUrl(href, ctx))}"`;
+  });
+  return tagged.replace(ANCHOR_OPEN_RE, (tag, attrs: string) => {
+    if (/\brel\s*=/i.test(attrs)) return tag;
+    const href = /\bhref\s*=\s*(["'])([^"']*)\1/i.exec(attrs);
+    return href && isEchoUrl(decodeAttr(href[2])) ? `<a${attrs} rel="sponsored noopener">` : tag;
   });
 }
 
