@@ -375,6 +375,9 @@ export const studies = pgTable(
     // catalog (ORDER BY ... ASC NULLS FIRST) instead of re-checking the same
     // rows forever.
     lastRetractionCheckAt: timestamp("last_retraction_check_at"),
+    // Rotation marker for the weekly CrossRef metadata-freshness job (stamped
+    // on every attempt, success or not; migration 025).
+    freshnessCheckedAt: timestamp("freshness_checked_at"),
     conflictOfInterest: text("conflict_of_interest"), // Trust signal declarations
 
     // AI Comprehension Fields

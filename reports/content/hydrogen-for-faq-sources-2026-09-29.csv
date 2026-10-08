@@ -1,0 +1,54 @@
+topic,question,pmids,other_sources
+heart-disease,Can hydrogen water help with heart disease?,41888952;36278221;25378931;28321000,Benefits guide evidence table (heart/brain protection: insufficient)
+heart-disease,Does hydrogen water lower cholesterol?,41888952,
+heart-disease,Does hydrogen water lower blood pressure?,34601077;36278221,
+heart-disease,Does hydrogen water improve blood vessel function?,25378931,
+heart-disease,Has hydrogen been tested in people after a heart attack?,28321000,
+heart-disease,Is hydrogen water safe to drink with heart medications?,20216947;37487817,/blog/hydrogen-water-side-effects; NIH ODS magnesium fact sheet (kidney clearance)
+diabetes,Can hydrogen water help manage diabetes?,32273740;35059257,Benefits guide evidence table (blood sugar: very low)
+diabetes,Does hydrogen water lower blood sugar?,35059257;37371975;19083400,
+diabetes,What did the 24-week hydrogen water trial in metabolic syndrome find?,32273740,Benefits guide conflict-of-interest note (tablets from a hydrogen-tablet company)
+diabetes,Is hydrogen water safe if you take insulin or other diabetes medicines?,22146674;35059257,
+diabetes,How much hydrogen water was used in diabetes studies?,19083400;37371975;32273740,NIH ODS magnesium fact sheet (kidney clearance)
+brain-health,Can hydrogen therapy help with brain health?,17486089;29110615;27176725;30207619;28669654;36969346,Benefits guide evidence table (brain protection: insufficient); 30207619 results letter has no PubMed abstract - 72-week null result as reported in the benefits guide
+brain-health,Is hydrogen water good for memory or cognitive function?,29110615;34601077,
+brain-health,Does hydrogen water help Parkinson's disease?,23400965;27176725;30207619;34319514,27176725 = protocol (178 people / 14 hospitals / 1 L a day / 72 weeks); 30207619 = results letter (no abstract)
+brain-health,Can hydrogen reach the brain?,24975958;29110615;30207619,24975958 full text (PMC4074787) for brain tissue levels
+brain-health,Has inhaled hydrogen been tested after a stroke or cardiac arrest?,28669654;36969346,
+brain-health,Does hydrogen water help with anxiety or depression?,29497485;40826930,
+inflammation,Does hydrogen water reduce inflammation?,32699287;41371770,Benefits guide evidence table (antioxidant/anti-inflammatory: low)
+inflammation,Can hydrogen therapy help with arthritis?,23031079;24929023,
+inflammation,Does hydrogen help osteoarthritis or joint pain?,31927559;42734458,PubMed title search 2026-09-29 found no human osteoarthritis trial
+inflammation,Do hydrogen baths reduce inflammation?,34854419;30257503,
+inflammation,Can hydrogen water replace anti-inflammatory medicine?,23031079;24929023;32699287,Benefits guide evidence table (treating a disease: insufficient)
+cancer-support,Can hydrogen water help cancer patients?,22146004,22146004 full text (PMC3231938): fatigue/depression/sleep subscales did not differ; appetite loss lower; tumor response 48% vs 50%
+cancer-support,Is hydrogen therapy safe during cancer treatment?,22146004;29142752;31552873;19148645,
+cancer-support,Can hydrogen water kill cancer cells?,32314789;31552873,
+cancer-support,Does hydrogen water reduce side effects of chemotherapy?,29142752,
+cancer-support,Is hydrogen water the same as hydrogen peroxide?,28069419,
+athletic-performance,Does hydrogen water improve athletic performance?,36819697;38903627,Answer corrected 2026-09-29; one sentence added (jumping power) from 38903627
+athletic-performance,How does hydrogen water help with recovery?,33555824;38681143;39434721;33123594;30257503,Answer unchanged from the 2026-09-29 correction; studies as listed on /explore-by-condition/exercise-recovery
+athletic-performance,How much hydrogen water did exercise studies use?,36819697;38903627;36538554,Dose ranges as reported on the exercise-recovery and chronic-fatigue condition hubs
+athletic-performance,Is hydrogen water better than plain water for hydration?,36819697;38903627,/blog/hydrogen-water-side-effects (ppm and mg per liter)
+athletic-performance,Is hydrogen water safe for athletes?,20216947;37487817;36538554,/blog/hydrogen-water-side-effects (sports trials' side-effect reporting)
+skin-health,Can hydrogen water improve skin health?,34601077;36807963;22070900,Answer unchanged from the 2026-09-29 correction
+skin-health,How does hydrogen therapy help with anti-aging?,17486089;25086438,Answer unchanged from the 2026-09-29 correction
+skin-health,Does hydrogen protect skin from sun damage?,36807963;22070900,
+skin-health,Does hydrogen water increase collagen?,22070900;34601077,
+skin-health,Has hydrogen been tested for psoriasis or other skin conditions?,29795283;41545661,
+gut-health,Can hydrogen water improve gut health?,38855154;37371975,
+gut-health,Is hydrogen water good for your liver?,40406427;36290657,
+gut-health,How can you get more hydrogen in your gut?,19652760;22146674,
+gut-health,Can hydrogen water cause bloating or stomach upset?,20216947;37487817,20216947 full text (PMC2831093) for the possibly-related adverse events
+gut-health,Does hydrogen water affect a hydrogen breath test?,19652760,
+kidney-health,Can hydrogen water help protect kidneys?,19148645;25592271;19907413;20388631;29321509,/explore-by-condition/kidney-health and /blog/is-hydrogen-water-good-for-kidneys (no controlled CKD drinking trial found in September 2026 PubMed search)
+kidney-health,What studies exist on hydrogen and kidney health?,20388631;29321509;39934143;42734448;39740897,/explore-by-condition/kidney-health
+kidney-health,Is hydrogen water better for your kidneys than plain water?,42734448,NIDDK kidney stone prevention guidance (as cited in /blog/is-hydrogen-water-good-for-kidneys)
+kidney-health,Can hydrogen protect the kidneys during chemotherapy or contrast scans?,19148645;25592271,
+kidney-health,How much hydrogen was used in the kidney studies?,20388631;29321509;19148645;42734448,
+lung-health,Can hydrogen therapy help with lung conditions?,33985501;39124575,
+lung-health,Is hydrogen inhalation safe for the lungs?,41401441;33985501,/blog/hydrogen-inhalation-side-effects (device-related side effects in the COPD trial); NOAA CAMEO Chemicals hydrogen datasheet (flammable 4-75% in air)
+lung-health,What did the COPD trial of hydrogen-oxygen gas find?,33985501,Total of 108 from 34/54 = 63.0% per arm; /blog/hydrogen-inhalation-side-effects
+lung-health,Did hydrogen help people with COVID-19?,39124575;35206179,
+lung-health,Is hydrogen inhalation the same as hydrogen peroxide therapy?,28069419,
+lung-health,Can drinking hydrogen water help your lungs?,38794767;39124575;32407476;39147072,

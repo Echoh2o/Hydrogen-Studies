@@ -1,0 +1,5 @@
+# Off-topic (non-health, non-energy) studies flagged as borderline in reports/energy-studies-2026-09-borderline.csv.
+# approved-by: josh 2026-09-28 — in session: "remove off topic studies" (the two listed as "off-topic but not energy").
+id,slug,title,journal,year,reason,confidence,gsc_impressions_90d,gsc_clicks_90d
+3646,clostridium-beijerinckii-displays-a-soluble-fefe-hydrogenaseformate-dehydrogenase-enzyme-complex-that-links-h2-and-co2-metabolism-1775650467182,Clostridium beijerinckii [FeFe]-hydrogenase/formate dehydrogenase enzyme complex,,,off-topic: biofuel-fermentation enzymology (not human health),manual,,
+4255,hydrogen-supplementation-improves-glucose-based-n-caproate-production-in-caproiciproducens-galactitolivorans-with-reverse-b-oxidation-associated-redox-remodeling-1782857395648,Hydrogen supplementation improves glucose-based n-caproate production,,,off-topic: industrial fermentation / platform chemicals (not human health),manual,,

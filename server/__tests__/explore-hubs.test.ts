@@ -46,8 +46,8 @@ vi.mock("../auth", () => ({
 }));
 
 import { BODY_SYSTEM_HUBS, bodySystemLikePatterns, findBodySystemHub } from "../utils/explore-hubs";
-import { renderPageBody } from "../middleware/seo-body-renderer";
-import seoRoutes from "../routes/seo-routes";
+import { renderPageBody, __resetConditionHubsForTests } from "../middleware/seo-body-renderer";
+import seoRoutes, { __resetSitemapCacheForTests } from "../routes/seo-routes";
 
 /** SQL LIKE (with only % wildcards) against the joined, lowercased array. */
 function likeMatches(values: string[], pattern: string): boolean {
@@ -89,6 +89,7 @@ describe("BODY_SYSTEM_HUBS", () => {
 
 describe("body-system hub rendering", () => {
   beforeEach(() => {
+    __resetConditionHubsForTests();
     executed.queries = [];
     studyRowsFor.fn = (params) =>
       params.includes("%nervous%")
@@ -112,15 +113,50 @@ describe("body-system hub rendering", () => {
 });
 
 describe("sitemap-explore.xml", () => {
+  beforeEach(() => {
+    __resetConditionHubsForTests();
+    __resetSitemapCacheForTests();
+  });
+
   it("advertises exactly the hubs the renderer resolves", async () => {
+    // Every canonical hub has a study → every one resolves (200).
+    studyRowsFor.fn = () => [{ slug: "s-1", title: "S", publish_year: 2024, journal: "J" }];
     const app = express();
     app.use(seoRoutes);
     const res = await request(app).get("/sitemap-explore.xml");
     expect(res.status).toBe(200);
     for (const h of BODY_SYSTEM_HUBS) {
       expect(res.text).toContain(`/explore-by-body-system/${h.slug}</loc>`);
+      expect(await renderPageBody(`/explore-by-body-system/${h.slug}`)).not.toBeNull();
     }
     const advertised = [...res.text.matchAll(/\/explore-by-body-system\/([a-z0-9-]+)<\/loc>/g)].map((m) => m[1]);
     expect(advertised.sort()).toEqual(BODY_SYSTEM_HUBS.map((h) => h.slug).sort());
   });
+
+  it("leaves out a canonical hub without studies — that URL is a 404", async () => {
+    // Only the brain hub's terms match a study.
+    studyRowsFor.fn = (params) =>
+      params.includes("%nervous%") ? [{ slug: "s-1", title: "S", publish_year: 2024, journal: "J" }] : [];
+    const app = express();
+    app.use(seoRoutes);
+    const res = await request(app).get("/sitemap-explore.xml");
+    const advertised = [...res.text.matchAll(/\/explore-by-body-system\/([a-z0-9-]+)<\/loc>/g)].map((m) => m[1]);
+    expect(advertised).toEqual(["brain-nervous-system"]);
+    expect(await renderPageBody("/explore-by-body-system/eyes-vision")).toBeNull();
+  });
+});
+
+describe("long-tail body-system slugs (not canonical hubs)", () => {
+  beforeEach(() => {
+    __resetConditionHubsForTests();
+    // Rows exist for anything — the old words-or-slug match would render them.
+    studyRowsFor.fn = () => [{ slug: "s-1", title: "S", publish_year: 2024, journal: "J" }];
+  });
+
+  it.each(["molecular", "multi-system", "whole-body", "nervous-system", "cardiovascular-system", "renal-system"])(
+    "/explore-by-body-system/%s is a hard 404 (null body), even when studies match its words",
+    async (slug) => {
+      expect(await renderPageBody(`/explore-by-body-system/${slug}`)).toBeNull();
+    },
+  );
 });

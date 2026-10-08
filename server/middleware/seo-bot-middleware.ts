@@ -29,7 +29,14 @@ import {
   studyPageTitle,
 } from "../../shared/seo-markup";
 import { getHydrogenForTopic } from "../../shared/hydrogen-for-topics";
-import { bodySystemHubName, mechanismHubMeta } from "../../shared/explore-hubs";
+import { conditionHubJsonLd, getConditionHubIntro } from "../../shared/condition-hub-intros";
+import {
+  bodySystemHubName,
+  exploreDetailMeta,
+  exploreIndexCopy,
+  mechanismHubMeta,
+  type ListedExploreHubType,
+} from "../../shared/explore-hubs";
 import { marked } from "marked";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -89,6 +96,9 @@ const BOT_PATTERNS = [
   /amazonbot/i, /mistralai-user/i, /cohere/i, /youbot/i, /diffbot/i,
   /yeti/i,               // Naver (Korea)
   /seznambot/i, /qwant/i, /mojeekbot/i, /coccocbot/i,
+  // SEO site-audit crawlers (2026-10-06): AhrefsSiteAudit isn't matched by
+  // /ahrefsbot/, so Ahrefs audited the SPA shell (health score 1).
+  /ahrefssiteaudit/i, /siteauditbot/i,
   // Generic tail: catches well-behaved crawlers we haven't named. Real browser
   // UAs never contain these tokens, and a false positive is harmless — the
   // "penalty" is being served real prerendered content.
@@ -262,6 +272,11 @@ export function buildBlogMeta(blog: any): PageMeta {
   };
 }
 
+function exploreIndexMeta(type: ListedExploreHubType): { title: string; description: string } {
+  const { title, description } = exploreIndexCopy(type);
+  return { title, description };
+}
+
 export function resolveStaticPageMeta(pathname: string): PageMeta | null {
   // PLAN.md 0.6 + 1.8: internal-search pages and thin pages carry
   // noindex,follow until they have real content. Kept in nav; removed from
@@ -310,10 +325,6 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
       title: `Advanced Research Search | ${SITE_NAME}`,
       description: "Advanced search with filters for study type, outcome, date range, body system, and health condition across hydrogen therapy research."
     },
-    "/benefits": {
-      title: `Health Benefits of Hydrogen | ${SITE_NAME}`,
-      description: "Discover the scientifically-studied health benefits of molecular hydrogen, from anti-inflammatory effects to neuroprotection."
-    },
     "/explore-by-condition": {
       title: `Hydrogen Research by Health Condition | ${SITE_NAME}`,
       description: "Explore hydrogen therapy research organized by health condition. Find studies on diabetes, Alzheimer's, arthritis, cancer support, and more."
@@ -322,26 +333,14 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
       title: `Hydrogen Research by Body System | ${SITE_NAME}`,
       description: "Browse hydrogen therapy studies organized by body system — brain, heart, digestive, immune, musculoskeletal, and more."
     },
-    "/explore-by-mechanism": {
-      title: `Hydrogen Delivery Mechanisms Research | ${SITE_NAME}`,
-      description: "Explore research on different hydrogen delivery methods — hydrogen water, inhalation therapy, hydrogen-rich saline, and more."
-    },
-    "/explore-by-life-stage": {
-      title: `Hydrogen Research by Life Stage | ${SITE_NAME}`,
-      description: "Find hydrogen therapy research relevant to your life stage — pregnancy, childhood, adults, elderly, and athletes."
-    },
-    "/explore-by-demographic": {
-      title: `Hydrogen Research by Demographics | ${SITE_NAME}`,
-      description: "Explore hydrogen therapy research filtered by demographic groups and population types."
-    },
-    "/explore-by-delivery-method": {
-      title: `Hydrogen Delivery Methods Research | ${SITE_NAME}`,
-      description: "Compare research on hydrogen water, hydrogen gas inhalation, hydrogen-rich saline, hydrogen baths, and other delivery methods."
-    },
-    "/explore-by-benefit": {
-      title: `Hydrogen Research by Health Benefit | ${SITE_NAME}`,
-      description: "Browse hydrogen therapy research organized by health benefit — antioxidant, anti-inflammatory, neuroprotective, and more."
-    },
+    // Shared index copy (shared/explore-hubs.ts exploreIndexCopy) — the SPA
+    // demographic, delivery-method and benefit indexes render the same
+    // title/description for browsers.
+    "/explore-by-mechanism": exploreIndexMeta("mechanism"),
+    "/explore-by-life-stage": exploreIndexMeta("life-stage"),
+    "/explore-by-demographic": exploreIndexMeta("demographic"),
+    "/explore-by-delivery-method": exploreIndexMeta("delivery-method"),
+    "/explore-by-benefit": exploreIndexMeta("benefit"),
     "/learn/basics": {
       title: `Hydrogen Therapy Basics | ${SITE_NAME}`,
       description: "Everything you need to know about molecular hydrogen therapy — what it is, how it works, and what the research shows."
@@ -413,14 +412,18 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
   }
 
   // explore-by-{delivery-method,benefit,demographic}/:slug detail pages also
-  // rendered bodies without meta (homepage FALLBACK).
+  // rendered bodies without meta (homepage FALLBACK). Title/description/
+  // canonical are shared with the SPA hub pages (shared/explore-hubs.ts).
   const exploreDetailMatch = pathname.match(/^\/explore-by-(delivery-method|benefit|demographic)\/([^/]+)$/);
   if (exploreDetailMatch) {
-    const name = exploreDetailMatch[2].replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    const meta = exploreDetailMeta(
+      exploreDetailMatch[1] as "delivery-method" | "benefit" | "demographic",
+      exploreDetailMatch[2],
+    );
     return {
-      title: `${name}: Hydrogen Research | ${SITE_NAME}`,
-      description: `Peer-reviewed molecular hydrogen studies related to ${name.toLowerCase()}, with study types, publication years and links to each study summary and its source.`,
-      canonical: `${SITE_URL}${pathname}`,
+      title: meta.title,
+      description: meta.description,
+      canonical: `${SITE_URL}${meta.path}`,
       ogType: "website",
       ogImage: `${SITE_URL}/logo.png`,
     };
@@ -429,6 +432,21 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
   // Check explore-by-condition category pages
   const conditionMatch = pathname.match(/^\/explore-by-condition\/([^/]+)$/);
   if (conditionMatch) {
+    // Evidence-graded hubs (shared/condition-hub-intros.ts): title,
+    // description and JSON-LD from the record the SPA page renders too. The
+    // FAQ is visible on the page (bot body + SPA), so FAQPage is allowed.
+    const intro = getConditionHubIntro(conditionMatch[1]);
+    if (intro) {
+      const canonical = canonicalForCondition(intro.slug);
+      return {
+        title: intro.metaTitle,
+        description: intro.metaDescription,
+        canonical,
+        ogType: "website",
+        ogImage: `${SITE_URL}/logo.png`,
+        jsonLd: conditionHubJsonLd(intro, { canonical, siteUrl: SITE_URL }),
+      };
+    }
     const category = conditionMatch[1].replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
     return {
       title: `Hydrogen Research for ${category} | ${SITE_NAME}`,
@@ -772,7 +790,7 @@ export async function prewarmBotCache(staticPath: string): Promise<void> {
       if (row.slug) paths.push(`/blog/${row.slug}`);
     }
 
-    // All condition slugs
+    // All condition slugs (a row whose page lists no study renders no body → not cached)
     const condRows = await database.execute(sql`SELECT slug FROM health_conditions WHERE slug IS NOT NULL`);
     for (const row of (condRows.rows || []) as any[]) {
       if (row.slug) paths.push(`/explore-by-condition/${row.slug}`);

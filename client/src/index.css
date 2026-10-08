@@ -232,3 +232,10 @@
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.4); opacity: 0.7; }
 }
+
+/* Section links (#is-hydrogen-flammable): keep the heading clear of the
+   sticky site header when the page jumps to it. */
+h2[id],
+h3[id] {
+  scroll-margin-top: 5rem;
+}

@@ -20,7 +20,9 @@ test.describe("Search Functionality", () => {
   });
 
   test("search from benefits page navigates correctly", async ({ page }) => {
-    await page.goto("/benefits");
+    // /benefits is now a server 301 (no SPA route); its old SPA redirect
+    // target /learn is the page these links live on.
+    await page.goto("/learn");
     await page.waitForLoadState("networkidle");
 
     // Find a link that goes to search or studies

@@ -13,6 +13,7 @@
  */
 
 import { fetchWithTimeout } from "../utils/http";
+import { maskEmail } from "../utils/logger";
 
 const KLAVIYO_API_URL = "https://a.klaviyo.com/api";
 const KLAVIYO_REVISION = "2024-10-15";
@@ -145,7 +146,7 @@ export async function subscribeToNewsletter(email: string, options: {
     });
 
     if (subscribeResponse.ok || subscribeResponse.status === 202 || subscribeResponse.status === 204) {
-      console.log(`[Klaviyo] Subscribed ${email} to newsletter (profile: ${profileId})`);
+      console.log(`[Klaviyo] Subscribed ${maskEmail(email)} to newsletter (profile: ${profileId})`);
       return { success: true, profileId };
     }
 
@@ -220,7 +221,7 @@ export async function addCustomerProfile(email: string, options: {
     }
 
     if (profileId) {
-      console.log(`[Klaviyo] Added customer profile: ${email} (profile: ${profileId})`);
+      console.log(`[Klaviyo] Added customer profile: ${maskEmail(email)} (profile: ${profileId})`);
     }
 
     return { success: !!profileId, profileId };

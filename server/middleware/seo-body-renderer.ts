@@ -6,6 +6,7 @@
  */
 
 import { db } from "../db";
+import { headingId } from "../../shared/heading-id";
 import { sql } from "drizzle-orm";
 import { sanitizeArticleHtml } from "../utils/sanitize-html";
 import { marked } from "marked";
@@ -30,10 +31,23 @@ import {
   studySourceLink,
   studyUpdatedAt,
   withoutPlaceholders,
+  type BlogByline,
 } from "../../shared/seo-markup";
 import { isBridgeAllowed } from "../../shared/bridge-policy";
 import { getHydrogenForTopic } from "../../shared/hydrogen-for-topics";
+import {
+  CONDITION_HUB_FAQ_HEADING,
+  CONDITION_HUB_OWNER_GUIDE_LEAD,
+  CONDITION_HUB_SOURCES_HEADING,
+  CONDITION_HUB_STUDIES_HEADING,
+  conditionHubByline,
+  conditionHubSourceId,
+  conditionHubSourceLinks,
+  getConditionHubIntro,
+  type ConditionHubIntro,
+} from "../../shared/condition-hub-intros";
 import { getLiveBlogPredicate } from "../services/live-blog-index";
+import { conditionHubTermsPattern } from "../utils/condition-hub-terms";
 import {
   BODY_SYSTEM_HUBS,
   bodySystemHubName,
@@ -42,12 +56,28 @@ import {
   conditionHubForValue,
   exploreDetailCopy,
   exploreHubPath,
+  exploreIndexCopy,
   findBodySystemHub,
+  isExploreHubType,
+  isHubSlugShape,
+  isListedExploreHubType,
+  LISTED_EXPLORE_HUB_SLUGS,
+  listedExploreHubs,
+  studyCountLabel,
   type BodySystemHub,
   type ConditionHubRef,
+  type ExploreHubSummary,
+  type ListedExploreHubType,
 } from "../../shared/explore-hubs";
 
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
+
+/**
+ * The evidence-graded benefits guide. /benefits was merged into it (owner
+ * approved 2026-09-28; the 301 is a redirects-table row), so template links
+ * point at the final URL instead of hopping through the redirect.
+ */
+const BENEFITS_GUIDE_PATH = "/blog/molecular-hydrogen-benefits-guide-pillar";
 
 // ── Utilities ─────────────────────────────────────────────────
 
@@ -59,10 +89,6 @@ function esc(str: string | null | undefined): string {
 function truncate(str: string, max: number): string {
   if (!str || str.length <= max) return str || "";
   return str.substring(0, max - 3) + "...";
-}
-
-function slugify(str: string): string {
-  return str.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
 function fmtDate(d: string | Date | null | undefined): string {
@@ -94,27 +120,143 @@ async function getTopConditions(): Promise<{ name: string; slug: string }[]> {
   return _topConditions!;
 }
 
-let _conditionHubs: ConditionHubRef[] | null = null;
-let _conditionHubsAt = 0;
+/** A health_conditions row — the canonical condition hubs. */
+interface ConditionRow {
+  slug: string;
+  name: string;
+  description: string | null;
+  study_count: number;
+}
+
+let _conditionRows: ConditionRow[] | null = null;
+let _conditionRowsAt = 0;
+
+async function getConditionRows(): Promise<ConditionRow[]> {
+  if (_conditionRows && Date.now() - _conditionRowsAt < 30 * 60 * 1000) return _conditionRows;
+  const r = await db.execute(sql`
+    SELECT name, slug, description, study_count FROM health_conditions WHERE slug IS NOT NULL
+  `);
+  _conditionRows = ((r.rows || []) as any[]).map((row) => ({
+    slug: row.slug,
+    name: row.name,
+    description: row.description ?? null,
+    study_count: Number(row.study_count) || 0,
+  }));
+  // Never cache an empty result (e.g. a boot-time prewarm that ran before the
+  // 007 seed migration): the 404 predicate reads these lists, so a cached
+  // empty list would 404 every real hub for 30 minutes.
+  _conditionRowsAt = _conditionRows.length ? Date.now() : 0;
+  return _conditionRows;
+}
 
 /**
- * Every condition hub that exists (one per health_conditions row — the table
- * renderConditionPage and sitemap-categories resolve from). Study pages link
- * a condition only when it is in this list.
+ * WHERE clause of the ONE condition-hub study query: a study tagged with the
+ * hub's name (the crawler's original rule) OR whose title / plain-language
+ * title / condition tags name one of the hub's synonyms at a word start
+ * (server/utils/condition-hub-terms.ts — the keyword fallback the SPA page
+ * used). Excluded studies never match.
+ */
+function conditionHubWhere(row: ConditionRow) {
+  const tagMatch = sql`array_to_string(health_conditions, ' ') ILIKE ${"%" + row.name + "%"}`;
+  const pattern = conditionHubTermsPattern(row.slug, row.name);
+  const termMatch = pattern
+    ? sql` OR LOWER(COALESCE(title, '') || ' ' || COALESCE(plain_language_title, '') || ' ' || COALESCE(array_to_string(health_conditions, ' '), '')) ~ ${pattern}`
+    : sql``;
+  return sql`slug IS NOT NULL AND is_excluded = false AND (${tagMatch}${termMatch})`;
+}
+
+/** A study on a condition hub (crawler list + GET /api/explore/condition/:slug/studies). */
+export interface ConditionHubStudy {
+  slug: string;
+  title: string;
+  publish_year: number | null;
+  journal: string | null;
+  study_type: string | null;
+  /** ≤300-char abstract excerpt ("" when there is no real abstract) — never the full abstract. */
+  excerpt: string;
+}
+
+/**
+ * The studies a condition hub lists — ONE query for the crawler page
+ * (renderConditionPage) and the SPA page (GET /api/explore/condition/:slug/studies),
+ * so both list the same studies in the same order: name-tagged studies
+ * first, then newest. Null when the slug has no health_conditions row.
+ */
+export async function getConditionHubStudies(
+  slug: string,
+): Promise<{ hub: { slug: string; name: string; description: string | null }; studies: ConditionHubStudy[] } | null> {
+  const row = (await getConditionRows()).find((r) => r.slug === slug);
+  if (!row) return null;
+  const r = await db.execute(sql`
+    SELECT slug, COALESCE(plain_language_title, title) AS title, publish_year, journal, study_type, abstract
+    FROM studies
+    WHERE ${conditionHubWhere(row)}
+    ORDER BY (array_to_string(health_conditions, ' ') ILIKE ${"%" + row.name + "%"}) DESC NULLS LAST,
+             publish_year DESC NULLS LAST, id DESC
+    LIMIT 100
+  `);
+  const studies = ((r.rows || []) as any[]).map((s) => ({
+    slug: s.slug,
+    title: s.title,
+    publish_year: s.publish_year ?? null,
+    journal: s.journal ?? null,
+    study_type: s.study_type ?? null,
+    excerpt: abstractExcerpt(s.abstract),
+  }));
+  return { hub: { slug: row.slug, name: row.name, description: row.description }, studies };
+}
+
+/** How many studies a condition hub page lists (the same query, capped like the list). */
+async function countConditionHubStudies(row: ConditionRow): Promise<number> {
+  const r = await db.execute(sql`
+    SELECT count(*)::int AS n FROM (SELECT 1 FROM studies WHERE ${conditionHubWhere(row)} LIMIT 100) q
+  `);
+  return Number((r.rows?.[0] as any)?.n) || 0;
+}
+
+let _conditionHubSummaries: ExploreHubSummary[] | null = null;
+let _conditionHubSummariesAt = 0;
+
+/**
+ * Every condition hub that exists, most-studied first: a health_conditions
+ * row (the canonical hubs — the table renderConditionPage and
+ * sitemap-categories resolve from) whose page lists ≥1 study with the shared
+ * query (getConditionHubStudies). Any other /explore-by-condition/<slug> is a
+ * 404 for bots and browsers alike. The crawler index, the SPA index
+ * (GET /api/explore/condition/hubs), study-page links, sitemap-categories and
+ * the 404 predicate (exploreHubExists) all read this list; `studyCount` is
+ * the number of studies the hub page lists. Throws on a DB error (callers
+ * decide how to degrade).
+ */
+export async function getConditionHubSummaries(): Promise<ExploreHubSummary[]> {
+  if (_conditionHubSummaries && Date.now() - _conditionHubSummariesAt < 30 * 60 * 1000) {
+    return _conditionHubSummaries;
+  }
+  const rows = await getConditionRows();
+  const counted = await Promise.all(rows.map(async (row) => ({ row, n: await countConditionHubStudies(row) })));
+  _conditionHubSummaries = counted
+    .filter(({ n }) => n > 0)
+    .sort((a, b) => b.n - a.n || b.row.study_count - a.row.study_count || a.row.name.localeCompare(b.row.name))
+    .map(({ row, n }) => ({
+      slug: row.slug,
+      name: row.name,
+      path: exploreHubPath("condition", row.slug),
+      studyCount: n,
+    }));
+  _conditionHubSummariesAt = _conditionHubSummaries.length ? Date.now() : 0; // empty → not cached
+  return _conditionHubSummaries;
+}
+
+/**
+ * Condition hubs as { slug, name } — study pages link a condition only when
+ * it is in this list. A DB error links nothing rather than risk 404 links.
  */
 async function getConditionHubs(): Promise<ConditionHubRef[]> {
-  if (_conditionHubs && Date.now() - _conditionHubsAt < 30 * 60 * 1000) return _conditionHubs;
   try {
-    const r = await db.execute(sql`
-      SELECT name, slug FROM health_conditions WHERE slug IS NOT NULL
-    `);
-    _conditionHubs = (r.rows || []).map((row: any) => ({ name: row.name, slug: row.slug }));
-    _conditionHubsAt = Date.now();
+    return (await getConditionHubSummaries()).map(({ slug, name }) => ({ slug, name }));
   } catch {
-    // Unknown hub set → link nothing rather than risk links to 404s.
     return [];
   }
-  return _conditionHubs!;
 }
 
 let _liveBodySystemHubs: BodySystemHub[] | null = null;
@@ -131,7 +273,7 @@ function bodySystemMatchSql(slug: string) {
  * Canonical body-system hubs that resolve right now — renderBodySystemPage
  * 404s a hub with no matching study, so the index links only these.
  */
-async function getLiveBodySystemHubs(): Promise<BodySystemHub[]> {
+export async function getLiveBodySystemHubs(): Promise<BodySystemHub[]> {
   if (_liveBodySystemHubs && Date.now() - _liveBodySystemHubsAt < 30 * 60 * 1000) return _liveBodySystemHubs;
   const live = await Promise.all(
     BODY_SYSTEM_HUBS.map(async (hub) => {
@@ -142,16 +284,94 @@ async function getLiveBodySystemHubs(): Promise<BodySystemHub[]> {
     }),
   );
   _liveBodySystemHubs = live.filter((h): h is BodySystemHub => h !== null);
-  _liveBodySystemHubsAt = Date.now();
+  _liveBodySystemHubsAt = _liveBodySystemHubs.length ? Date.now() : 0; // empty → not cached (404 predicate)
   return _liveBodySystemHubs;
+}
+
+const _liveListedHubs = new Map<ListedExploreHubType, { hubs: ExploreHubSummary[]; at: number }>();
+
+/**
+ * Curated demographic / delivery-method / benefit / life-stage / mechanism
+ * hubs (shared/explore-hubs.ts) whose page lists at least one study right
+ * now, with that count. The crawler index (renderExploreIndex), the SPA index
+ * (GET /api/explore/:type/hubs) and the 404 predicate (exploreHubExists) all
+ * read this, so browsers and bots link exactly the same hubs and every other
+ * slug is a 404. Counts come from the same query the hub page itself runs
+ * (getExploreDetailStudies), so an index count always equals the number of
+ * studies on the linked page.
+ */
+export async function getLiveExploreHubs(type: ListedExploreHubType): Promise<ExploreHubSummary[]> {
+  const cached = _liveListedHubs.get(type);
+  if (cached && Date.now() - cached.at < 30 * 60 * 1000) return cached.hubs;
+  const counts: Record<string, number> = {};
+  await Promise.all(
+    LISTED_EXPLORE_HUB_SLUGS[type].map(async (slug) => {
+      counts[slug] = (await getExploreDetailStudies(slug)).length;
+    }),
+  );
+  const hubs = listedExploreHubs(type, counts);
+  // Empty → not cached (the 404 predicate reads this list).
+  _liveListedHubs.set(type, { hubs, at: hubs.length ? Date.now() : 0 });
+  return hubs;
+}
+
+/**
+ * THE "hub exists" predicate for /explore-by-<type>/<slug> — one rule per
+ * type, shared by the crawler renderer (null body → hard 404), the SPA shell
+ * fallback (server/index.ts → HTTP 404) and GET /api/explore/:type/:slug
+ * (→ the SPA renders NotFound). Bots and browsers therefore get the same
+ * status for every hub URL:
+ *   - condition:   a health_conditions row with ≥1 study (getConditionHubSummaries)
+ *   - body-system: a canonical BODY_SYSTEM_HUBS slug with ≥1 study
+ *                  (getLiveBodySystemHubs — renderBodySystemPage already
+ *                  404'd a canonical hub without studies)
+ *   - mechanism / life-stage: one of the sitemap-explore hubs
+ *                  (MECHANISM_HUB_SLUGS / LIFE_STAGE_HUB_SLUGS). A sitemap hub
+ *                  whose page lists no study stays valid: dropping it from the
+ *                  sitemap is a content-destructive op that needs the owner's
+ *                  approval of the URL (reports/hub-404-impact-2026-09-28.csv).
+ *   - delivery-method / demographic / benefit: a curated slug whose page lists
+ *                  ≥1 study (getLiveExploreHubs)
+ * Case / trailing-slash variants never get here: URL hygiene 301s them first.
+ * Throws on a DB error — callers choose how to degrade.
+ */
+export async function exploreHubExists(type: string, slug: string): Promise<boolean> {
+  if (!isExploreHubType(type) || !isHubSlugShape(slug)) return false;
+  if (type === "condition") {
+    return (await getConditionHubSummaries()).some((h) => h.slug === slug);
+  }
+  if (type === "body-system") {
+    if (!findBodySystemHub(slug)) return false;
+    return (await getLiveBodySystemHubs()).some((h) => h.slug === slug);
+  }
+  if (!isListedExploreHubType(type)) return false;
+  if (!LISTED_EXPLORE_HUB_SLUGS[type].includes(slug)) return false;
+  if (SITEMAP_LISTED_HUB_TYPES.has(type)) return true;
+  return (await getLiveExploreHubs(type)).some((h) => h.slug === slug);
+}
+
+/** Listed hub types whose every curated slug is advertised in sitemap-explore. */
+const SITEMAP_LISTED_HUB_TYPES: ReadonlySet<ListedExploreHubType> = new Set<ListedExploreHubType>(["mechanism", "life-stage"]);
+
+/**
+ * Drop the cached hub lists. Called once boot migrations finish: the bot-cache
+ * prewarm can run while migrations are still going, and a hub row a migration
+ * adds (e.g. 024 sleep-quality) would otherwise 404 until the 30-minute cache
+ * expired (2026-09-29).
+ */
+export function invalidateHubCaches(): void {
+  __resetConditionHubsForTests();
 }
 
 /** Test-only: drop the cached hub lists. */
 export function __resetConditionHubsForTests(): void {
-  _conditionHubs = null;
-  _conditionHubsAt = 0;
+  _conditionHubSummaries = null;
+  _conditionHubSummariesAt = 0;
+  _conditionRows = null;
+  _conditionRowsAt = 0;
   _liveBodySystemHubs = null;
   _liveBodySystemHubsAt = 0;
+  _liveListedHubs.clear();
 }
 
 // ── Shared HTML fragments ─────────────────────────────────────
@@ -198,7 +418,7 @@ function footer(conditions: { name: string; slug: string }[]): string {
   h += `<li><a href="/learn/basics">Hydrogen Basics</a></li>`;
   h += `<li><a href="/learn/health-benefits">Health Benefits</a></li>`;
   h += `<li><a href="/learn/therapy-guide">Therapy Guide</a></li>`;
-  h += `<li><a href="/benefits">Benefits Overview</a></li>`;
+  h += `<li><a href="${BENEFITS_GUIDE_PATH}">Hydrogen water benefits (evidence-graded)</a></li>`;
   h += `</ul></section>`;
 
   h += `<section><h3>Company</h3><ul>`;
@@ -235,19 +455,38 @@ export function renderBlogBylineHtml(b: {
   published_at?: string | Date | null;
   created_at?: string | Date | null;
 }): string {
-  const by = blogByline({
+  return renderBylineHtml(blogByline({
     authorName: b.author_name,
     reviewerName: b.reviewer_name,
     lastReviewed: b.last_reviewed,
     updatedAt: b.updated_at,
     publishedAt: b.published_at,
     createdAt: b.created_at,
-  });
+  }));
+}
+
+/** Byline markup for a resolved byline — the bot twin of the SPA's <Byline>. */
+export function renderBylineHtml(by: BlogByline): string {
   let h = `<p class="byline">By <a href="${by.href}">${esc(by.author)}</a>`;
   if (by.reviewer) h += ` · Reviewed by ${esc(by.reviewer)}`;
   if (by.date) h += ` · ${by.dateLabel} <time datetime="${isoDate(by.date)}">${esc(by.dateText)}</time>`;
   h += `</p>\n`;
   return h;
+}
+
+/**
+ * Markdown → HTML for crawler bodies (PLAN.md 1.5): marked, then slug ids on
+ * h2/h3 so in-page anchors work. Callers sanitize (sanitizeArticleHtml) and
+ * demote any body <h1> (demoteH1InHtml) — the page's only H1 is its title.
+ */
+function markdownToHtml(md: string): string {
+  const html = marked.parse(md, { async: false }) as string;
+  // Same id rule as the SPA (shared/heading-id): visible text with inline
+  // tags stripped and entities decoded.
+  return html.replace(/<h([23])>([\s\S]*?)<\/h\1>/g, (m, lvl, inner) => {
+    const id = headingId(inner.replace(/<[^>]*>/g, ""));
+    return id ? `<h${lvl} id="${id}">${inner}</h${lvl}>` : m;
+  });
 }
 
 // ── Data queries ──────────────────────────────────────────────
@@ -492,9 +731,7 @@ export async function renderBlog(slugOrId: string): Promise<string | null> {
         /(\*\*|^#{1,3} |\n#{1,3} |\]\()/m.test(raw);
       if (looksLikeMarkdown) {
         try {
-          raw = marked.parse(raw, { async: false }) as string;
-          raw = raw.replace(/<h([23])>([^<]+)<\/h\1>/g,
-            (_m, lvl, text) => `<h${lvl} id="${slugify(text)}">${text}</h${lvl}>`);
+          raw = markdownToHtml(raw);
         } catch {
           // fall through with the original content — sanitizer still applies
         }
@@ -609,7 +846,7 @@ async function renderHomepage(): Promise<string> {
   h += `<li><a href="/learn/basics">Hydrogen Therapy Basics</a></li>`;
   h += `<li><a href="/learn/health-benefits">Health Benefits Guide</a></li>`;
   h += `<li><a href="/learn/therapy-guide">Therapy Guide</a></li>`;
-  h += `<li><a href="/benefits">Benefits Overview</a></li>`;
+  h += `<li><a href="${BENEFITS_GUIDE_PATH}">Hydrogen water benefits (evidence-graded)</a></li>`;
   h += `</ul></section>\n`;
 
   h += footer(conditions);
@@ -681,46 +918,98 @@ export async function renderBlogList(): Promise<string> {
   return h;
 }
 
+/**
+ * Evidence-graded intro of a condition hub (shared/condition-hub-intros.ts),
+ * the crawler twin of ConditionCategoryPage's intro: H1, byline ("Updated" —
+ * no named reviewer), the intro (markdown → HTML through the blog-body path),
+ * the visible FAQ its FAQPage JSON-LD describes, and the numbered sources the
+ * intro's "[n]" refs point to.
+ */
+export function renderConditionHubIntroHtml(intro: ConditionHubIntro): string {
+  let h = `<article>\n<h1>${esc(intro.h1)}</h1>\n`;
+  h += renderBylineHtml(conditionHubByline(intro));
+  const body = demoteH1InHtml(sanitizeArticleHtml(markdownToHtml(intro.introMarkdown)));
+  h += `<div class="hub-intro">${body}</div>\n`;
+  if (intro.faqs.length > 0) {
+    h += `<section aria-labelledby="faq"><h2 id="faq">${esc(CONDITION_HUB_FAQ_HEADING)}</h2>`;
+    for (const faq of intro.faqs) h += `<h3>${esc(faq.question)}</h3><p>${esc(faq.answer)}</p>`;
+    h += `</section>\n`;
+  }
+  if (intro.sources.length > 0) {
+    h += `<section aria-labelledby="sources"><h2 id="sources">${esc(CONDITION_HUB_SOURCES_HEADING)}</h2><ol>`;
+    for (const s of intro.sources) {
+      h += `<li id="${conditionHubSourceId(s.n)}">${esc(s.citation)}`;
+      conditionHubSourceLinks(s).forEach((link, i) => {
+        const attrs = link.external ? ` target="_blank" rel="noopener noreferrer"` : "";
+        h += `${i === 0 ? " " : " · "}<a href="${esc(link.href)}"${attrs}>${esc(link.label)}</a>`;
+      });
+      h += `</li>`;
+    }
+    h += `</ol></section>\n`;
+  }
+  h += `</article>\n`;
+  return h;
+}
+
+/** "Read the full guide: <owner page>" — after the study list. */
+export function renderConditionHubOwnerGuideHtml(intro: ConditionHubIntro): string {
+  return `<section class="owner-guide"><p><strong>${esc(CONDITION_HUB_OWNER_GUIDE_LEAD)}</strong> ` +
+    `<a href="${esc(intro.ownerLink.href)}">${esc(intro.ownerLink.label)}</a></p></section>\n`;
+}
+
 async function renderConditionPage(slug: string): Promise<string | null> {
   try {
-    const condR = await db.execute(sql`
-      SELECT name, slug, description FROM health_conditions WHERE slug = ${slug} LIMIT 1
-    `);
-    const cond: any = condR.rows?.[0];
-    if (!cond) return null;
+    // Not a hub (no health_conditions row, or a row whose page lists no
+    // study) → hard 404.
+    if (!(await exploreHubExists("condition", slug))) return null;
+    // The ONE condition-hub study query, shared with the SPA page
+    // (GET /api/explore/condition/:slug/studies): name tag OR hub synonyms.
+    // It used to match the name tag only — 0 studies on kidney-health while
+    // the SPA listed ~50.
+    const hubStudies = await getConditionHubStudies(slug);
+    if (!hubStudies) return null;
+    const cond = hubStudies.hub;
 
-    const [studiesR, relatedBlogs, conditions] = await Promise.all([
-      db.execute(sql`
-        SELECT slug, COALESCE(plain_language_title, title) as title, publish_year, journal, study_type
-        FROM studies
-        WHERE array_to_string(health_conditions, ' ') ILIKE ${"%" + cond.name + "%"} AND slug IS NOT NULL
-          AND is_excluded = false
-        ORDER BY publish_year DESC NULLS LAST LIMIT 100
-      `),
+    const [relatedBlogs, conditions] = await Promise.all([
       getRelatedBlogs(cond.name),
       getTopConditions(),
     ]);
 
-    const studies = (studiesR.rows || []) as any[];
+    const studies = hubStudies.studies;
+    // Evidence-graded hubs (keyword plan wave 3) — same record the SPA
+    // page renders (ConditionCategoryPage.tsx).
+    const intro = getConditionHubIntro(slug);
+
+    let studyItems = "";
+    for (const s of studies) {
+      studyItems += `<li><a href="/study/${esc(s.slug)}">${esc(s.title)}</a>`;
+      const meta = [s.publish_year, s.journal, s.study_type].filter(Boolean).join(", ");
+      if (meta) studyItems += ` — ${esc(String(meta))}`;
+      studyItems += `</li>`;
+    }
 
     let h = breadcrumbs([
       { label: "Home", href: "/" },
       { label: "Health Conditions", href: "/explore-by-condition" },
       { label: cond.name },
     ]);
-    h += `<h1>Hydrogen Research for ${esc(cond.name)}</h1>\n`;
-    if (cond.description) h += `<p>${esc(cond.description)}</p>\n`;
-    h += `<p>${studies.length} research stud${studies.length === 1 ? "y" : "ies"} on hydrogen therapy for ${esc(cond.name.toLowerCase())}.</p>\n`;
-
-    if (studies.length > 0) {
-      h += `<section><h2>Research Studies</h2><ul>`;
-      for (const s of studies) {
-        h += `<li><a href="/study/${esc(s.slug)}">${esc(s.title)}</a>`;
-        const meta = [s.publish_year, s.journal, s.study_type].filter(Boolean).join(", ");
-        if (meta) h += ` — ${esc(String(meta))}`;
-        h += `</li>`;
+    if (intro) {
+      // The reviewed intro REPLACES health_conditions.description and the
+      // generic count line: they contradicted it ("Hydrogen water bathing
+      // may reduce UV damage…"). No sponsor/product block (bridgeTopic null).
+      h += renderConditionHubIntroHtml(intro);
+      if (studies.length > 0) {
+        h += `<section><h2>${esc(CONDITION_HUB_STUDIES_HEADING)}</h2>`;
+        h += `<p>${studyCountLabel(studies.length)} in our database.</p><ul>${studyItems}</ul></section>\n`;
       }
-      h += `</ul></section>\n`;
+      h += renderConditionHubOwnerGuideHtml(intro);
+    } else {
+      h += `<h1>Hydrogen Research for ${esc(cond.name)}</h1>\n`;
+      if (cond.description) h += `<p>${esc(cond.description)}</p>\n`;
+      h += `<p>${studies.length} research stud${studies.length === 1 ? "y" : "ies"} on hydrogen therapy for ${esc(cond.name.toLowerCase())}.</p>\n`;
+      if (studies.length > 0) {
+        h += `<section><h2>Research Studies</h2><ul>${studyItems}</ul></section>\n`;
+      }
     }
 
     if (relatedBlogs.length > 0) {
@@ -743,11 +1032,14 @@ async function renderConditionPage(slug: string): Promise<string | null> {
 }
 
 async function renderBodySystemPage(slug: string): Promise<string | null> {
-  // Sitemap hubs resolve via their curated terms (server/utils/explore-hubs.ts);
-  // any other slug keeps the historical words-or-slug match.
+  // Only the canonical hubs (the sitemap list, shared/explore-hubs.ts) with
+  // ≥1 study exist; they resolve via their curated terms. Any other slug —
+  // the ~100 long-tail values (/explore-by-body-system/molecular, …) that
+  // used to render a words-or-slug match — is a hard 404, for browsers too.
   const displayName = findBodySystemHub(slug)?.label
     ?? slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   try {
+    if (!(await exploreHubExists("body-system", slug))) return null;
     const likeAny = bodySystemMatchSql(slug);
     const [studiesR, conditions] = await Promise.all([
       db.execute(sql`
@@ -792,11 +1084,12 @@ async function renderExploreIndex(type: string): Promise<string> {
   const titles: Record<string, string> = {
     condition: "Hydrogen Research by Health Condition",
     "body-system": "Hydrogen Research by Body System",
-    mechanism: "Hydrogen Research by Mechanism",
-    "delivery-method": "Hydrogen Research by Delivery Method",
-    "life-stage": "Hydrogen Research by Life Stage",
-    benefit: "Hydrogen Research by Health Benefit",
-    demographic: "Hydrogen Research by Demographics",
+    // Shared with the SPA index pages (same H1 for browsers and bots).
+    mechanism: exploreIndexCopy("mechanism").h1,
+    "delivery-method": exploreIndexCopy("delivery-method").h1,
+    "life-stage": exploreIndexCopy("life-stage").h1,
+    benefit: exploreIndexCopy("benefit").h1,
+    demographic: exploreIndexCopy("demographic").h1,
   };
   const title = titles[type] || "Explore Hydrogen Research";
 
@@ -804,15 +1097,14 @@ async function renderExploreIndex(type: string): Promise<string> {
   h += `<h1>${esc(title)}</h1>\n`;
 
   if (type === "condition") {
+    // The condition hubs that exist (a health_conditions row with studies) —
+    // the same list GET /api/explore/condition/hubs serves the SPA index.
     try {
-      const r = await db.execute(sql`
-        SELECT name, slug, study_count FROM health_conditions
-        WHERE slug IS NOT NULL ORDER BY study_count DESC NULLS LAST
-      `);
+      const hubs = await getConditionHubSummaries();
       h += `<ul>`;
-      for (const c of (r.rows || []) as any[]) {
-        h += `<li><a href="/explore-by-condition/${esc(c.slug)}">${esc(c.name)}</a>`;
-        if (c.study_count) h += ` (${c.study_count} studies)`;
+      for (const c of hubs) {
+        h += `<li><a href="${esc(c.path)}">${esc(c.name)}</a>`;
+        if (c.studyCount) h += ` (${c.studyCount} studies)`;
         h += `</li>`;
       }
       h += `</ul>\n`;
@@ -832,6 +1124,24 @@ async function renderExploreIndex(type: string): Promise<string> {
       h += `</ul>\n`;
     } catch {
       h += `<p>Browse research by body system.</p>\n`;
+    }
+  } else if (isListedExploreHubType(type)) {
+    // The curated hubs that list studies — the same list (and links) the SPA
+    // index renders from GET /api/explore/:type/hubs. Before 2026-09-28 these
+    // indexes linked no hub at all for crawlers (benefit, life-stage and
+    // mechanism until the hub-404 change).
+    h += `<p>${esc(exploreIndexCopy(type).intro)}</p>\n`;
+    try {
+      const hubs = await getLiveExploreHubs(type);
+      if (hubs.length > 0) {
+        h += `<ul>`;
+        for (const hub of hubs) {
+          h += `<li><a href="${esc(hub.path)}">${esc(hub.name)}</a> (${studyCountLabel(hub.studyCount)})</li>`;
+        }
+        h += `</ul>\n`;
+      }
+    } catch {
+      // Hub list unavailable — the intro and cross-links still render.
     }
   } else {
     h += `<p>Explore hydrogen therapy research organized by ${type.replace(/-/g, " ")}.</p>\n`;
@@ -886,6 +1196,10 @@ async function renderExploreDetail(type: string, slug: string): Promise<string |
   // Same H1/intro copy as the SPA hub page (shared/explore-hubs.ts).
   const { name: displayName, h1, intro } = exploreDetailCopy(slug);
   try {
+    // Only hubs that exist render (exploreHubExists); any other slug (e.g.
+    // /explore-by-demographic/xyzzy) used to render an empty 200 page (soft
+    // 404) — now a hard 404, for browsers too.
+    if (!(await exploreHubExists(type, slug))) return null;
     const [studies, conditions] = await Promise.all([
       getExploreDetailStudies(slug),
       getTopConditions(),
@@ -1001,7 +1315,6 @@ export async function renderHydrogenForPage(slug: string): Promise<string | null
 function renderStaticPage(pathname: string): string | null {
   const pages: Record<string, { title: string; desc: string }> = {
     "/about": { title: "About Hydrogen Studies", desc: "Hydrogen Studies is the most comprehensive database of molecular hydrogen research, dedicated to making scientific research accessible to everyone." },
-    "/benefits": { title: "Health Benefits of Hydrogen", desc: "Discover the scientifically-studied health benefits of molecular hydrogen, from anti-inflammatory effects to neuroprotection, backed by peer-reviewed research." },
     "/contact": { title: "Contact Us", desc: "Get in touch with the Hydrogen Studies team. Questions about hydrogen research, partnership inquiries, or feedback welcome." },
     "/products": { title: "Hydrogen Products", desc: "Explore hydrogen water generators, inhalation devices, and other hydrogen therapy products backed by research." },
     "/recommendations": { title: "Research Recommendations", desc: "Personalized hydrogen therapy research recommendations based on your interests and health conditions." },

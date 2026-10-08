@@ -16,7 +16,14 @@ import {
   studyOutcomes,
 } from "@shared/schema-hydrogen-fields";
 import { and, eq, sql } from "drizzle-orm";
-import { getExploreDetailStudies } from "../middleware/seo-body-renderer";
+import {
+  exploreHubExists,
+  getConditionHubStudies,
+  getConditionHubSummaries,
+  getExploreDetailStudies,
+  getLiveExploreHubs,
+} from "../middleware/seo-body-renderer";
+import { exploreHubPath, isExploreHubType, isListedExploreHubType } from "@shared/explore-hubs";
 
 const router = Router();
 
@@ -261,26 +268,89 @@ router.get(
 );
 
 /**
+ * Explore-hub APIs. Every "does this hub exist" answer comes from
+ * seo-body-renderer exploreHubExists — the same predicate that makes the
+ * crawler renderer 404 an unknown hub and the SPA shell fallback answer
+ * HTTP 404 — so an unknown slug is a 404 for bots, browsers and the SPA alike.
+ *
+ * Route order matters: /hubs is registered before /:slug.
+ */
+
+/**
+ * Hubs linked from an /explore-by-<type> index — the crawler index renders
+ * the same list (seo-body-renderer getLiveExploreHubs / getConditionHubSummaries),
+ * so the SPA and bot indexes link the same hubs with the same counts.
+ * Listed types: the curated slugs whose page lists ≥1 study. condition: the
+ * health_conditions hubs with studies, most-studied first.
+ */
+router.get("/api/explore/:type/hubs", async (req: Request, res: Response) => {
+  const { type } = req.params;
+  if (type !== "condition" && !isListedExploreHubType(type)) {
+    return res.status(404).json({ error: "Not found" });
+  }
+  try {
+    const hubs = type === "condition" ? await getConditionHubSummaries() : await getLiveExploreHubs(type);
+    res.set("Cache-Control", "public, max-age=300");
+    res.json({ hubs });
+  } catch (error) {
+    logger.error("Error fetching explore hubs", error, "HydrogenRoutes", { type });
+    res.status(500).json({ error: "Failed to fetch hubs" });
+  }
+});
+
+/**
  * Studies on an /explore-by-<type>/<slug> detail hub — exactly the list the
  * crawler renderer shows for that URL (seo-body-renderer
  * getExploreDetailStudies), so the SPA page and the bot HTML match. The six
  * sitemap mechanism hubs (hydrogen-water, …) are delivery modes, not rows of
  * the `mechanisms` table, so /api/mechanisms/:slug can't serve them.
+ * 404 when the hub doesn't exist → the SPA page renders NotFound.
  */
-const EXPLORE_DETAIL_TYPES = new Set(["mechanism", "delivery-method", "life-stage", "benefit", "demographic"]);
-
 router.get("/api/explore/:type/:slug/studies", async (req: Request, res: Response) => {
   const { type, slug } = req.params;
-  if (!EXPLORE_DETAIL_TYPES.has(type) || !/^[a-z0-9-]{1,120}$/.test(slug)) {
+  if (type !== "condition" && !isListedExploreHubType(type)) {
     return res.status(404).json({ error: "Not found" });
   }
   try {
+    if (!(await exploreHubExists(type, slug))) {
+      return res.status(404).json({ error: "Not found" });
+    }
+    if (type === "condition") {
+      // Condition hubs: the ONE query the crawler page lists
+      // (seo-body-renderer getConditionHubStudies) — hub name + studies.
+      const hubStudies = await getConditionHubStudies(slug);
+      if (!hubStudies) return res.status(404).json({ error: "Not found" });
+      res.set("Cache-Control", "public, max-age=300");
+      return res.json(hubStudies);
+    }
     const studies = await getExploreDetailStudies(slug);
     res.set("Cache-Control", "public, max-age=300");
     res.json({ studies });
   } catch (error) {
     logger.error("Error fetching explore hub studies", error, "HydrogenRoutes", { type, slug });
     res.status(500).json({ error: "Failed to fetch studies" });
+  }
+});
+
+/**
+ * Does /explore-by-<type>/<slug> exist? 200 { type, slug, path } or 404.
+ * The condition / body-system / life-stage SPA pages (which read their study
+ * lists elsewhere) render NotFound on a 404 (ExploreHubGate).
+ */
+router.get("/api/explore/:type/:slug", async (req: Request, res: Response) => {
+  const { type, slug } = req.params;
+  if (!isExploreHubType(type)) {
+    return res.status(404).json({ error: "Not found" });
+  }
+  try {
+    if (!(await exploreHubExists(type, slug))) {
+      return res.status(404).json({ error: "Not found" });
+    }
+    res.set("Cache-Control", "public, max-age=300");
+    res.json({ type, slug, path: exploreHubPath(type, slug) });
+  } catch (error) {
+    logger.error("Error checking explore hub", error, "HydrogenRoutes", { type, slug });
+    res.status(500).json({ error: "Failed to check hub" });
   }
 });
 

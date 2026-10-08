@@ -7,6 +7,7 @@
 
 import { Router, Request, Response } from "express";
 import { subscribeToNewsletter, isKlaviyoConfigured } from "../services/klaviyo-api";
+import { maskEmail } from "../utils/logger";
 
 const router = Router();
 
@@ -31,7 +32,7 @@ router.post("/subscribe", async (req: Request, res: Response) => {
 
     if (!isKlaviyoConfigured()) {
       // If Klaviyo isn't configured, still acknowledge (don't break the UX)
-      console.log(`[Newsletter] Signup received but Klaviyo not configured: ${email}`);
+      console.log(`[Newsletter] Signup received but Klaviyo not configured: ${maskEmail(email)}`);
       return res.json({
         success: true,
         message: "Thank you for subscribing! You'll receive our latest hydrogen research updates.",

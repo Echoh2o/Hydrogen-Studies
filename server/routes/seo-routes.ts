@@ -12,7 +12,8 @@ import { eq, desc, isNotNull, isNull, sql, and, count, inArray, gt } from "drizz
 import { requireAdmin } from "../auth";
 import { logger } from "../utils/logger";
 import { toAbsoluteUrl } from "../utils/absolute-url";
-import { BODY_SYSTEM_HUBS, LIFE_STAGE_HUB_SLUGS, MECHANISM_HUB_SLUGS, exploreHubPath } from "../utils/explore-hubs";
+import { LIFE_STAGE_HUB_SLUGS, MECHANISM_HUB_SLUGS, exploreHubPath } from "../utils/explore-hubs";
+import { getConditionHubSummaries, getLiveBodySystemHubs } from "../middleware/seo-body-renderer";
 
 const router = Router();
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
@@ -59,6 +60,11 @@ function setCache(key: string, content: string): void {
   sitemapCache[key] = { content, timestamp: Date.now() };
 }
 
+/** Test-only: drop every cached sitemap. */
+export function __resetSitemapCacheForTests(): void {
+  for (const k of Object.keys(sitemapCache)) delete sitemapCache[k];
+}
+
 function xmlHeader(): string {
   return '<?xml version="1.0" encoding="UTF-8"?>\n';
 }
@@ -97,7 +103,6 @@ Allow: /learn/
 Allow: /search
 Allow: /advanced-search
 Allow: /about
-Allow: /benefits
 Allow: /products
 Allow: /recommendations
 Allow: /contact
@@ -243,7 +248,8 @@ router.get("/sitemap-pages.xml", (req: Request, res: Response) => {
     // PLAN.md 0.6: internal search results are noindex and out of the sitemap.
     // PLAN.md 1.8: thin pages (/products, /recommendations, /learn/*) are
     // noindex until they carry real content — kept in nav, not in the sitemap.
-    { url: "/benefits", priority: "0.8", freq: "monthly" },
+    // /benefits 301s to /blog/molecular-hydrogen-benefits-guide-pillar (merged,
+    // owner-approved 2026-09-28) — the guide is listed in sitemap-blog.
     { url: "/about", priority: "0.6", freq: "monthly" },
     { url: "/contact", priority: "0.4", freq: "yearly" },
     { url: "/explore-by-condition", priority: "0.9", freq: "weekly" },
@@ -255,7 +261,7 @@ router.get("/sitemap-pages.xml", (req: Request, res: Response) => {
     { url: "/explore-by-benefit", priority: "0.8", freq: "weekly" },
     { url: "/insights", priority: "0.7", freq: "weekly" },
     { url: "/research-analytics", priority: "0.7", freq: "weekly" },
-    // /hydrogen-therapy-guide 301s to /blog/hydrogen-gas-therapy-research —
+    // /hydrogen-therapy-guide is a 301 (a redirects-table row, not code) —
     // a sitemap lists only final 200 URLs (removal approved, re-audit 2026-09-28).
     // Programmatic hydrogen-for condition pages
     { url: "/hydrogen-for/heart-disease", priority: "0.8", freq: "weekly" },
@@ -413,13 +419,14 @@ router.get("/sitemap-categories.xml", async (req: Request, res: Response) => {
       return res.send(cached);
     }
 
-    // Generate condition URLs from health_conditions — the same table the
-    // crawler-facing renderer validates slugs against — so every URL here
-    // resolves to a real page (see seo-body-renderer.ts).
-    const conditions = await db.select({
+    // Condition URLs = the condition hubs that exist (a health_conditions row
+    // with studies — seo-body-renderer getConditionHubSummaries, the same
+    // predicate the renderer and the SPA 404 use), so every URL here is a 200.
+    const hubSlugs = new Set((await getConditionHubSummaries()).map((h) => h.slug));
+    const conditions = (await db.select({
       slug: healthConditions.slug,
       createdAt: healthConditions.createdAt,
-    }).from(healthConditions);
+    }).from(healthConditions)).filter((c) => c.slug && hubSlugs.has(c.slug));
 
     const urls = conditions.map(c => {
       const lastmod = formatDate(c.createdAt);
@@ -463,9 +470,11 @@ router.get("/sitemap-explore.xml", async (req: Request, res: Response) => {
     const urls: string[] = [];
     const today = formatDate(new Date());
 
-    // Body system explore pages — same list the renderer resolves
-    // (server/utils/explore-hubs.ts), so every advertised URL returns 200.
-    for (const { slug: bs } of BODY_SYSTEM_HUBS) {
+    // Only hubs that exist (seo-body-renderer exploreHubExists) — every other
+    // hub URL is a 404 for bots and browsers, so every advertised URL is a 200.
+    // Body system explore pages: the canonical hubs with ≥1 study (a canonical
+    // hub without studies has always been a crawler 404).
+    for (const { slug: bs } of await getLiveBodySystemHubs()) {
       urls.push(`  <url>
     <loc>${SITE_URL}/explore-by-body-system/${bs}</loc>
     <lastmod>${today}</lastmod>
@@ -474,7 +483,7 @@ router.get("/sitemap-explore.xml", async (req: Request, res: Response) => {
   </url>`);
     }
 
-    // Predefined mechanism pages
+    // Predefined mechanism pages (all valid hubs — exploreHubExists)
     for (const m of MECHANISM_HUB_SLUGS) {
       urls.push(`  <url>
     <loc>${SITE_URL}/explore-by-mechanism/${m}</loc>
@@ -485,7 +494,8 @@ router.get("/sitemap-explore.xml", async (req: Request, res: Response) => {
     }
 
     // Predefined life stage pages — same path helper as the SPA canonical
-    // (LifeStageCategoryPage), so the two can't drift apart again.
+    // (LifeStageCategoryPage), so the two can't drift apart again. All valid
+    // hubs (exploreHubExists).
     for (const ls of LIFE_STAGE_HUB_SLUGS) {
       urls.push(`  <url>
     <loc>${SITE_URL}${exploreHubPath("life-stage", ls)}</loc>

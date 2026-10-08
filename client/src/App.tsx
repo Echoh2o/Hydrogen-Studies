@@ -28,7 +28,6 @@ const ResetPasswordPage = lazy(() => import("@/pages/ResetPasswordPage"));
 
 // Lazy load all non-critical pages for better performance
 const SearchPage = lazy(() => import("@/pages/SearchPage"));
-const BenefitsPage = lazy(() => import("@/pages/BenefitsPage"));
 const LearnPage = lazy(() => import("@/pages/LearnPage"));
 const ProductsPage = lazy(() => import("@/pages/ProductsPage"));
 const HydrogenBasicsPage = lazy(() => import("@/pages/HydrogenBasicsPage"));
@@ -66,7 +65,13 @@ const HydrogenTherapyGuide = lazy(
 );
 
 // New organization structure pages
+const ExploreHubGate = lazy(() => import("@/components/explore/ExploreHubGate"));
 const ExploreByBenefit = lazy(() => import("@/pages/ExploreByBenefit"));
+const BenefitDetailPage = lazy(() =>
+  import("@/pages/ExploreByBenefit").then((module) => ({
+    default: module.BenefitDetailPage,
+  })),
+);
 const ExploreByCondition = lazy(() => import("@/pages/ExploreByCondition"));
 const ConditionCategoryPage = lazy(
   () => import("@/pages/ConditionCategoryPage"),
@@ -230,7 +235,8 @@ function Router() {
           component={NaturalLanguageSearchPage}
         />
         <Route path="/advanced-search" component={EnhancedSearchPage} />
-        <Route path="/benefits">{() => <Redirect to="/learn" />}</Route>
+        {/* /benefits: server 301 → /blog/molecular-hydrogen-benefits-guide-pillar
+            (redirects-table row; merged 2026-09-28) — no SPA route. */}
         <Route path="/learn" component={LearnPage} />
         <Route path="/products" component={ProductsPage} />
         <Route path="/about" component={About} />
@@ -530,14 +536,37 @@ function Router() {
         <Route path="/admin/crossref">{() => <Redirect to="/admin/research-import" />}</Route>
 
         {/* Explore Pages - Browse by category */}
+        {/* Explore hubs: a slug that isn't a hub renders NotFound (the server
+            sends these URLs with HTTP 404 too — seo-body-renderer
+            exploreHubExists). The shared ExploreHubDetail / mechanism pages
+            check via their studies API; the other three via ExploreHubGate. */}
         <Route path="/explore-by-benefit" component={ExploreByBenefit} />
+        <Route path="/explore-by-benefit/:benefit" component={BenefitDetailPage} />
         <Route path="/explore-by-condition" component={ExploreByCondition} />
-        <Route path="/explore-by-condition/:category" component={ConditionCategoryPage} />
+        <Route path="/explore-by-condition/:category">
+          {(params) => (
+            <ExploreHubGate type="condition" slug={params.category}>
+              <ConditionCategoryPage />
+            </ExploreHubGate>
+          )}
+        </Route>
         <Route path="/hydrogen-for/:condition" component={HydrogenForConditionPage} />
         <Route path="/explore-by-body-system" component={ExploreByBodySystem} />
-        <Route path="/explore-by-body-system/:category" component={BodySystemCategoryPage} />
+        <Route path="/explore-by-body-system/:category">
+          {(params) => (
+            <ExploreHubGate type="body-system" slug={params.category}>
+              <BodySystemCategoryPage />
+            </ExploreHubGate>
+          )}
+        </Route>
         <Route path="/explore-by-life-stage" component={ExploreByLifeStage} />
-        <Route path="/explore-by-life-stage/:category" component={LifeStageCategoryPage} />
+        <Route path="/explore-by-life-stage/:category">
+          {(params) => (
+            <ExploreHubGate type="life-stage" slug={params.category}>
+              <LifeStageCategoryPage />
+            </ExploreHubGate>
+          )}
+        </Route>
         <Route path="/explore-by-demographic" component={ExploreByDemographicPage} />
         <Route path="/explore-by-demographic/:demographic" component={DemographicDetailPage} />
         <Route path="/explore-by-mechanism" component={ExploreByMechanismPage} />

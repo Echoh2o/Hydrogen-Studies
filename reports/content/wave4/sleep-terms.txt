@@ -1,0 +1,75 @@
+sleep-quality hub — proposed study-match terms (CONDITION_HUB_TERMS["sleep-quality"], server/utils/condition-hub-terms.ts)
+Source: prod DB, READ-ONLY (begin transaction read only ... rollback), 2026-09-28. Live studies (slug not null, is_excluded=false): 2,283.
+Matching semantics = the hub query: word-start regex \m(?:term|...) over lower(title || plain_language_title || health_conditions tags),
+plus the name-tag match array_to_string(health_conditions,' ') ILIKE '%<hub name>%'.
+Columns: title_n = matches in title only; hub_n = matches in the hub haystack; hub_human = of hub_n, study_type 'Human'.
+
+=== 1. Census: titles mentioning sleep / insomnia / circadian (\m(sleep|insomn|circadian) on title) ===
+Total 10:  Human 6 · Mouse 2 · Rat 1 · review ("clinical") 1
+  Human: Gao 2025 inhaled H2-O2 insomnia RCT; Higashikawa 2026 jelly RCT; Todorovic 2025 HYDRAPPET; Todorovic 2021 sleep-deprived
+         alertness (Food Sci Nutr); "Hydrogen vs. Caffeine ... Sleep-Deprived Humans" 2020 (Neurophysiology, not in PubMed);
+         Okumura 2026 overnight breath hydrogen & sleep physiology (observational, no intervention)
+  Mouse: Vincent 2023 sleep consolidation (EEG); Xiao 2026 sleep-deprived mice cognition
+  Rat:   Chen 2025 OSA-hypopnea endothelial model
+  Review: Cui 2026 mast cell–sleep-wake–melatonin (Mol Neurobiol)
+No title contains "insomnia" or "circadian"; "Chronic Insomnia"/"Insomnia"/"Circadian Rhythm Disorders" exist only as tags.
+
+=== 2. RECOMMENDED term list (precise) ===
+["sleep quality", "poor sleep", "sleep disorder", "sleep disturbance", "sleep deprivation", "sleep-deprived", "sleep loss",
+ "sleep consolidation", "sleep physiology", "sleep-wake", "sleep duration", "sleep efficiency", "insomnia", "circadian"]
+
+term                  title_n  hub_n  hub_human
+sleep quality            2       4       3
+poor sleep               0       1       1
+sleep disorder           2       6       3      (also matches tag "Sleep Disorders")
+sleep disturbance        0       1       1
+sleep deprivation        0       4       2
+sleep-deprived           2       2       2
+sleep loss               0       0       0      (future-proofing)
+sleep consolidation      1       1       0
+sleep physiology         1       1       1
+sleep-wake               1       1       0
+sleep duration           0       0       0      (future-proofing)
+sleep efficiency         0       0       0      (future-proofing)
+insomnia                 0       2       0      (tags only today)
+circadian                0       2       0      (tags only today)
+
+Combined (distinct studies): 13 = Human 7 · Mouse 3 · review 2 · Chinchilla 1
+  Human 7: Gao 2025; Higashikawa 2026; HYDRAPPET 2025; Todorovic 2021; Hydrogen vs Caffeine 2020; Okumura 2026; Tanaka 2019
+           (alkaline electrolyzed water — via tag "Sleep Disorders"; its plain_language_title "Hydrogen Water Improves Sleep and
+           Digestive Health in Healthy Adults" overstates a within-group, single-item result — suggest a title fix)
+  Mouse 3: Vincent 2023; Xiao 2026; Song 2023 CIH cardiac hypertrophy (apnea model; matched via its plain-language title — borderline/off-topic)
+  Review 2: Cui 2026; "Hydrogen as an innovative nootropic" 2024 (via tag "Circadian Rhythm Disorders" — borderline)
+  Chinchilla 1: behavioral adaptation of Chinchilla lanigera (title has a Cyrillic 'С'; matched via plain-language title/tags — off-topic false positive)
+
+=== 3. REJECTED terms (with counts) ===
+sleep (bare)            title 10 / hub 25 / human 7  -> adds 13 records over the recommended list, ALL sleep-apnea/intermittent-hypoxia
+                                                        animal models (heart, kidney, liver, tumour, vessels) + 1 respiratory review,
+                                                        pulled in by "Sleep Apnea" tags. Zero extra human studies. Would also match
+                                                        "sleeping beauty" (transposon) titles in future (0 today).
+sleep apnea / apnea     title 1 / hub 15 / human 0   -> apnea organ-damage models, not sleep quality; disease topic (Appendix E).
+intermittent hypoxia    title 11 / hub 12 / human 0  -> same apnea-model set.
+melatonin               title 3 / hub 3 / human 0    -> 2 of 3 are melatonin–mitochondria reviews (off-topic).
+anesthe(sia/tic)        title 1 / hub 8 / human 0    -> anesthesia neurotoxicity studies (false positive).
+nocturnal               title 1 / hub 2 / human 1    -> nocturnal polyuria mouse study (false positive); the human hit is already matched.
+overnight               title 1 / hub 1 / human 1    -> already matched via "sleep physiology".
+nap                     title 1 / hub 1 / human 0    -> false positive.
+restless legs           title 0 / hub 1 / human 0    -> the one hit (Cui 2026 review) is already matched.
+hibernat / torpor / sleeping beauty / dream / polysomnogra / actigraph / somnolen / drowsiness / hypnotic / sedat /
+narcolep / jet lag / shift work / night shift / chronotype / clock gene / biological clock / psqi / bedtime   -> 0 matches today.
+
+=== 4. Gap: human trials that MEASURED sleep but no term can reach ===
+These have no sleep word in title, plain_language_title or tags, so the hub list will omit them even though the intro cites them:
+  Mizuno 2018 (mood/anxiety crossover, PSQI)            /study/hydrogen-rich-water-for-improvements-of-mood-anxiety-and-autonomic-nerve-function-in-daily-life-1775650467142
+  Kuzmanovic 2025 (over-50 training, sleep trend)       /study/the-effects-of-drinking-hydrogen-rich-water-for-six-weeks-on-exercise-related-biomarkers-...-1775650467178
+  Zanini 2021 (70+, 6 months, sleep NS)                 /study/the-effects-of-6-month-hydrogen-rich-water-intake-on-...-1775650467164
+  Tan 2024 (long COVID, PSQI subgroup)                  /study/the-effect-of-14-day-consumption-of-hydrogen-rich-water-...-1775650467172
+  Wu 2024 (glioma surgery, sleep monitor)               /study/effects-of-perioperative-hydrogen-inhalation-on-brain-edema-...-1775650467174
+  Lin 2022 (post-op delirium, sleep NRS NS)             /study/hydrogen-gas-treatment-improves-postoperative-delirium-...-1775650467169
+  Ji 2026 (day surgery, exploratory sleep trend)        /study/the-impact-of-perioperative-hydrogen-gas-inhalation-on-postoperative-recovery-in-day-surgery-patients-a-research-study-1785513615619
+Option (data change — lead/Josh call): append the tag "Sleep Quality" to these rows' health_conditions; the hub's name-tag match
+(ILIKE '%Sleep Quality%') would then list them with no new terms. With that, the hub would list ~20 studies (14 human).
+
+=== 5. Hub prerequisites ===
+- No health_conditions row exists for sleep, insomnia, circadian or apnea; /explore-by-condition/sleep-quality returns 404
+  (bot and browser) today. Needs a boot-migration row (slug "sleep-quality", name e.g. "Sleep Quality") + this term list.

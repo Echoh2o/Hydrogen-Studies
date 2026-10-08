@@ -1040,6 +1040,8 @@ pool.query("SELECT 1").then(async () => {
     const { addUniquenessAndJobState } = await import("./migrations/add-uniqueness-and-job-state");
     const { addBlogBylineFields } = await import("./migrations/add-blog-byline-fields");
     const { addStudyExclusion } = await import("./migrations/add-study-exclusion");
+    const { addSleepQualityHub } = await import("./migrations/add-sleep-quality-hub");
+    const { addFreshnessCheckTracking } = await import("./migrations/add-freshness-check-tracking");
 
     await runMigrations([
       { name: "001_add_fulltext_search", up: addFullTextSearch },
@@ -1065,7 +1067,18 @@ pool.query("SELECT 1").then(async () => {
       { name: "021_add_uniqueness_and_job_state", up: addUniquenessAndJobState },
       { name: "022_add_blog_byline_fields", up: addBlogBylineFields },
       { name: "023_add_study_exclusion", up: addStudyExclusion },
+      { name: "024_add_sleep_quality_hub", up: addSleepQualityHub },
+      { name: "025_add_freshness_check_tracking", up: addFreshnessCheckTracking },
     ]);
+
+    // Hub lists cached by a prewarm that ran mid-migration would hide hub rows
+    // the migrations just added (404 for 30 min) — drop them.
+    try {
+      const { invalidateHubCaches } = await import("./middleware/seo-body-renderer");
+      invalidateHubCaches();
+    } catch (err: any) {
+      console.warn("Hub cache invalidation skipped:", err?.message ?? err);
+    }
 
     // Recover orphaned "processing" jobs — items whose worker crashed/restarted
     // mid-run. Done after migrations so the relevant tables are guaranteed

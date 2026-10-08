@@ -230,10 +230,10 @@ export default function HomePage() {
                 | "Athletic Performance";
 
               const categoryLinks: Record<BenefitTitle, string> = {
-                "Heart Health": "/explore-by-body-system/cardiovascular-system",
-                "Brain Function": "/explore-by-body-system/nervous-system",
+                "Heart Health": "/explore-by-body-system/cardiovascular",
+                "Brain Function": "/explore-by-body-system/brain-nervous-system",
                 "Oxidative Stress & Inflammation": "/explore-by-body-system/immune-system",
-                "Athletic Performance": "/explore-by-body-system/musculoskeletal-system",
+                "Athletic Performance": "/explore-by-body-system/musculoskeletal",
               };
 
               const detailedBenefits: Record<BenefitTitle, string[]> = {

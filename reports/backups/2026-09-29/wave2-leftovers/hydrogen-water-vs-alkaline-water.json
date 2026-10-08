@@ -1,0 +1,255 @@
+{
+  "slug": "hydrogen-water-vs-alkaline-water",
+  "title": "Hydrogen Water vs Alkaline Water: pH, Ionized Water and the Evidence",
+  "metaTitle": "Hydrogen Water vs Alkaline Water, Explained",
+  "metaDescription": "Hydrogen water vs alkaline water: one is defined by dissolved H2, the other by pH. How ionized water fits in, why ORP misleads, safety limits and the evidence.",
+  "summary": "How hydrogen water and alkaline water differ, what ionized (electrolyzed reduced) water is, why ORP and pH claims mislead, what studies show for each, and who should be cautious.",
+  "targetKeywords": [
+    "hydrogen water vs alkaline water",
+    "alkaline water vs hydrogen water",
+    "is alkaline water the same as hydrogen water",
+    "is hydrogen water the same as alkaline water",
+    "ionized hydrogen water",
+    "alkaline hydrogen water",
+    "hydrogen rich alkaline water",
+    "is hydrogen water alkaline",
+    "electrolyzed reduced water",
+    "alkaline ionized water",
+    "is hydrogen water better than alkaline water",
+    "kangen water hydrogen"
+  ],
+  "questionAnswerPairs": [
+    {
+      "question": "Is hydrogen water better than alkaline water?",
+      "answer": "Neither has strong evidence. In animal studies, the effects of ionizer water came from its hydrogen, not its pH. In people, hydrogen water's effects have been small, and alkaline water's studies mostly measured short-term blood or urine markers. No trial has compared the two directly."
+    },
+    {
+      "question": "Is ionized water the same as hydrogen water?",
+      "answer": "Not exactly. Ionized water, also called electrolyzed reduced water, is alkaline water from a water ionizer that also contains some dissolved hydrogen, typically 0.2–1.2 mg/L when the machine is new and clean. Hydrogen water simply means water with dissolved hydrogen, at any pH."
+    },
+    {
+      "question": "Is Kangen water hydrogen water?",
+      "answer": "Kangen water is the brand name for water from Enagic's ionizers, so it's electrolyzed reduced water: alkaline, with some dissolved hydrogen. The amount depends on the setting, the minerals in your tap water, the flow rate and how clean the electrodes are. We don't test or rate brands; only a hydrogen-specific test shows what's in the glass."
+    },
+    {
+      "question": "Is hydrogen water alkaline?",
+      "answer": "Not necessarily. Dissolved hydrogen doesn't change pH. Water from ionizers and magnesium-based products is alkaline, while portable electrolysis bottles with a membrane and hydrogen dissolved under pressure can be close to neutral."
+    },
+    {
+      "question": "Is alkaline water safe if you have kidney disease?",
+      "answer": "Ask your nephrologist first. High-pH ionizer water has been linked to high blood potassium in some people with poor kidney function, and reviewers advise against using it without medical supervision. Bottled alkaline waters can also add sodium or other minerals you may need to limit."
+    }
+  ],
+  "internalLinks": [
+    "/blog/h2-tabs-side-effects",
+    "/blog/how-much-hydrogen-water-per-day",
+    "/blog/hydrogen-water-ppm-levels",
+    "/blog/hydrogen-water-real-or-fake",
+    "/blog/hydrogen-water-side-effects",
+    "/blog/hydrogen-water-vs-regular-water",
+    "/blog/is-hydrogen-water-good-for-kidneys",
+    "/blog/molecular-hydrogen-benefits-guide-pillar",
+    "/blog/what-is-hydrogen-water",
+    "/editorial-policy",
+    "/study/alkaline-water-improves-exercise-induced-metabolic-acidosis-and-enhances-anaerobic-exercise-performance-in-combat-sport-athletes-1775650467141",
+    "/study/can-molecular-hydrogen-supplementation-enhance-physical-performance-in-healthy-adults-a-systematic-review-and-meta-analysis-1777577956391",
+    "/study/effect-of-electrolyzed-high-ph-alkaline-water-on-blood-viscosity-in-healthy-adults-1775650467148",
+    "/study/effects-of-alkaline-reduced-drinking-water-on-irritable-bowel-syndrome-with-diarrhea-a-randomized-double-blind-placebo-controlled-pilot-study-1775650467142",
+    "/study/electrolyzed-hydrogen-rich-water-for-oxidative-stress-suppression-and-improvement-of-insulin-resistance-a-multicenter-prospective-double-blind-randomized-control-trial-1775650467165",
+    "/study/electrolyzed-reduced-water-review-i-molecular-hydrogen-is-the-exclusive-agent-responsible-for-the-therapeutic-effects-1777577956390",
+    "/study/electrolyzed-reduced-water-review-ii-safety-concerns-and-effectiveness-as-a-source-of-hydrogen-water-1777577956390",
+    "/study/the-effect-of-hydrogen-rich-water-interventions-on-lipid-profiles-in-adults-with-overweight-or-obesity-and-associated-metabolic-disorders-a-systematic-review-and-meta-analysis-of-randomized-controlled-trials-1775826876384"
+  ],
+  "sources": [
+    {
+      "n": 1,
+      "pmid": "36498838",
+      "doi": "10.3390/ijms232314508",
+      "citation": "LeBaron TW, et al. Electrolyzed-reduced water: Review II: safety concerns and effectiveness as a source of hydrogen water. International Journal of Molecular Sciences. 2022.",
+      "ourStudyUrl": "/study/electrolyzed-reduced-water-review-ii-safety-concerns-and-effectiveness-as-a-source-of-hydrogen-water-1777577956390",
+      "verifiedVia": "PubMed get_article_metadata + PMC full text (PMC9736533)"
+    },
+    {
+      "n": 2,
+      "pmid": "36499079",
+      "doi": "10.3390/ijms232314750",
+      "citation": "LeBaron TW, et al. Electrolyzed-reduced water: Review I. Molecular hydrogen is the exclusive agent responsible for the therapeutic effects. International Journal of Molecular Sciences. 2022.",
+      "ourStudyUrl": "/study/electrolyzed-reduced-water-review-i-molecular-hydrogen-is-the-exclusive-agent-responsible-for-the-therapeutic-effects-1777577956390",
+      "verifiedVia": "PubMed get_article_metadata + PMC full text (PMC9738607)"
+    },
+    {
+      "n": 3,
+      "pmid": "27297008",
+      "doi": "10.1136/bmjopen-2015-010438",
+      "citation": "Fenton TR, Huang T. Systematic review of the association between dietary acid load, alkaline water and cancer. BMJ Open. 2016.",
+      "ourStudyUrl": null,
+      "verifiedVia": "PubMed get_article_metadata (abstract)"
+    },
+    {
+      "n": 4,
+      "pmid": "38903627",
+      "doi": "10.3389/fnut.2024.1387657",
+      "citation": "Zhou K, et al. Can molecular hydrogen supplementation enhance physical performance in healthy adults? A systematic review and meta-analysis. Frontiers in Nutrition. 2024.",
+      "ourStudyUrl": "/study/can-molecular-hydrogen-supplementation-enhance-physical-performance-in-healthy-adults-a-systematic-review-and-meta-analysis-1777577956391",
+      "verifiedVia": "PubMed get_article_metadata (abstract); full text checked in wave 2"
+    },
+    {
+      "n": 5,
+      "pmid": "41888952",
+      "doi": "10.1186/s13098-026-02124-0",
+      "citation": "Ye H, et al. The effect of hydrogen-rich water interventions on lipid profiles in adults with overweight or obesity and associated metabolic disorders: a systematic review and meta-analysis of randomized controlled trials. Diabetology & Metabolic Syndrome. 2026.",
+      "ourStudyUrl": "/study/the-effect-of-hydrogen-rich-water-interventions-on-lipid-profiles-in-adults-with-overweight-or-obesity-and-associated-metabolic-disorders-a-systematic-review-and-meta-analysis-of-randomized-controlled-trials-1775826876384",
+      "verifiedVia": "PubMed get_article_metadata (abstract); full text checked in wave 2"
+    },
+    {
+      "n": 6,
+      "pmid": "22844861",
+      "doi": "10.1177/000348941212100702",
+      "citation": "Koufman JA, Johnston N. Potential benefits of pH 8.8 alkaline drinking water as an adjunct in the treatment of reflux disease. Annals of Otology, Rhinology & Laryngology. 2012.",
+      "ourStudyUrl": null,
+      "verifiedVia": "PubMed get_article_metadata (abstract; no PMC full text)"
+    },
+    {
+      "n": 7,
+      "pmid": "30452459",
+      "doi": "10.1371/journal.pone.0205708",
+      "citation": "Chycki J, et al. Alkaline water improves exercise-induced metabolic acidosis and enhances anaerobic exercise performance in combat sport athletes. PLoS One. 2018.",
+      "ourStudyUrl": "/study/alkaline-water-improves-exercise-induced-metabolic-acidosis-and-enhances-anaerobic-exercise-performance-in-combat-sport-athletes-1775650467141",
+      "verifiedVia": "PubMed get_article_metadata + PMC full text (PMC6242303)"
+    },
+    {
+      "n": 8,
+      "pmid": "18926940",
+      "doi": "10.1016/j.bone.2008.09.007",
+      "citation": "Wynn E, et al. Alkaline mineral water lowers bone resorption even in calcium sufficiency: alkaline mineral water and bone metabolism. Bone. 2009.",
+      "ourStudyUrl": null,
+      "verifiedVia": "PubMed get_article_metadata (abstract)"
+    },
+    {
+      "n": 9,
+      "pmid": "27932937",
+      "doi": "10.1186/s12970-016-0153-8",
+      "citation": "Weidman J, et al. Effect of electrolyzed high-pH alkaline water on blood viscosity in healthy adults. Journal of the International Society of Sports Nutrition. 2016.",
+      "ourStudyUrl": "/study/effect-of-electrolyzed-high-ph-alkaline-water-on-blood-viscosity-in-healthy-adults-1775650467148",
+      "verifiedVia": "PubMed get_article_metadata + PMC full text (PMC5126823)"
+    },
+    {
+      "n": 10,
+      "pmid": "29849734",
+      "doi": "10.1155/2018/9147914",
+      "citation": "Shin DW, et al. Effects of alkaline-reduced drinking water on irritable bowel syndrome with diarrhea: a randomized double-blind, placebo-controlled pilot study. Evidence-Based Complementary and Alternative Medicine. 2018.",
+      "ourStudyUrl": "/study/effects-of-alkaline-reduced-drinking-water-on-irritable-bowel-syndrome-with-diarrhea-a-randomized-double-blind-placebo-controlled-pilot-study-1775650467142",
+      "verifiedVia": "PubMed get_article_metadata + PMC full text (PMC5925025)"
+    },
+    {
+      "n": 11,
+      "pmid": "35059257",
+      "doi": "10.1007/s13340-021-00524-3",
+      "citation": "Ogawa S, et al. Electrolyzed hydrogen-rich water for oxidative stress suppression and improvement of insulin resistance: a multicenter prospective double-blind randomized control trial. Diabetology International. 2021.",
+      "ourStudyUrl": "/study/electrolyzed-hydrogen-rich-water-for-oxidative-stress-suppression-and-improvement-of-insulin-resistance-a-multicenter-prospective-double-blind-randomized-control-trial-1775650467165",
+      "verifiedVia": "PubMed get_article_metadata (abstract + affiliations)"
+    }
+  ],
+  "claims": [
+    {
+      "claim": "Most new ionizers make ~0.2-1.2 mg/L H2 at pH 8.5-10.5; range <0.01 to ~2 mg/L; scale can cut output to <0.01 mg/L in 2 weeks.",
+      "sources": [
+        1
+      ]
+    },
+    {
+      "claim": "Animal/lab studies separated pH from H2: NaOH water at same pH not protective; 0.07 mg/L ineffective vs 0.22/0.84 mg/L effective; pH 8.5 = 9.5 at same H2; degassed ERW lost effect.",
+      "sources": [
+        2
+      ]
+    },
+    {
+      "claim": "'Ionized' is a misnomer; Japan approved ionizers 1965, Korea 1978.",
+      "sources": [
+        2
+      ]
+    },
+    {
+      "claim": "ORP dominated by pH: pH 9 with 0.1 vs 1 mg/L H2 = -497 vs -527 mV; pH 10.5 water can read -580 to -730 mV with <0.1 mg/L H2.",
+      "sources": [
+        1
+      ]
+    },
+    {
+      "claim": "Microcluster NMR evidence is a pH artifact; tea demo is a pH indicator.",
+      "sources": [
+        2
+      ]
+    },
+    {
+      "claim": "Our calculation: hydroxide at pH 9.5 = 0.032 mmol/L (1,807 L per 57.1 mmol tsp baking soda); pH 10 = 0.1 mmol/L (571 L); Chycki water ~11.3 mmol/L (~5 L); Wynn water B ~35.6 mmol/L (~1.6 L). Reviewers' ~1,800 L figure matches.",
+      "sources": [
+        2,
+        7,
+        8
+      ],
+      "note": "4.8 g / 84.007 g/mol = 57.1 mmol; OH- = 10^(pH-14) mol/L at 25 C; HCO3- 61.02 g/mol, CO3 2- 60.01 g/mol x2 equivalents."
+    },
+    {
+      "claim": "pH 8.8 bicarbonate well water inactivated pepsin in vitro; better acid buffering than two bottled waters.",
+      "sources": [
+        6
+      ]
+    },
+    {
+      "claim": "Bicarbonate-rich water lowered PTH and S-CTX in 30 young women over 4 weeks; calcium-rich low-bicarbonate water did not.",
+      "sources": [
+        8
+      ]
+    },
+    {
+      "claim": "High-pH electrolyzed bottled water lowered high-shear viscosity 6.3% vs 3.4% after dehydration; other hydration markers no difference.",
+      "sources": [
+        9
+      ]
+    },
+    {
+      "claim": "Bicarbonate mineral water pH 9.1 (Na ~255 mg/L) for 3 weeks raised urine and resting blood pH and Wingate output vs baseline in 8 athletes; controls unchanged.",
+      "sources": [
+        7
+      ]
+    },
+    {
+      "claim": "No RCTs of alkaline water/diet for cancer; promotion not justified.",
+      "sources": [
+        3
+      ]
+    },
+    {
+      "claim": "Ionizer water (pH 8.5-10) in 27 IBS-D adults: primary outcome NS, QoL improved; H2 not reported.",
+      "sources": [
+        10
+      ]
+    },
+    {
+      "claim": "Electrolyzed H2-rich water in 50 T2D adults: no change in HOMA-IR vs filtered water.",
+      "sources": [
+        11
+      ]
+    },
+    {
+      "claim": "H2 in 597 healthy adults: small RPE and lactate reductions; no endurance/strength gain.",
+      "sources": [
+        4
+      ]
+    },
+    {
+      "claim": "HRW in 757 adults with overweight/obesity: TC -6.7, LDL -3.2 mg/dL; below clinically meaningful thresholds.",
+      "sources": [
+        5
+      ]
+    },
+    {
+      "claim": "Japan/Korea limit ionizer drinking water to pH <=9.8; hyperkalemia in some with poor kidney function above pH 10; avoid without medical supervision if kidney function impaired; 1990s rat heart damage; Pt-coated Ti electrodes may leach metals.",
+      "sources": [
+        1
+      ]
+    }
+  ],
+  "wordCount": 3073
+}

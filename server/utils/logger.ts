@@ -15,6 +15,27 @@ interface LogEntry {
 
 const isProduction = process.env.NODE_ENV === "production";
 
+const EMAIL_RE = /([A-Za-z0-9._%+-])[A-Za-z0-9._%+-]*@([A-Za-z0-9.-]+\.[A-Za-z]{2,})/g;
+
+/**
+ * Mask email addresses so customer PII never lands in Railway logs:
+ * "jane.doe@example.com" -> "j***@example.com". Keeps the domain for triage.
+ */
+export function maskEmail(text: string): string {
+  return text.replace(EMAIL_RE, "$1***@$2");
+}
+
+/** Deep-mask every string in a log payload (webhook bodies, error messages). */
+function redact<T>(value: T, depth = 0): T {
+  if (typeof value === "string") return maskEmail(value) as T;
+  if (depth > 6 || value === null || typeof value !== "object") return value;
+  if (Array.isArray(value)) return value.map((v) => redact(v, depth + 1)) as T;
+  if (value instanceof Date) return value;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(value)) out[k] = redact(v, depth + 1);
+  return out as T;
+}
+
 /**
  * Keep the error message line plus the first `maxFrames` stack frames so logs
  * stay debuggable without ballooning each line. Returns undefined for missing
@@ -47,10 +68,10 @@ function createLogEntry(
 ): LogEntry {
   return {
     level,
-    message,
+    message: maskEmail(message),
     timestamp: new Date().toISOString(),
     context,
-    data,
+    data: data ? redact(data) : data,
   };
 }
 

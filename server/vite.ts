@@ -59,7 +59,10 @@ export async function setupVite(app: Express, server: Server) {
         `src="/src/main.tsx?v=${nanoid()}"`,
       );
       const page = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(page);
+      // Unknown explore hubs: 404 shell, as in production (server/index.ts).
+      const { spaShellStatus } = await import("./middleware/explore-hub-404");
+      const status = await spaShellStatus(new URL(url, "http://localhost").pathname);
+      res.status(status).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
       next(e);

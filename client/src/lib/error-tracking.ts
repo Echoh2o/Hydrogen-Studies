@@ -29,19 +29,18 @@ let errorsReported = 0;
 
 let sentryInitialized = false;
 
-/** Report an error to the server and Sentry if available */
+/**
+ * Report an error to the server beacon.
+ *
+ * Deliberately does NOT call Sentry: Sentry's default GlobalHandlers
+ * integration already captures window errors / unhandled rejections, and
+ * trackError() captures explicitly. Capturing here too double-counted every
+ * error in Sentry (once with the real stack, once as a stackless copy whose
+ * culprit was this file).
+ */
 async function reportError(report: ErrorReport): Promise<void> {
   if (errorsReported >= MAX_ERRORS_PER_SESSION) return;
   errorsReported++;
-
-  // Report to Sentry if available
-  if (sentryInitialized) {
-    try {
-      Sentry.captureException(new Error(report.message));
-    } catch {
-      // Swallow
-    }
-  }
 
   try {
     // sendBeacon defaults to Content-Type: text/plain. Wrap in a Blob with
@@ -107,10 +106,10 @@ export function initErrorTracking(): void {
 
 /** Manually track an error (e.g., from error boundaries) */
 export function trackError(error: Error, context?: string): void {
-  // Send to Sentry if available
+  // Sentry gets the original Error (real stack + context tag); the beacon
+  // below is server-side only.
   Sentry.captureException(error, { tags: { context: context || "unknown" } });
 
-  // Also send to server beacon as fallback
   reportError({
     message: `${context ? `[${context}] ` : ""}${error.message}`,
     stack: error.stack,
