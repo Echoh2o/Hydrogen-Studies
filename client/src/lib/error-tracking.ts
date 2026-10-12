@@ -64,9 +64,24 @@ export function initErrorTracking(): void {
       dsn,
       environment: import.meta.env.MODE,
       tracesSampleRate: 0.1,
-      beforeSend(event) {
+      // Third-party noise: browser extensions and in-app browser bridges
+      // (Facebook/Instagram Android WebView, Bing/Edge preview bots).
+      ignoreErrors: [
+        "Invalid call to runtime.sendMessage(). Tab not found",
+        "Java object is gone",
+        "Object Not Found Matching Id",
+      ],
+      beforeSend(event, hint) {
         const frames = event.exception?.values?.[0]?.stacktrace?.frames;
         if (frames?.some((f) => f.filename?.includes("extension://"))) {
+          return null;
+        }
+        // Stale/failed chunk load that triggers (or joins) a one-shot page
+        // reload — the user recovers, so don't report it. This catches the
+        // paths our own listeners can't suppress: Sentry's GlobalHandlers,
+        // and the error boundary's retry render rethrowing to the root.
+        // Repeat failures inside the 30s loop guard still get reported.
+        if (reloadOnceForStaleChunk(hint?.originalException)) {
           return null;
         }
         return event;
