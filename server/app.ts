@@ -606,7 +606,10 @@ app.get("/api/public-stats", generalApiRateLimiter, async (req, res) => {
     const [totalResult] = await database.select({ value: countFn() }).from(studiesTable).where(live);
     const [countryResult] = await database.select({ value: countDistinct(studiesTable.country) }).from(studiesTable).where(live);
     const [peerReviewedResult] = await database.select({ value: countFn() }).from(studiesTable).where(sqlFn`${studiesTable.peerReviewed} = true AND ${live}`);
-    const [humanResult] = await database.select({ value: countFn() }).from(studiesTable).where(sqlFn`(LOWER(${studiesTable.studyType}) LIKE '%human%' OR LOWER(${studiesTable.studyType}) LIKE '%clinical%') AND ${live}`);
+    // Same definition as /api/learn-stats: is_human_trial (human participants
+    // received H2). The old study_type LIKE human/clinical match counted the
+    // 525-row unclassified "clinical" bucket — mostly reviews — as trials (891).
+    const [humanResult] = await database.select({ value: countFn() }).from(studiesTable).where(sqlFn`${studiesTable.isHumanTrial} = true AND ${live}`);
     const [oldestResult] = await database.select({ value: sqlFn`MIN(${studiesTable.publishYear})` }).from(studiesTable).where(sqlFn`${studiesTable.publishYear} IS NOT NULL AND ${studiesTable.publishYear} > 1900 AND ${live}`);
 
     const totalStudies = Number(totalResult?.value || 0);

@@ -167,7 +167,8 @@ export class StudiesController {
       const [countryResult, journalResult, humanResult, categoryResult, peakYearResult, recentAvgResult, oldestResult, countryBreakdown, categoryBreakdown, count2015, count2023] = await Promise.all([
         pool.query("SELECT COUNT(DISTINCT country) as count FROM studies WHERE country IS NOT NULL AND is_excluded = false"),
         pool.query("SELECT COUNT(DISTINCT journal) as count FROM studies WHERE journal IS NOT NULL AND is_excluded = false"),
-        pool.query("SELECT COUNT(*) as count FROM studies WHERE is_excluded = false AND (LOWER(study_type) LIKE '%human%' OR LOWER(study_type) LIKE '%clinical%')"),
+        // is_human_trial — same definition as /api/learn-stats and /api/public-stats.
+        pool.query("SELECT COUNT(*) as count FROM studies WHERE is_excluded = false AND is_human_trial = true"),
         pool.query("SELECT COUNT(DISTINCT category) as count FROM studies WHERE category IS NOT NULL AND is_excluded = false"),
         pool.query("SELECT publish_year, COUNT(*) as cnt FROM studies WHERE publish_year IS NOT NULL AND is_excluded = false GROUP BY publish_year ORDER BY cnt DESC LIMIT 1"),
         pool.query("SELECT ROUND(AVG(cnt)) as avg FROM (SELECT COUNT(*) as cnt FROM studies WHERE publish_year >= 2019 AND publish_year IS NOT NULL AND is_excluded = false GROUP BY publish_year) t"),

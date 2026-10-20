@@ -60,10 +60,14 @@ const APPLY = has("--apply");
 const SCAN = has("--scan");
 const RESTORE = has("--restore");
 const IDS_FILE = flagValue("--ids");
-const APPROVAL_DATE = "2026-09-28";
-const APPROVAL_QUOTE = "Remove hydrogen energy studies";
-const ACTOR = `claude-code (approved: josh ${APPROVAL_DATE} '${APPROVAL_QUOTE}')`;
-const NOTE_TAG = `exclude-energy ${APPROVAL_DATE}`;
+// Defaults are the original 2026-09-28 hydrogen-energy run. An id file can
+// override them (see readIds): `# reason: <label>` and
+// `approved-by: josh <YYYY-MM-DD> "<quote>"`.
+let APPROVAL_DATE = "2026-09-28";
+let APPROVAL_QUOTE = "Remove hydrogen energy studies";
+let REASON_LABEL = "Off-topic hydrogen-energy research";
+let ACTOR = `claude-code (approved: josh ${APPROVAL_DATE} '${APPROVAL_QUOTE}')`;
+let NOTE_TAG = `exclude-energy ${APPROVAL_DATE}`;
 const LOG_ACTION = "exclude_410";
 const GSC_DAYS = 90;
 
@@ -97,7 +101,11 @@ function publicPaths(s: { id: number; slug: string | null }): string[] {
   return paths;
 }
 
-function readIds(file: string): { ids: number[]; approved: boolean } {
+function readIds(file: string): {
+  ids: number[];
+  approved: boolean;
+  meta: { reason?: string; approvedDate?: string; approvedQuote?: string };
+} {
   const text = fs.readFileSync(file, "utf8");
   const ids: number[] = [];
   for (const line of text.split(/\r?\n/)) {
@@ -107,7 +115,13 @@ function readIds(file: string): { ids: number[]; approved: boolean } {
   }
   // The approval marker must START a line (optionally after "#"), so prose
   // that merely mentions it (like the scan header) never counts.
-  return { ids: Array.from(new Set(ids)), approved: /^\s*#?\s*approved-by:\s*josh\b/im.test(text) };
+  const approval = text.match(/^\s*#?\s*approved-by:\s*josh\b[ \t]*(\d{4}-\d{2}-\d{2})?[ \t]*(?:["'](.+)["'])?/im);
+  const reason = text.match(/^\s*#\s*reason:\s*(.+?)\s*$/im)?.[1];
+  return {
+    ids: Array.from(new Set(ids)),
+    approved: !!approval,
+    meta: { reason, approvedDate: approval?.[1], approvedQuote: approval?.[2] },
+  };
 }
 
 async function gscFor(db: pg.Client, slugs: string[]): Promise<Map<string, { impressions: number; clicks: number }>> {
@@ -169,8 +183,16 @@ async function scan(db: pg.Client) {
 
 async function planOrApply(db: pg.Client) {
   if (!IDS_FILE) throw new Error("--ids <file.csv> is required (or use --scan)");
-  const { ids, approved } = readIds(IDS_FILE);
+  const { ids, approved, meta } = readIds(IDS_FILE);
   if (ids.length === 0) throw new Error(`no study ids found in ${IDS_FILE}`);
+  if (meta.reason) {
+    REASON_LABEL = meta.reason;
+    if (meta.approvedDate) APPROVAL_DATE = meta.approvedDate;
+    if (meta.approvedQuote) APPROVAL_QUOTE = meta.approvedQuote;
+    ACTOR = `claude-code (approved: josh ${APPROVAL_DATE} '${APPROVAL_QUOTE}')`;
+    NOTE_TAG = `study-exclusion ${APPROVAL_DATE}`;
+    console.log(`reason: ${REASON_LABEL}\napproval: josh ${APPROVAL_DATE} '${APPROVAL_QUOTE}'\n`);
+  }
   if (APPLY && !approved) {
     throw new Error(`refusing --apply: ${IDS_FILE} has no "approved-by: josh" line (CLAUDE.md: 410s need Josh's approval of the exact list)`);
   }
@@ -225,7 +247,7 @@ async function planOrApply(db: pg.Client) {
         await db.query(`UPDATE studies SET is_excluded = false, excluded_reason = NULL, excluded_at = NULL WHERE id = $1`, [s.id]);
         for (const p of publicPaths(s)) {
           const r = await db.query(
-            `UPDATE redirects SET is_active = false, note = COALESCE(note, '') || $2 WHERE from_path = $1 AND status_code = 410 AND note LIKE '%exclude-energy%'`,
+            `UPDATE redirects SET is_active = false, note = COALESCE(note, '') || $2 WHERE from_path = $1 AND status_code = 410 AND (note LIKE '%exclude-energy%' OR note LIKE '%study-exclusion%')`,
             [p, ` | restored ${new Date().toISOString().slice(0, 10)}`],
           );
           if (r.rowCount) {
@@ -237,7 +259,8 @@ async function planOrApply(db: pg.Client) {
         }
       } else {
         const v = isHydrogenEnergyStudy({ title: s.title, abstract: s.abstract, keywords: s.keywords, category: s.category, journal: s.journal });
-        const reason = `Off-topic hydrogen-energy research (${v.reason ?? "approved list"}). Approved: josh ${APPROVAL_DATE} '${APPROVAL_QUOTE}'`;
+        const detail = meta.reason ? "approved list" : (v.reason ?? "approved list");
+        const reason = `${REASON_LABEL} (${detail}). Approved: josh ${APPROVAL_DATE} '${APPROVAL_QUOTE}'`;
         await db.query(
           `UPDATE studies SET is_excluded = true, excluded_reason = $2, excluded_at = COALESCE(excluded_at, now()) WHERE id = $1`,
           [s.id, reason],
@@ -253,7 +276,7 @@ async function planOrApply(db: pg.Client) {
             await db.query(
               `INSERT INTO redirects (from_path, to_path, status_code, is_active, note) VALUES ($1, '-', 410, true, $2)
                ON CONFLICT (from_path) DO UPDATE SET status_code = 410, to_path = '-', is_active = true, note = COALESCE(redirects.note, '') || ' | ' || EXCLUDED.note`,
-              [p, `${NOTE_TAG}: study #${s.id} off-topic hydrogen-energy research`],
+              [p, `${NOTE_TAG}: study #${s.id} ${REASON_LABEL}`],
             );
           }
           await db.query(
