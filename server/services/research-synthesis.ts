@@ -9,6 +9,7 @@
  */
 import { ai, MODELS } from "./ai-provider";
 import {
+  detectCondition,
   evidenceProfile,
   findStudies,
   getStudyDetail,
@@ -70,7 +71,15 @@ export async function answerQuestion(input: {
 }) {
   const depth = input.depth ?? "standard";
   const max = Math.min(Math.max(input.maxStudies ?? 12, 3), 25);
-  const { studies: matches, condition, notes } = await findStudies({ ...input.filters, query: input.question });
+  // A question that names a condition hub ("…blood pressure…") retrieves from
+  // that hub's curated study set; the text query then ranks within it.
+  const condition0 = input.filters?.condition ?? (await detectCondition(input.question)) ?? undefined;
+  let found = await findStudies({ ...input.filters, condition: condition0, query: input.question });
+  if (condition0 && !input.filters?.condition && found.studies.length < 3) {
+    // Too narrow once text-matched inside the hub — use the hub alone.
+    found = await findStudies({ ...input.filters, condition: condition0 });
+  }
+  const { studies: matches, condition, notes } = found;
   const selected = selectEvidence(matches, max);
   if (!selected.length) {
     return {
