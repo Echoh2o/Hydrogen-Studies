@@ -182,31 +182,51 @@ export function queryTerms(query: string): string[] {
   return (content.length ? content : words).slice(0, 12);
 }
 
+/** IDF weight: rare terms ("pressure") count far more than common ones ("water", "improve"). */
+export function idfWeights(dfs: number[], total: number): number[] {
+  return dfs.map((df) => (df > 0 ? Math.log(1 + total / df) : 0));
+}
+
 /**
- * Relevance per matching study: how many distinct query terms it matches
- * (dominant), plus ts_rank as the tie-breaker. A study must match at least
- * half the terms — an OR over "does hydrogen water improve blood pressure"
- * otherwise matches the whole corpus and ranks blood-pressure studies no
- * higher than any hydrogen-water paper.
+ * Relevance per matching study: the IDF-weighted share of the query's
+ * distinct terms it matches (dominant), with ts_rank as the tie-breaker. A
+ * study must cover at least half the query's total term weight. Without the
+ * weighting, "does hydrogen water improve blood pressure in humans" matched
+ * 254–362 studies and ranked any "hydrogen water improves …" paper as highly
+ * as a blood-pressure trial.
  */
 async function textRanks(query: string): Promise<Map<number, number>> {
   const terms = queryTerms(query);
   if (!terms.length) return new Map();
-  const anyTerm = terms.join(" | ");
-  const hits = sql.join(
-    terms.map((t) => sql`(search_vector @@ to_tsquery('english', ${t}))::int`),
+  const tsq = (t: string) => sql`to_tsquery('english', ${t})`;
+  const dfRow = (
+    await db.execute(sql`
+      SELECT COUNT(*) AS total,
+             ${sql.join(terms.map((t, i) => sql`COUNT(*) FILTER (WHERE search_vector @@ ${tsq(t)}) AS ${sql.raw(`df${i}`)}`), sql`, `)}
+        FROM studies WHERE is_excluded = false`)
+  ).rows?.[0] as Record<string, unknown> | undefined;
+  const total = Number(dfRow?.total ?? 0);
+  const weights = idfWeights(terms.map((_, i) => Number(dfRow?.[`df${i}`] ?? 0)), total);
+  const totalWeight = weights.reduce((a, b) => a + b, 0);
+  if (!totalWeight) return new Map();
+
+  const live = terms.filter((_, i) => weights[i] > 0);
+  const anyTerm = live.join(" | ");
+  const score = sql.join(
+    terms.flatMap((t, i) => (weights[i] > 0 ? [sql`(search_vector @@ ${tsq(t)})::int * ${weights[i]}::float8`] : [])),
     sql` + `,
   );
-  const minHits = Math.max(1, Math.ceil(terms.length / 2));
   const r = await db.execute(sql`
-    SELECT id, hits, rank FROM (
-      SELECT id, (${hits}) AS hits, ts_rank(search_vector, to_tsquery('english', ${anyTerm})) AS rank
+    SELECT id, score, rank FROM (
+      SELECT id, (${score}) AS score, ts_rank(search_vector, ${tsq(anyTerm)}) AS rank
         FROM studies
-       WHERE is_excluded = false AND search_vector @@ to_tsquery('english', ${anyTerm})
+       WHERE is_excluded = false AND search_vector @@ ${tsq(anyTerm)}
     ) m
-    WHERE hits >= ${minHits}
+    WHERE score >= ${totalWeight / 2}::float8
   `);
-  return new Map(((r.rows ?? []) as any[]).map((x) => [Number(x.id), Number(x.hits) + Math.min(Number(x.rank), 0.99)]));
+  return new Map(
+    ((r.rows ?? []) as any[]).map((x) => [Number(x.id), Number(x.score) / totalWeight + Math.min(Number(x.rank), 0.99) / 100]),
+  );
 }
 
 /** The condition hub a free-text question names, if any (longest name wins). */
@@ -287,6 +307,10 @@ export async function findStudies(f: ResearchFilters, order?: SortOrder): Promis
   }
 
   let ranks: Map<number, number> | undefined;
+  if (f.query?.trim() && !f.condition) {
+    const named = await detectCondition(f.query);
+    if (named) notes.push(`The query names the "${named}" condition hub — pass condition: "${named}" for its curated study set.`);
+  }
   if (f.query?.trim()) {
     ranks = await textRanks(f.query);
     pool = pool.filter((s) => ranks!.has(s.id));

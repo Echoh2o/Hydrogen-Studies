@@ -52,6 +52,14 @@ describe("matchConditionRow", () => {
   });
 });
 
+describe("idfWeights", () => {
+  it("weights rare terms above common ones and zeroes absent terms", () => {
+    const [rare, common, absent] = rq.idfWeights([50, 1500, 0], 2283);
+    expect(rare).toBeGreaterThan(common * 3);
+    expect(absent).toBe(0);
+  });
+});
+
 describe("detectCondition", () => {
   it("finds the condition hub a question names", async () => {
     const { getConditionRows } = await import("../middleware/seo-body-renderer");

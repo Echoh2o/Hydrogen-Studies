@@ -19,12 +19,22 @@ function route(text: string, params: unknown[]) {
   if (text.includes("study_quality_scores q WHERE q.study_id = s.id")) return CORPUS_ROWS;
   const cond = text.match(/cond_match_([a-z-]+)/);
   if (cond) return (CONDITION_IDS[cond[1]] ?? []).map((id) => ({ id }));
+  if (text.includes("AS df0")) {
+    // document frequency per term (params: one term each)
+    const row: Record<string, number> = { total: CORPUS_ROWS.length };
+    params.forEach((w, i) => (row[`df${i}`] = CORPUS_ROWS.filter((r) => r.title.toLowerCase().includes(String(w))).length));
+    return [row];
+  }
   if (text.includes("ts_rank")) {
-    // params: one per-term hit check each, then the OR query, then minHits.
-    const words = (params.filter((p) => typeof p === "string") as string[]).filter((p) => !p.includes(" | "));
-    const minHits = params[params.length - 1] as number;
-    return CORPUS_ROWS.map((r) => ({ id: r.id, hits: words.filter((w) => r.title.toLowerCase().includes(w)).length, rank: 0.5 }))
-      .filter((r) => r.hits >= minHits);
+    // params: (term, weight) per scored term, the OR query, then the min score.
+    const pairs: Array<[string, number]> = [];
+    for (let i = 0; i + 1 < params.length - 2; i += 2) pairs.push([String(params[i]), Number(params[i + 1])]);
+    const minScore = Number(params[params.length - 1]);
+    return CORPUS_ROWS.map((r) => ({
+      id: r.id,
+      score: pairs.reduce((a, [w, wt]) => a + (r.title.toLowerCase().includes(w) ? wt : 0), 0),
+      rank: 0.5,
+    })).filter((r) => r.score >= minScore);
   }
   if (text.includes("row_to_json")) {
     const target = CORPUS_ROWS.find((r) => params.includes(r.id) || params.includes(r.slug)) ?? null;
