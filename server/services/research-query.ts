@@ -307,12 +307,19 @@ export async function findStudies(f: ResearchFilters, order?: SortOrder): Promis
   }
 
   let ranks: Map<number, number> | undefined;
+  let namedHubIds: Set<number> | null = null;
   if (f.query?.trim() && !f.condition) {
     const named = await detectCondition(f.query);
-    if (named) notes.push(`The query names the "${named}" condition hub — pass condition: "${named}" for its curated study set.`);
+    const row = named ? matchConditionRow(await getConditionRows(), named) : null;
+    if (row) {
+      namedHubIds = await conditionStudyIds(row);
+      notes.push(`The query names the "${row.slug}" condition hub — its studies rank first; pass condition: "${row.slug}" to restrict to them.`);
+    }
   }
   if (f.query?.trim()) {
     ranks = await textRanks(f.query);
+    // Studies on the hub the query names outrank equally-worded off-topic ones.
+    if (namedHubIds) for (const [id, r] of ranks) if (namedHubIds.has(id)) ranks.set(id, r + 1);
     pool = pool.filter((s) => ranks!.has(s.id));
   }
 

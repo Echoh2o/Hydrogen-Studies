@@ -120,6 +120,13 @@ describe("public MCP server", () => {
     expect(data.studies[0].url).toBe("https://hydrogenstudies.com/study/h2-water-bp-rct");
   });
 
+  it("search_studies notes and boosts a condition hub the query names", async () => {
+    const { data } = await call("search_studies", { query: "hydrogen lowers blood pressure rats" });
+    expect(data.notes.join(" ")).toMatch(/"blood-pressure" condition hub/);
+    expect(data.studies.length).toBeGreaterThan(0);
+    expect(data.studies.every((s: any) => CONDITION_IDS["blood-pressure"].includes(s.id))).toBe(true);
+  });
+
   it("search_studies ranks full-text matches and paginates", async () => {
     const { data } = await call("search_studies", { query: "fatigue", limit: 1 });
     expect(data.total_matches).toBe(1);
