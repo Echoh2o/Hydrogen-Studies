@@ -36,9 +36,10 @@ describe("filters and sorting", () => {
     expect(rq.sortStudies([byId(1), byId(3)], "relevance", ranks).map((s) => s.id)).toEqual([3, 1]);
   });
 
-  it("builds an OR tsquery from plain words only", () => {
-    expect(rq.toOrTsQuery("Does H2 water help fatigue? fatigue!")).toBe("does | h2 | water | help | fatigue");
-    expect(rq.toOrTsQuery("!!! ' ;")).toBeNull();
+  it("keeps distinct content words and drops corpus-wide / question words", () => {
+    expect(rq.queryTerms("Does hydrogen-rich water improve blood pressure in humans? blood")).toEqual(["water", "improve", "blood", "pressure", "humans"]);
+    expect(rq.queryTerms("hydrogen")).toEqual(["hydrogen"]);
+    expect(rq.queryTerms("!!! ' ;")).toEqual([]);
   });
 });
 
@@ -48,6 +49,16 @@ describe("matchConditionRow", () => {
     expect(rq.matchConditionRow(CONDITION_ROWS, "Blood Pressure")?.slug).toBe("blood-pressure");
     expect(rq.matchConditionRow(CONDITION_ROWS, "fatigue")?.slug).toBe("chronic-fatigue");
     expect(rq.matchConditionRow(CONDITION_ROWS, "glaucoma")).toBeNull();
+  });
+});
+
+describe("detectCondition", () => {
+  it("finds the condition hub a question names", async () => {
+    const { getConditionRows } = await import("../middleware/seo-body-renderer");
+    vi.mocked(getConditionRows).mockResolvedValue(CONDITION_ROWS as any);
+    expect(await rq.detectCondition("Does H2 water lower blood pressure?")).toBe("blood-pressure");
+    expect(await rq.detectCondition("hydrogen for chronic fatigue")).toBe("chronic-fatigue");
+    expect(await rq.detectCondition("hydrogen and sleep")).toBeNull();
   });
 });
 

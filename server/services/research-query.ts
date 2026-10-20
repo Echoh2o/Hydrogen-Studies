@@ -166,21 +166,60 @@ export async function listConditions(): Promise<Array<ConditionHub & { studies: 
 
 // ── text search ──────────────────────────────────────────────
 
-/** OR-joined tsquery of the query's plain words (natural questions shouldn't AND every word). */
-export function toOrTsQuery(query: string): string | null {
-  const words = (query.toLowerCase().match(/[a-z0-9]+/g) ?? []).filter((w) => w.length > 1).slice(0, 16);
-  return words.length ? [...new Set(words)].join(" | ") : null;
+// Words that match (nearly) the whole corpus or only carry question syntax.
+// They would make every study a "match" and drown the terms that matter.
+const GENERIC_TERMS = new Set([
+  "hydrogen", "h2", "molecular", "rich", "enriched", "hrw", "does", "do", "did", "can", "could", "would", "is", "are",
+  "was", "were", "what", "which", "how", "why", "when", "who", "the", "and", "or", "of", "in", "on", "for", "to",
+  "with", "about", "any", "there", "help", "helps", "effect", "effects", "study", "studies", "research", "evidence",
+  "show", "shows", "tell", "me", "us", "it", "its", "be", "by", "an", "as", "at", "from", "that", "this", "have", "has",
+]);
+
+/** Distinct content words of a query (generic corpus-wide words removed, unless nothing else is left). */
+export function queryTerms(query: string): string[] {
+  const words = [...new Set((query.toLowerCase().match(/[a-z0-9]+/g) ?? []).filter((w) => w.length > 1))];
+  const content = words.filter((w) => !GENERIC_TERMS.has(w));
+  return (content.length ? content : words).slice(0, 12);
 }
 
+/**
+ * Relevance per matching study: how many distinct query terms it matches
+ * (dominant), plus ts_rank as the tie-breaker. A study must match at least
+ * half the terms — an OR over "does hydrogen water improve blood pressure"
+ * otherwise matches the whole corpus and ranks blood-pressure studies no
+ * higher than any hydrogen-water paper.
+ */
 async function textRanks(query: string): Promise<Map<number, number>> {
-  const ts = toOrTsQuery(query);
-  if (!ts) return new Map();
+  const terms = queryTerms(query);
+  if (!terms.length) return new Map();
+  const anyTerm = terms.join(" | ");
+  const hits = sql.join(
+    terms.map((t) => sql`(search_vector @@ to_tsquery('english', ${t}))::int`),
+    sql` + `,
+  );
+  const minHits = Math.max(1, Math.ceil(terms.length / 2));
   const r = await db.execute(sql`
-    SELECT id, ts_rank(search_vector, to_tsquery('english', ${ts})) AS rank
-      FROM studies
-     WHERE is_excluded = false AND search_vector @@ to_tsquery('english', ${ts})
+    SELECT id, hits, rank FROM (
+      SELECT id, (${hits}) AS hits, ts_rank(search_vector, to_tsquery('english', ${anyTerm})) AS rank
+        FROM studies
+       WHERE is_excluded = false AND search_vector @@ to_tsquery('english', ${anyTerm})
+    ) m
+    WHERE hits >= ${minHits}
   `);
-  return new Map(((r.rows ?? []) as any[]).map((x) => [Number(x.id), Number(x.rank)]));
+  return new Map(((r.rows ?? []) as any[]).map((x) => [Number(x.id), Number(x.hits) + Math.min(Number(x.rank), 0.99)]));
+}
+
+/** The condition hub a free-text question names, if any (longest name wins). */
+export async function detectCondition(text: string): Promise<string | null> {
+  const t = ` ${text.toLowerCase().replace(/[^a-z0-9]+/g, " ")} `;
+  const rows = await getConditionRows();
+  const hits = rows.filter((r) => {
+    const name = ` ${r.name.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()} `;
+    const slug = ` ${r.slug.replace(/-/g, " ")} `;
+    return t.includes(name) || t.includes(slug);
+  });
+  hits.sort((a, b) => b.name.length - a.name.length);
+  return hits[0]?.slug ?? null;
 }
 
 // ── filtering + sorting ──────────────────────────────────────

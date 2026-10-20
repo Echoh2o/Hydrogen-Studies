@@ -20,8 +20,11 @@ function route(text: string, params: unknown[]) {
   const cond = text.match(/cond_match_([a-z-]+)/);
   if (cond) return (CONDITION_IDS[cond[1]] ?? []).map((id) => ({ id }));
   if (text.includes("ts_rank")) {
-    const words = String(params[0]).split(" | ");
-    return CORPUS_ROWS.filter((r) => words.some((w) => r.title.toLowerCase().includes(w))).map((r) => ({ id: r.id, rank: 0.5 }));
+    // params: one per-term hit check each, then the OR query, then minHits.
+    const words = (params.filter((p) => typeof p === "string") as string[]).filter((p) => !p.includes(" | "));
+    const minHits = params[params.length - 1] as number;
+    return CORPUS_ROWS.map((r) => ({ id: r.id, hits: words.filter((w) => r.title.toLowerCase().includes(w)).length, rank: 0.5 }))
+      .filter((r) => r.hits >= minHits);
   }
   if (text.includes("row_to_json")) {
     const target = CORPUS_ROWS.find((r) => params.includes(r.id) || params.includes(r.slug)) ?? null;
