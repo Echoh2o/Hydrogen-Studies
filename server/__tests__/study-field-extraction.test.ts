@@ -66,6 +66,16 @@ describe("parseExtraction", () => {
 
   it("rejects an off-vocabulary design and nulls implausible numbers", () => {
     expect(parseExtraction({ study_design: "anecdote" })).toBeNull();
+    expect(parseExtraction({ study_design: "Systematic Review" })!.studyDesign).toBe("meta_analysis");
+    expect(parseExtraction({ study_design: "randomized-controlled-trial" })!.studyDesign).toBe("rct");
+    expect(parseExtraction({ study_design: "in vivo" })!.studyDesign).toBe("animal");
+    expect(parseExtraction({ study_design: "in_vitro, animal" })!.studyDesign).toBe("animal");
+    expect(parseExtraction({ study_design: "animal and rct" })!.studyDesign).toBe("rct");
+    expect(parseExtraction({ study_design: "mixed" })!.studyDesign).toBe("other");
+    expect(parseExtraction({ study_design: "erratum" })).toMatchObject({ studyDesign: "other", notice: "erratum" });
+    expect(parseExtraction({ study_design: "Expression of concern" })!.notice).toBe("expression_of_concern");
+    expect(parseExtraction({ study_design: "corrigendum" })!.notice).toBe("erratum");
+    expect(parseExtraction({ study_design: "rct", h2_concentration: "x".repeat(150) })!.h2Concentration).toHaveLength(100);
     const x = parseExtraction({ study_design: "animal", sample_size: -3, duration_days: "8 weeks" })!;
     expect(x.sampleSize).toBeNull();
     expect(x.durationDays).toBeNull();

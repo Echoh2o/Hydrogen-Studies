@@ -100,7 +100,6 @@ async function main() {
       const s = candidates[next++];
       try {
         const extracted = await extractStudyFields(s);
-        if (!extracted) throw new Error("off-vocabulary study_design");
         const plan = planUpdates(s, extracted);
         corrections.push(...plan.corrections);
         for (const k of Object.keys(plan.updates)) fieldCounts[k] = (fieldCounts[k] ?? 0) + 1;

@@ -1,0 +1,15 @@
+id,field,current,proposed,title
+2402,is_human_trial,false,true,Inhibition of streptococcal biofilm by hydrogen water
+2783,is_human_trial,false,true,Hydrogen-rich electrolyzed warm water represses wrinkle formation against UVA ray together with type-I collagen production and oxidative-str
+2979,is_excluded,false,true (off-topic),Antibacterial effect of electrolyzed water on oral bacteria 
+3209,is_human_trial,false,true,Molecular hydrogen has a positive impact on pregnancy maintenance through enhancement of mitochondrial function and immunomodulatory effects
+3684,is_human_trial,false,true,Hydrogen-Enriched Hyaluronic Acid Dressing Ameliorates Diabetic Foot Ulcer via Promoting Mitophagy 
+3938,is_excluded,false,true (erratum),Corrigendum to 'Inhalation of water electrolysis-derived hydrogen ameliorates cerebral ischemia-reperfusion injury in rats - A possible new 
+3947,is_human_trial,true,false,Erratum to hydrogen/oxygen mixed gas inhalation improves disease severity and dyspnea in patients with Coronavirus disease 2019 in a recent 
+3947,is_excluded,false,true (erratum),Erratum to hydrogen/oxygen mixed gas inhalation improves disease severity and dyspnea in patients with Coronavirus disease 2019 in a recent 
+3999,is_excluded,false,true (erratum),Corrigendum to 'Hydrogen Gas Attenuates Hypoxic-Ischemic Brain Injury via Regulation of the MAPK/HO-1/PGC-1a Pathway in Neonatal Rats' 
+4184,is_excluded,false,true (erratum),"Corrigendum to ""Protective effect of hydrogen-rich water on spermatogenesis in high-fat diet obese rats"" [Toxicology and Applied Pharmacolog"
+4146,is_excluded,false,true (erratum),"Correction to ""Inhalation of Hydrogen Gas Mitigates Sevoflurane-Induced Neuronal Apoptosis in the Neonatal Cortex and is Associated With Cha"
+4185,is_excluded,false,true (expression_of_concern),"Expression of concern: ""Hydrogen therapy reduces apoptosis in neonatal hypoxia-ischemia rat model"" [NEUROSCI LETT, Volume 441 (2008) 167-172"
+4186,is_excluded,false,true (erratum),Hydrogen Gas Alleviates Sepsis-Induced Brain Injury by Improving Mitochondrial Biogenesis Through the Activation of PGC-α in Mice: Erratum 
+4240,is_excluded,false,true (erratum),"Correction to ""Core-Shell Microspheres Enabling Sustained Hydrogen Release and Peroxidase-Like Catalytic Activity for Periodontitis Therapy"""
