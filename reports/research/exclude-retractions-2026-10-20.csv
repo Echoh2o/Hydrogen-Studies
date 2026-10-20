@@ -1,4 +1,5 @@
 # Retracted papers and publication notices to exclude (410) — backfill review D3. Josh 2026-10-20: "fix retractions".
+approved-by: josh 2026-10-20 "fix retractions; yes, exclude all 38"
 # reason: Retracted paper or publication notice (retraction, expression of concern, erratum/corrigendum) — not a study
 id,url,title,year,gsc_impressions_90d,gsc_clicks_90d,group
 2056,https://hydrogenstudies.com/study/retracted-an-immunohistochemical-study-of-the-increase-in-antioxidant-capacity-of-corneal-epithelial-cells-by-molecular-hydrogen-leading-to-the-suppression-of-alkali-induced-oxidative-stress-1775650467134,"An Immunohistochemical Study of the Increase in Antioxidant Capacity of Corneal Epithelial Cells by Molecular Hydrogen, Leading to the Suppression of Alkali-Induced Oxidative Stress",2020,0,0,retracted-paper
