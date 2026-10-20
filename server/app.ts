@@ -1047,6 +1047,7 @@ pool.query("SELECT 1").then(async () => {
     const { addStudyExclusion } = await import("./migrations/add-study-exclusion");
     const { addSleepQualityHub } = await import("./migrations/add-sleep-quality-hub");
     const { addFreshnessCheckTracking } = await import("./migrations/add-freshness-check-tracking");
+    const { addStudyDesignFields } = await import("./migrations/add-study-design-fields");
 
     await runMigrations([
       { name: "001_add_fulltext_search", up: addFullTextSearch },
@@ -1074,6 +1075,7 @@ pool.query("SELECT 1").then(async () => {
       { name: "023_add_study_exclusion", up: addStudyExclusion },
       { name: "024_add_sleep_quality_hub", up: addSleepQualityHub },
       { name: "025_add_freshness_check_tracking", up: addFreshnessCheckTracking },
+      { name: "026_add_study_design_fields", up: addStudyDesignFields },
     ]);
 
     // Hub lists cached by a prewarm that ran mid-migration would hide hub rows
