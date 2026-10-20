@@ -97,24 +97,73 @@ const NOTICES = ["retraction_notice", "expression_of_concern", "erratum"] as con
 const shortStr = (v: unknown, max = 200): string | null =>
   typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null;
 
+/** Labels the model sometimes returns instead of the STUDY_DESIGNS enum. */
+const DESIGN_SYNONYMS: Record<string, StudyDesign> = {
+  systematic_review: "meta_analysis", "systematic review": "meta_analysis", "meta-analysis": "meta_analysis", metaanalysis: "meta_analysis",
+  randomized_controlled_trial: "rct", randomised_controlled_trial: "rct", crossover: "rct", randomized_crossover: "rct",
+  clinical_trial: "controlled_trial", "controlled trial": "controlled_trial", non_randomized_trial: "controlled_trial",
+  open_label: "uncontrolled_trial", pilot: "uncontrolled_trial", single_arm: "uncontrolled_trial", pilot_study: "uncontrolled_trial",
+  cohort: "observational", cross_sectional: "observational", case_control: "observational", epidemiological: "observational",
+  case_series: "case_report", "case report": "case_report",
+  in_vivo: "animal", "in vivo": "animal", animal_study: "animal", preclinical: "animal",
+  "in vitro": "in_vitro", invitro: "in_vitro", cell_culture: "in_vitro", ex_vivo: "in_vitro",
+  narrative_review: "review", editorial: "review", commentary: "review", letter: "review", hypothesis: "review",
+  perspective: "review", opinion: "review", mini_review: "review",
+};
+
+// Strongest first: a paper reporting both an RCT and mouse work is an RCT.
+const DESIGN_PRIORITY: StudyDesign[] = [
+  "meta_analysis", "rct", "controlled_trial", "uncontrolled_trial", "observational",
+  "case_report", "animal", "in_vitro", "review", "other",
+];
+const NOTICE_LABELS: Array<[RegExp, NonNullable<ExtractedFields["notice"]>]> = [
+  [/retract/, "retraction_notice"],
+  [/expression.of.concern/, "expression_of_concern"],
+  [/errat|corrigend|correction/, "erratum"],
+];
+
+function oneDesign(label: string): StudyDesign | null {
+  const key = label.trim().toLowerCase();
+  if (isStudyDesign(key)) return key;
+  return DESIGN_SYNONYMS[key] ?? DESIGN_SYNONYMS[key.replace(/[\s-]+/g, "_")] ?? null;
+}
+
+/**
+ * Map the model's design label onto STUDY_DESIGNS. Combined labels
+ * ("in_vitro, animal", "animal and rct") keep the strongest design; notice
+ * labels ("erratum", "expression_of_concern") become design "other" + notice.
+ */
+export function normalizeDesign(v: unknown): { design: StudyDesign; notice: ExtractedFields["notice"] } | null {
+  if (typeof v !== "string" || !v.trim()) return null;
+  const key = v.trim().toLowerCase();
+  const notice = NOTICE_LABELS.find(([re]) => re.test(key))?.[1] ?? null;
+  if (notice) return { design: "other", notice };
+  if (key === "mixed" || key === "multiple") return { design: "other", notice: null };
+  const parts = key.split(/\s*(?:[,/;&+|]|\band\b|\bplus\b)\s*/).map(oneDesign).filter((d): d is StudyDesign => d !== null);
+  if (!parts.length) return null;
+  return { design: DESIGN_PRIORITY.find((d) => parts.includes(d))!, notice: null };
+}
+
 /** Validate the model's JSON; anything off-vocabulary becomes null. */
 export function parseExtraction(raw: Record<string, unknown>): ExtractedFields | null {
-  if (!isStudyDesign(raw.study_design)) return null;
+  const normalized = normalizeDesign(raw.study_design);
+  if (!normalized) return null;
+  const studyDesign = normalized.design;
   const delivery = typeof raw.h2_delivery_method === "string" ? normalizeDeliveryMethod(raw.h2_delivery_method) : null;
   return {
-    studyDesign: raw.study_design,
+    studyDesign,
     species: shortStr(raw.species, 80),
     sampleSize: posInt(raw.sample_size, 1_000_000),
     durationDays: posInt(raw.duration_days, 36_500),
     outcome: typeof raw.outcome === "string" ? normalizeOutcome(raw.outcome) : null,
     deliveryMethod: delivery,
-    h2Concentration: shortStr(raw.h2_concentration),
+    h2Concentration: shortStr(raw.h2_concentration, 100), // varchar(100)
     dosageProtocol: shortStr(raw.dosage_protocol, 500),
     isHumanTrial: raw.is_human_trial === true,
     onTopic: raw.on_topic !== false,
     notice: (NOTICES as readonly unknown[]).includes(raw.publication_type)
       ? (raw.publication_type as ExtractedFields["notice"])
-      : null,
+      : normalized.notice,
   };
 }
 
@@ -151,12 +200,14 @@ export function planUpdates(s: ExtractionInput, x: ExtractedFields, now = new Da
   return { updates, corrections };
 }
 
-export async function extractStudyFields(s: ExtractionInput): Promise<ExtractedFields | null> {
+export async function extractStudyFields(s: ExtractionInput): Promise<ExtractedFields> {
   const raw = await ai.generateJSON<Record<string, unknown>>(EXTRACTION_SYSTEM_PROMPT, buildExtractionPrompt(s), {
     model: MODELS.HAIKU,
     maxTokens: 600,
     temperature: 0,
     caller: "study-field-extraction",
   });
-  return parseExtraction(raw);
+  const parsed = parseExtraction(raw);
+  if (!parsed) throw new Error(`off-vocabulary study_design: ${JSON.stringify(raw.study_design)}`);
+  return parsed;
 }
