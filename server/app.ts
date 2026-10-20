@@ -74,7 +74,7 @@ import imageGenerationRoutes from "./routes/image-generation-routes";
 import doiEnhancerRoutes from "./routes/doi-enhancer-routes";
 import learnStatsRoutes from "./routes/learn-stats-routes";
 import embedRoutes from "./routes/embed-routes";
-import { mcpPublicRouter } from "./mcp/http";
+import { mcpAdminRouter, mcpPublicRouter } from "./mcp/http";
 
 // New Controllers
 import { searchController } from "./controllers/search-controller";
@@ -256,8 +256,10 @@ app.use(cookieParser());
 // Public embeds for echowater.com (live study count + footer badge). Before
 // the CORS allowlist: these answer any origin with `*` and no credentials.
 app.use("/embed", generalApiRateLimiter, embedRoutes);
-// Public MCP server (read-only research tools; server/mcp). Before the CORS
-// allowlist / sessions / CSRF for the same reason as /embed.
+// MCP servers (server/mcp): admin tier (bearer key, server-side synthesis)
+// and the public read-only tier. Before the CORS allowlist / sessions / CSRF
+// for the same reason as /embed; admin first so /mcp/admin never hits public.
+app.use("/mcp/admin", mcpAdminRouter());
 app.use("/mcp", mcpPublicRouter());
 
 // Secure CORS configuration

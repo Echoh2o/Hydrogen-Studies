@@ -10,6 +10,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { DELIVERY_METHODS, OUTCOMES, STUDY_DESIGNS } from "@shared/research-vocab";
+import { READ_ONLY, fail, filterObject, filterShape, instrument, json, stripUndefined, subjectEnum, toFilters } from "./tool-helpers";
+import { registerAdminTools } from "./admin-tools";
 import { getPublicStudyStats } from "../services/public-study-stats";
 import {
   GROUP_BY,
@@ -23,11 +25,10 @@ import {
   parseStudyRef,
   relatedStudies,
   studyCard,
-  type ResearchFilters,
 } from "../services/research-query";
-import { logger } from "../utils/logger";
+import type { McpTier } from "./tool-helpers";
 
-export type McpTier = "public" | "admin";
+export type { McpTier } from "./tool-helpers";
 
 export const SERVER_INSTRUCTIONS = `Hydrogen Studies (${SITE_URL}) is a curated database of published research on molecular hydrogen (H2) — drinking hydrogen-rich water, inhalation, hydrogen-rich saline and more.
 
@@ -39,60 +40,6 @@ How to use these tools well:
 - Report coverage honestly: fields like design, outcome and delivery method are unknown for some studies; the tools count unknowns separately rather than guessing.
 - These are research summaries, not medical advice. Do not present findings as treatments or cures; most human trials are small.
 - Disclosure: Hydrogen Studies is built and funded by Echo Technologies LLC, a maker of hydrogen water products. Mention this when a user asks about bias or funding.`;
-
-const subjectEnum = z.enum(["human", "animal", "in_vitro", "review"]);
-
-const filterShape = {
-  query: z.string().max(300).optional().describe("Full-text search terms, e.g. 'exercise fatigue lactate'"),
-  condition: z
-    .string()
-    .max(100)
-    .optional()
-    .describe("Condition hub slug or name, e.g. 'blood-pressure' or 'Blood Pressure' (see list_conditions)"),
-  subject: subjectEnum.optional().describe("Who/what was studied"),
-  design: z.enum(STUDY_DESIGNS).optional().describe("Study design"),
-  delivery_method: z.enum(DELIVERY_METHODS).optional().describe("How hydrogen was administered"),
-  outcome: z.enum(OUTCOMES).optional().describe("Direction of the reported hydrogen effect"),
-  year_from: z.number().int().min(1900).max(2100).optional(),
-  year_to: z.number().int().min(1900).max(2100).optional(),
-  min_sample_size: z.number().int().min(1).optional().describe("Minimum participants/animals"),
-};
-const filterObject = z.object(filterShape);
-type FilterArgs = z.infer<typeof filterObject>;
-
-function toFilters(a: FilterArgs): ResearchFilters {
-  return {
-    query: a.query,
-    condition: a.condition,
-    subject: a.subject,
-    design: a.design,
-    deliveryMethod: a.delivery_method,
-    outcome: a.outcome,
-    yearFrom: a.year_from,
-    yearTo: a.year_to,
-    minSampleSize: a.min_sample_size,
-  };
-}
-
-const json = (data: unknown) => ({ content: [{ type: "text" as const, text: JSON.stringify(data) }] });
-const fail = (message: string) => ({ isError: true, content: [{ type: "text" as const, text: message }] });
-
-/** Wrap a handler with timing/logging and a uniform error result. */
-function instrument<A>(tier: McpTier, tool: string, fn: (args: A) => Promise<ReturnType<typeof json> | ReturnType<typeof fail>>) {
-  return async (args: A) => {
-    const started = Date.now();
-    try {
-      const out = await fn(args);
-      logger.info("MCP tool call", "MCP", { tier, tool, ms: Date.now() - started, error: "isError" in out });
-      return out;
-    } catch (err) {
-      logger.error("MCP tool failed", err, "MCP", { tier, tool });
-      return fail(`${tool} failed: ${err instanceof Error ? err.message : "internal error"}`);
-    }
-  };
-}
-
-const READ_ONLY = { readOnlyHint: true, destructiveHint: false, openWorldHint: false } as const;
 
 export function buildMcpServer({ tier }: { tier: McpTier }): McpServer {
   const server = new McpServer(
@@ -286,11 +233,9 @@ export function buildMcpServer({ tier }: { tier: McpTier }): McpServer {
     }),
   );
 
-  return server;
-}
+  if (tier === "admin") registerAdminTools(server);
 
-function stripUndefined<T extends object>(o: T): Partial<T> {
-  return Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as Partial<T>;
+  return server;
 }
 
 export const ABOUT_MARKDOWN = `# Hydrogen Studies

@@ -407,8 +407,9 @@ export function errorRecoveryMiddleware(
  * minutes later, which read as "content creation does nothing".
  * These get a 10-minute budget instead; everything else keeps 30s.
  */
+// /mcp/admin: answer_question / synthesize_topic run Claude (Opus) server-side.
 const LONG_RUNNING_PATH_RE =
-  /^\/api\/(studies\/[^/]+\/generate|studies\/generate|blogs\/(generate|improve)|multi-format\/|content-enrichment\/|enrichment\/|doi\/enhance|seo\/|image-generation\/|images\/generate|content-optimization\/|review-assistant\/|blog-recommendations\/)/;
+  /^\/(?:mcp\/admin(?:\/|$)|api\/(studies\/[^/]+\/generate|studies\/generate|blogs\/(generate|improve)|multi-format\/|content-enrichment\/|enrichment\/|doi\/enhance|seo\/|image-generation\/|images\/generate|content-optimization\/|review-assistant\/|blog-recommendations\/))/;
 const LONG_RUNNING_TIMEOUT_MS = 10 * 60 * 1000;
 
 /**

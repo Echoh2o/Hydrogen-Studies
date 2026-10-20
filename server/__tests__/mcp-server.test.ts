@@ -66,8 +66,16 @@ vi.mock("../services/public-study-stats", () => ({
   getPublicStudyStats: vi.fn(async () => ({ totalStudies: 6, humanTrials: 3, healthConditions: 2 })),
 }));
 vi.mock("../utils/logger", () => ({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }));
+const generateText = vi.fn(async () => "Bottom line: small human trials suggest a modest effect [1][2].");
+const generateJSON = vi.fn(async () => ({ topic_scope: "BP", evidence_strength_rating: 4, research_gaps: ["larger RCTs"] }));
+vi.mock("../services/ai-provider", () => ({
+  ai: { generateText, generateJSON },
+  MODELS: { SONNET: "claude-sonnet-4-6", OPUS: "claude-opus-4-8", HAIKU: "claude-haiku-4-5" },
+}));
 
-const { mcpPublicRouter } = await import("../mcp/http");
+const ADMIN_KEY = "test-admin-key-0123456789abcdef";
+process.env.MCP_ADMIN_KEYS = `another-key-that-is-long-enough-xx, ${ADMIN_KEY}`;
+const { mcpPublicRouter, mcpAdminRouter } = await import("../mcp/http");
 
 let server: Server;
 let base: string;
@@ -83,6 +91,7 @@ async function call(name: string, args: Record<string, unknown> = {}) {
 
 beforeAll(async () => {
   const app = express();
+  app.use("/mcp/admin", mcpAdminRouter());
   app.use("/mcp", mcpPublicRouter());
   await new Promise<void>((resolve) => {
     server = app.listen(0, "127.0.0.1", () => resolve());
@@ -203,5 +212,73 @@ describe("HTTP surface", () => {
     expect(pre.headers.get("access-control-allow-origin")).toBe("*");
     const get = await fetch(`${base}/mcp`);
     expect(get.status).toBe(405);
+  });
+});
+
+describe("admin MCP server", () => {
+  let admin: Client;
+
+  beforeAll(async () => {
+    admin = new Client({ name: "admin-test", version: "1.0.0" });
+    await admin.connect(
+      new StreamableHTTPClientTransport(new URL(`${base}/mcp/admin`), {
+        requestInit: { headers: { Authorization: `Bearer ${ADMIN_KEY}` } },
+      }),
+    );
+  });
+
+  afterAll(async () => {
+    await admin.close();
+  });
+
+  const initialize = (headers: Record<string, string>) =>
+    fetch(`${base}/mcp/admin`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json, text/event-stream", ...headers },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "x", version: "1" } } }),
+    });
+
+  it("rejects missing and wrong keys with 401", async () => {
+    expect((await initialize({})).status).toBe(401);
+    expect((await initialize({ Authorization: "Bearer nope" })).status).toBe(401);
+    expect((await initialize({ Authorization: `Bearer ${ADMIN_KEY}x` })).status).toBe(401);
+    expect((await initialize({ Authorization: `Bearer ${ADMIN_KEY}` })).status).toBe(200);
+  });
+
+  it("lists the admin tools on top of the public ones", async () => {
+    const names = (await admin.listTools()).tools.map((t) => t.name);
+    expect(names).toEqual(expect.arrayContaining(["search_studies", "answer_question", "synthesize_topic", "get_quality_breakdown", "field_coverage_report"]));
+  });
+
+  it("answer_question returns the model answer with numbered citations", async () => {
+    const res = (await admin.callTool({ name: "answer_question", arguments: { question: "blood pressure", depth: "deep" } })) as any;
+    const data = JSON.parse(res.content[0].text);
+    expect(data.answer).toMatch(/\[1\]/);
+    expect(data.model).toBe("claude-opus-4-8");
+    expect(data.citations[0]).toMatchObject({ n: 1, url: expect.stringContaining("/study/") });
+    expect(data.retrieval.matched).toBeGreaterThan(0);
+    const [, userPrompt, opts] = generateText.mock.calls.at(-1) as unknown as [string, string, any];
+    expect(userPrompt).toMatch(/^Question: blood pressure/);
+    expect(opts).toMatchObject({ model: "claude-opus-4-8", caller: "mcp-answer-question" });
+  });
+
+  it("synthesize_topic synthesizes a condition hub and caches it", async () => {
+    const first = JSON.parse(((await admin.callTool({ name: "synthesize_topic", arguments: { topic: "blood-pressure" } })) as any).content[0].text);
+    expect(first).toMatchObject({ cached: false, condition_hub: { slug: "blood-pressure" }, synthesis: { evidence_strength_rating: 4 } });
+    const again = JSON.parse(((await admin.callTool({ name: "synthesize_topic", arguments: { topic: "Blood-Pressure" } })) as any).content[0].text);
+    expect(again.cached).toBe(true);
+    expect(generateJSON).toHaveBeenCalledTimes(1);
+  });
+
+  it("get_study on the admin tier includes the full abstract", async () => {
+    const data = JSON.parse(((await admin.callTool({ name: "get_study", arguments: { study: "1" } })) as any).content[0].text);
+    expect(data.abstract).toBe(LONG_ABSTRACT);
+    expect(data).not.toHaveProperty("abstract_excerpt");
+  });
+
+  it("field_coverage_report summarizes known fields", async () => {
+    const data = JSON.parse(((await admin.callTool({ name: "field_coverage_report", arguments: {} })) as any).content[0].text);
+    expect(data.live_studies).toBe(6);
+    expect(data.fields.design).toEqual({ known: 3, pct: 50 });
   });
 });
