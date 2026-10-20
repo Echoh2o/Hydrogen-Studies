@@ -121,7 +121,7 @@ async function getTopConditions(): Promise<{ name: string; slug: string }[]> {
 }
 
 /** A health_conditions row — the canonical condition hubs. */
-interface ConditionRow {
+export interface ConditionRow {
   slug: string;
   name: string;
   description: string | null;
@@ -131,7 +131,7 @@ interface ConditionRow {
 let _conditionRows: ConditionRow[] | null = null;
 let _conditionRowsAt = 0;
 
-async function getConditionRows(): Promise<ConditionRow[]> {
+export async function getConditionRows(): Promise<ConditionRow[]> {
   if (_conditionRows && Date.now() - _conditionRowsAt < 30 * 60 * 1000) return _conditionRows;
   const r = await db.execute(sql`
     SELECT name, slug, description, study_count FROM health_conditions WHERE slug IS NOT NULL
@@ -156,7 +156,7 @@ async function getConditionRows(): Promise<ConditionRow[]> {
  * (server/utils/condition-hub-terms.ts — the keyword fallback the SPA page
  * used). Excluded studies never match.
  */
-function conditionHubWhere(row: ConditionRow) {
+export function conditionHubWhere(row: ConditionRow) {
   const tagMatch = sql`array_to_string(health_conditions, ' ') ILIKE ${"%" + row.name + "%"}`;
   const pattern = conditionHubTermsPattern(row.slug, row.name);
   const termMatch = pattern
