@@ -73,6 +73,7 @@ import pipelineRoutes from "./routes/pipeline-routes";
 import imageGenerationRoutes from "./routes/image-generation-routes";
 import doiEnhancerRoutes from "./routes/doi-enhancer-routes";
 import learnStatsRoutes from "./routes/learn-stats-routes";
+import embedRoutes from "./routes/embed-routes";
 
 // New Controllers
 import { searchController } from "./controllers/search-controller";
@@ -250,6 +251,10 @@ app.use(timeoutMiddleware(30000)); // 30 second timeout
 
 // Cookie parser for CSRF tokens
 app.use(cookieParser());
+
+// Public embeds for echowater.com (live study count + footer badge). Before
+// the CORS allowlist: these answer any origin with `*` and no credentials.
+app.use("/embed", generalApiRateLimiter, embedRoutes);
 
 // Secure CORS configuration
 validateCorsConfig();
