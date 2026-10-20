@@ -378,6 +378,10 @@ export const studies = pgTable(
     // Rotation marker for the weekly CrossRef metadata-freshness job (stamped
     // on every attempt, success or not; migration 025).
     freshnessCheckedAt: timestamp("freshness_checked_at"),
+    // Extracted research design (shared/research-vocab.ts STUDY_DESIGNS) and
+    // the backfill stamp — migration 026, scripts/research/backfill-study-fields.ts.
+    studyDesign: varchar("study_design", { length: 40 }),
+    fieldsExtractedAt: timestamp("fields_extracted_at"),
     conflictOfInterest: text("conflict_of_interest"), // Trust signal declarations
 
     // AI Comprehension Fields
