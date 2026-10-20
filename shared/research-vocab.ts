@@ -104,16 +104,3 @@ export function classifySubject(row: {
   if (IN_VITRO_TYPES.test(type)) return "in_vitro";
   return "animal"; // every other legacy value is a species (Rat, Mouse, Pig…)
 }
-
-/** SQL-side twin of classifySubject for filtering/grouping in Postgres. */
-export const SUBJECT_SQL = `CASE
-  WHEN study_design IN ('rct','controlled_trial','uncontrolled_trial','observational','case_report') THEN 'human'
-  WHEN study_design IN ('meta_analysis','review') THEN 'review'
-  WHEN study_design = 'animal' THEN 'animal'
-  WHEN study_design = 'in_vitro' THEN 'in_vitro'
-  WHEN study_design IS NOT NULL THEN 'unknown'
-  WHEN study_type ~* '^human$' THEN 'human'
-  WHEN study_type ~* '^clinical$' OR NULLIF(TRIM(study_type), '') IS NULL THEN 'unknown'
-  WHEN study_type ~* '^(cell culture|molecular assay|in vitro|tissue)' THEN 'in_vitro'
-  ELSE 'animal'
-END`;

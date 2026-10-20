@@ -180,6 +180,7 @@ Hydrogen Studies is built and funded by Echo Technologies LLC, the maker of Echo
 - [Sitemap index](${SITE_URL}/sitemap-index.xml): all indexable URLs (studies, articles, topic hubs)
 - [RSS feed](${SITE_URL}/rss.xml): latest published articles
 - [robots.txt](${SITE_URL}/robots.txt): crawl policy (all public content is crawlable)
+- [MCP server](${SITE_URL}/mcp): Model Context Protocol endpoint (Streamable HTTP, no auth, read-only) — tools to search studies, profile the evidence for a condition, compare delivery methods or conditions, and aggregate counts. Add it to an MCP client as \`${SITE_URL}/mcp\`.
 
 ## Attribution
 

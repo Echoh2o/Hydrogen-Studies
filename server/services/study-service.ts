@@ -205,7 +205,9 @@ export class StudyService {
       // Sorting — use relevance ranking when full-text search is active
       const sortField = filters.sortField || filters.sortBy || "publishDate";
       const sortOrder = filters.sortOrder === "asc" ? "asc" : "desc";
-      const userRequestedSort = filters.sortField || filters.sortBy;
+      // "relevance" is a request FOR ts_rank, not a user-chosen column sort —
+      // treating it as one ordered /chat retrieval by id DESC (newest-first).
+      const userRequestedSort = [filters.sortField, filters.sortBy].find((v) => v && v !== "relevance");
 
       let orderByClause;
 
