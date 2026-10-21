@@ -36,7 +36,7 @@ export const DELIVERY_METHODS = [
   "culture_medium", // H2-dissolved medium/solution in vitro
   "bathing",
   "topical",
-  "tablet", // magnesium tablets / supplements dissolved to produce H2
+  "tablet", // magnesium tablets / sticks that generate H2 in water ("Water (Mg-Chemico)")
   "mixed",
   "other",
 ] as const;
@@ -66,7 +66,9 @@ export function normalizeDeliveryMethod(raw: string | null | undefined): Deliver
   if (v === "saline" || v === "injection") return "hydrogen_saline";
   if (v.includes("/") || v === "mixed") return "mixed";
   if (v.startsWith("gas") || v.includes("inhal")) return "inhalation";
-  if (v.includes("tablet") || v.includes("supplement")) return "tablet";
+  if (v.includes("tablet") || v.includes("supplement") || v.includes("chemico") || v.includes("magnesium") || v.includes("stick")) {
+    return "tablet";
+  }
   if (v.startsWith("water") || v.includes("drink")) return "drinking_water";
   if (v.startsWith("saline") || v.startsWith("perfusion") || v.includes("inject") || v.includes("infusion")) {
     return "hydrogen_saline";

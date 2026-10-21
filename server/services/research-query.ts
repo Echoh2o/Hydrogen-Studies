@@ -49,6 +49,8 @@ export interface CorpusStudy {
   keyFinding: string | null;
   doi: string | null;
   qualityScore: number | null;
+  /** First author's surname ("Ohta") — distinguishes studies whose plain-language titles collide. */
+  firstAuthor: string | null;
 }
 
 export interface ResearchFilters {
@@ -70,6 +72,17 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 // ── corpus ───────────────────────────────────────────────────
 
 /** Map a raw studies row onto the normalized corpus shape. */
+/** Surname of the first author from "Shigeo Ohta, Ikuroh Ohsawa, …" (or "Ohta S, …"). */
+export function firstAuthorSurname(authors: unknown): string | null {
+  if (typeof authors !== "string") return null;
+  const first = authors.split(/[,;]| and /)[0]?.replace(/\s+/g, " ").trim();
+  if (!first) return null;
+  const parts = first.split(" ");
+  // "Ohta S" / "Ohta SH" (surname first, initials last) vs "Shigeo Ohta"
+  const last = parts[parts.length - 1];
+  return parts.length > 1 && /^[A-Z]{1,3}\.?$/.test(last) ? parts[0] : last;
+}
+
 export function toCorpusStudy(r: Record<string, any>): CorpusStudy {
   const design = isStudyDesign(r.study_design) ? r.study_design : null;
   const species = typeof r.study_type === "string" && r.study_type.trim() && !/^clinical$/i.test(r.study_type.trim())
@@ -94,17 +107,34 @@ export function toCorpusStudy(r: Record<string, any>): CorpusStudy {
     keyFinding: r.key_finding?.trim() || null,
     doi: r.doi?.trim() || null,
     qualityScore: r.quality_score === null || r.quality_score === undefined ? null : Number(r.quality_score),
+    firstAuthor: firstAuthorSurname(r.authors),
   };
 }
 
-let corpusCache: { at: number; rows: CorpusStudy[]; byId: Map<number, CorpusStudy> } | null = null;
+type Corpus = { rows: CorpusStudy[]; byId: Map<number, CorpusStudy> };
+let corpusCache: ({ at: number } & Corpus) | null = null;
+let corpusLoading: Promise<Corpus> | null = null;
 
-export async function getCorpus(): Promise<{ rows: CorpusStudy[]; byId: Map<number, CorpusStudy> }> {
+/**
+ * The cached corpus. Single-flight: concurrent callers on a cold or expired
+ * cache share one load instead of each re-running the full query.
+ */
+export async function getCorpus(): Promise<Corpus> {
   if (corpusCache && Date.now() - corpusCache.at < CACHE_TTL_MS) return corpusCache;
+  if (!corpusLoading) {
+    corpusLoading = loadCorpus().finally(() => {
+      corpusLoading = null;
+    });
+  }
+  return corpusLoading;
+}
+
+async function loadCorpus(): Promise<Corpus> {
   const r = await db.execute(sql`
     SELECT s.id, s.slug, COALESCE(NULLIF(s.plain_language_title, ''), s.title) AS title, s.publish_year,
            s.journal, s.country, s.study_design, s.study_type, s.is_human_trial, s.h2_delivery_method,
            s.outcome, s.sample_size, s.duration, s.health_conditions, s.key_finding, s.doi,
+           LEFT(s.authors, 120) AS authors,
            (SELECT q.overall_score FROM study_quality_scores q WHERE q.study_id = s.id
              ORDER BY q.id DESC LIMIT 1) AS quality_score
       FROM studies s
@@ -131,14 +161,17 @@ export function matchConditionRow(rows: ConditionRow[], input: string): Conditio
   );
 }
 
-const conditionIdCache = new Map<string, { at: number; ids: Set<number> }>();
+const conditionIdCache = new Map<string, { at: number; ids: Promise<Set<number>> }>();
 
+/** Study ids on a condition hub; cached and single-flight like getCorpus. */
 async function conditionStudyIds(row: ConditionRow): Promise<Set<number>> {
   const hit = conditionIdCache.get(row.slug);
   if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.ids;
-  const r = await db.execute(sql`SELECT id FROM studies WHERE ${conditionHubWhere(row)}`);
-  const ids = new Set(((r.rows ?? []) as any[]).map((x) => Number(x.id)));
+  const ids = db
+    .execute(sql`SELECT id FROM studies WHERE ${conditionHubWhere(row)}`)
+    .then((r) => new Set(((r.rows ?? []) as any[]).map((x) => Number(x.id))));
   conditionIdCache.set(row.slug, { at: Date.now(), ids });
+  ids.catch(() => conditionIdCache.delete(row.slug)); // never cache a failure
   return ids;
 }
 
@@ -423,6 +456,7 @@ export function studyCard(s: CorpusStudy) {
   return {
     id: s.id,
     title: s.title,
+    citation: [s.firstAuthor && `${s.firstAuthor} et al.`, s.year, s.journal].filter(Boolean).join(", ") || null,
     url: studyUrl(s.slug),
     year: s.year,
     journal: s.journal,
@@ -511,14 +545,31 @@ export async function relatedStudies(id: number, limit = 8) {
   const { byId, rows } = await getCorpus();
   const self = byId.get(id);
   if (!self) return null;
+  // Citation rows carry a denormalized title/DOI. A row pointing at an
+  // excluded study (by id or by DOI) must not surface it — that would leak
+  // retracted / off-topic papers through the public tool.
   const r = await db.execute(sql`
-    SELECT direction, to_study_id, to_doi, to_title FROM study_citations WHERE from_study_id = ${id} LIMIT 200
+    SELECT c.direction, c.to_study_id, c.to_doi, c.to_title
+      FROM study_citations c
+      LEFT JOIN studies t ON t.id = c.to_study_id
+     WHERE c.from_study_id = ${id}
+       AND (c.to_study_id IS NULL OR t.is_excluded = false)
+       AND NOT EXISTS (
+         SELECT 1 FROM studies x
+          WHERE x.is_excluded = true AND c.to_doi IS NOT NULL AND LOWER(x.doi) = LOWER(c.to_doi)
+       )
+     LIMIT 200
   `);
   const cites: unknown[] = [];
   const citedBy: unknown[] = [];
   for (const c of (r.rows ?? []) as any[]) {
     const inCorpus = c.to_study_id ? byId.get(Number(c.to_study_id)) : undefined;
-    const entry = inCorpus ? studyCard(inCorpus) : c.to_doi || c.to_title ? { title: c.to_title ?? null, doi_url: doiUrl(c.to_doi) } : null;
+    // An internal study missing from the corpus (no slug) is skipped, not shown via its cached title.
+    const entry = inCorpus
+      ? studyCard(inCorpus)
+      : !c.to_study_id && (c.to_doi || c.to_title)
+        ? { title: c.to_title ?? null, doi_url: doiUrl(c.to_doi) }
+        : null;
     if (!entry) continue;
     (c.direction === "cited_by" ? citedBy : cites).push(entry);
   }
@@ -540,5 +591,6 @@ export async function relatedStudies(id: number, limit = 8) {
 /** Test hook. */
 export function resetResearchQueryCaches(): void {
   corpusCache = null;
+  corpusLoading = null;
   conditionIdCache.clear();
 }

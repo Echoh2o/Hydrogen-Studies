@@ -89,8 +89,9 @@ export function registerAdminTools(server: McpServer): void {
       annotations: { title: "Quality score breakdown", ...READ_ONLY },
     },
     instrument("admin", "get_quality_breakdown", async ({ study }) => {
+      // Both lookup paths go through the live (non-excluded) corpus.
       const ref = parseStudyRef(study);
-      const id = ref.kind === "id" ? Number(ref.value) : (await getStudyDetail(study))?.id;
+      const id = ref.kind === "id" ? (await getCorpus()).byId.get(Number(ref.value))?.id : (await getStudyDetail(study))?.id;
       if (!id) return fail(`No study found for "${study}".`);
       const r = await db.execute(sql`SELECT * FROM study_quality_scores WHERE study_id = ${id} ORDER BY id DESC LIMIT 1`);
       const row = r.rows?.[0] as Record<string, unknown> | undefined;

@@ -131,6 +131,15 @@ Return JSON:
 
 const synthesisCache = new Map<string, { at: number; value: unknown }>();
 const SYNTHESIS_TTL_MS = 24 * 60 * 60 * 1000;
+const SYNTHESIS_CACHE_MAX = 200;
+
+function cacheSynthesis(key: string, value: unknown): void {
+  const now = Date.now();
+  for (const [k, v] of synthesisCache) if (now - v.at >= SYNTHESIS_TTL_MS) synthesisCache.delete(k);
+  // Map iterates in insertion order — drop the oldest until under the cap.
+  while (synthesisCache.size >= SYNTHESIS_CACHE_MAX) synthesisCache.delete(synthesisCache.keys().next().value!);
+  synthesisCache.set(key, { at: now, value });
+}
 
 export async function synthesizeTopic(input: { topic: string; depth?: Depth; refresh?: boolean }) {
   const depth = input.depth ?? "deep";
@@ -159,6 +168,6 @@ export async function synthesizeTopic(input: { topic: string; depth?: Depth; ref
     model: modelFor(depth),
     generated_at: new Date().toISOString(),
   };
-  synthesisCache.set(key, { at: Date.now(), value });
+  cacheSynthesis(key, value);
   return { ...value, cached: false };
 }
