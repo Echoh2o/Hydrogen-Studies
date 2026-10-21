@@ -4,7 +4,7 @@ export const CORPUS_ROWS = [
     id: 1, slug: "h2-water-bp-rct", title: "Hydrogen water lowers blood pressure", publish_year: 2021, journal: "J Hypertension",
     country: "Japan", study_design: "rct", study_type: "Human", is_human_trial: true, h2_delivery_method: "drinking_water",
     outcome: "positive", sample_size: 40, duration: 56, health_conditions: ["Blood Pressure"], key_finding: "Systolic BP fell 5 mmHg.",
-    doi: "10.1000/bp.1", quality_score: 82,
+    doi: "10.1000/bp.1", quality_score: 82, authors: "Makoto Ito, Shigeo Ohta",
   },
   {
     id: 2, slug: "h2-inhalation-bp", title: "Inhaled hydrogen and blood pressure", publish_year: 2019, journal: "Clin Exp",

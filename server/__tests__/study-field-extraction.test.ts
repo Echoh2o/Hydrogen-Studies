@@ -43,6 +43,8 @@ describe("research-vocab", () => {
     expect(normalizeDeliveryMethod("drinking")).toBe("drinking_water");
     expect(normalizeDeliveryMethod("")).toBeNull();
     expect(normalizeDeliveryMethod("Glycerin")).toBe("other");
+    expect(normalizeDeliveryMethod("Water (Mg-Chemico)")).toBe("tablet");
+    expect(normalizeDeliveryMethod("Saline, Commercial (Dr. Hayashi Hydrogen Rich Water Stick)")).toBe("tablet");
   });
 
   it("normalizes outcomes case-insensitively and rejects junk", () => {

@@ -19,6 +19,36 @@ describe("toCorpusStudy", () => {
   });
 });
 
+describe("authors and citations", () => {
+  it("extracts the first author's surname in either name order", () => {
+    expect(rq.firstAuthorSurname("Shigeo Ohta, Ikuroh Ohsawa")).toBe("Ohta");
+    expect(rq.firstAuthorSurname("Ohta S, Ohsawa I")).toBe("Ohta");
+    expect(rq.firstAuthorSurname("Zhi-ming Xun; Qing-hui Zhao")).toBe("Xun");
+    expect(rq.firstAuthorSurname("")).toBeNull();
+    expect(rq.firstAuthorSurname(null)).toBeNull();
+  });
+});
+
+describe("getCorpus", () => {
+  it("is single-flight: concurrent cold callers share one query", async () => {
+    const { db } = await import("../db");
+    rq.resetResearchQueryCaches();
+    vi.mocked(db.execute).mockReset();
+    let release!: () => void;
+    vi.mocked(db.execute).mockImplementation(
+      () => new Promise((r) => (release = () => r({ rows: CORPUS_ROWS } as any))) as any,
+    );
+    const pending = Promise.all([rq.getCorpus(), rq.getCorpus(), rq.getCorpus()]);
+    release();
+    const [a, b, c] = await pending;
+    expect(db.execute).toHaveBeenCalledTimes(1);
+    expect(a.rows).toHaveLength(6);
+    expect(b).toBe(a);
+    expect(c).toBe(a);
+    rq.resetResearchQueryCaches();
+  });
+});
+
 describe("filters and sorting", () => {
   it("applies structured filters", () => {
     expect(rq.applyFilters(corpus, { subject: "human" }).map((s) => s.id)).toEqual([1, 2, 6]);

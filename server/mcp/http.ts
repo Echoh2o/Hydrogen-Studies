@@ -11,7 +11,8 @@ import crypto from "crypto";
 import express, { Router, type Request, type Response } from "express";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { buildMcpServer, type McpTier } from "./server";
-import { createCustomRateLimiter } from "../utils/rate-limiting";
+import rateLimit from "express-rate-limit";
+import { clientIpKey } from "../utils/rate-limiting";
 import { logger } from "../utils/logger";
 
 function setCors(res: Response): void {
@@ -52,16 +53,48 @@ function methodNotAllowed(_req: Request, res: Response) {
   });
 }
 
+const skipInE2E = () => process.env.E2E_DISABLE_RATE_LIMIT === "1";
+const rateLimited = (message: string) => (_req: Request, res: Response) =>
+  res.status(429).json({ jsonrpc: "2.0", error: { code: -32000, message }, id: null });
+
+/**
+ * Public-tier limits. Per IP is generous because hosted MCP clients
+ * (claude.ai, ChatGPT connectors) call from their vendors' shared servers, so
+ * one IP can carry many users — 60/min would throttle them all at once. The
+ * tools are cheap (in-memory corpus); the global ceiling guards against abuse.
+ */
+export const MCP_PUBLIC_PER_IP_PER_MIN = 600;
+export const MCP_PUBLIC_GLOBAL_PER_MIN = 6000;
+
 /** Public, read-only MCP server: POST /mcp. */
 export function mcpPublicRouter(): Router {
   const router = Router();
-  const limiter = createCustomRateLimiter(60 * 1000, 60, "Too many MCP requests — limit is 60 per minute.");
+  const perIp = rateLimit({
+    windowMs: 60 * 1000,
+    limit: MCP_PUBLIC_PER_IP_PER_MIN,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: clientIpKey,
+    skip: skipInE2E,
+    handler: rateLimited(`Too many MCP requests — limit is ${MCP_PUBLIC_PER_IP_PER_MIN} per minute per client.`),
+  });
+  const global = rateLimit({
+    windowMs: 60 * 1000,
+    limit: MCP_PUBLIC_GLOBAL_PER_MIN,
+    standardHeaders: false,
+    legacyHeaders: false,
+    keyGenerator: () => "mcp-public-global",
+    validate: false,
+    skip: skipInE2E,
+    handler: rateLimited("The MCP server is busy — please retry shortly."),
+  });
+  const limiter = [global, perIp];
   router.use((req, res, next) => {
     setCors(res);
     if (req.method === "OPTIONS") return res.sendStatus(204);
     next();
   });
-  router.post("/", limiter, express.json({ limit: "1mb" }), handleMcp("public"));
+  router.post("/", ...limiter, express.json({ limit: "1mb" }), handleMcp("public"));
   router.all("/", methodNotAllowed);
   return router;
 }

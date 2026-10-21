@@ -14,6 +14,7 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import { CORPUS_ROWS, CONDITION_ROWS, CONDITION_IDS, LONG_ABSTRACT } from "./fixtures/research-corpus";
 
 const dialect = new PgDialect();
+const citationSql: string[] = [];
 
 function route(text: string, params: unknown[]) {
   if (text.includes("study_quality_scores q WHERE q.study_id = s.id")) return CORPUS_ROWS;
@@ -46,7 +47,15 @@ function route(text: string, params: unknown[]) {
                      sample_size_score: 50, red_flags: ["single-centre"], score_confidence: "high" } }]
       : [];
   }
-  if (text.includes("study_citations")) return [];
+  if (text.includes("study_citations")) {
+    citationSql.push(text);
+    // #999 is an internal study missing from the live corpus (e.g. excluded) — must never surface.
+    return [
+      { direction: "cites", to_study_id: 999, to_doi: "10.1000/excluded", to_title: "Excluded retracted paper" },
+      { direction: "cited_by", to_study_id: null, to_doi: "10.1000/ext", to_title: "External citing paper" },
+      { direction: "cites", to_study_id: 2, to_doi: null, to_title: null },
+    ];
+  }
   throw new Error(`unrouted SQL in test: ${text.slice(0, 120)}`);
 }
 
@@ -127,6 +136,7 @@ describe("public MCP server", () => {
     expect(data.condition_hub).toMatchObject({ slug: "blood-pressure", url: "https://hydrogenstudies.com/explore-by-condition/blood-pressure" });
     expect(data.studies.map((s: any) => s.id)).toEqual([1, 2]);
     expect(data.studies[0].url).toBe("https://hydrogenstudies.com/study/h2-water-bp-rct");
+    expect(data.studies[0].citation).toBe("Ito et al., 2021, J Hypertension");
   });
 
   it("search_studies notes and boosts a condition hub the query names", async () => {
@@ -190,6 +200,13 @@ describe("public MCP server", () => {
     expect(stats).not.toHaveProperty("strongest_studies");
     const related = (await call("find_related_studies", { study: "1" })).data;
     expect(related.similar_by_condition.map((s: any) => s.id)).toEqual([2, 3, 5]);
+    // citations: internal live study shown as a card, external shown, excluded/missing internal skipped
+    expect(related.cites.map((c: any) => c.id ?? c.title)).toEqual([2]);
+    expect(related.cited_by).toEqual([{ title: "External citing paper", doi_url: "https://doi.org/10.1000/ext" }]);
+    expect(JSON.stringify(related)).not.toMatch(/Excluded retracted paper/);
+    // and the SQL itself filters excluded targets by id and by DOI
+    expect(citationSql.at(-1)).toMatch(/t\."?is_excluded"? = false/);
+    expect(citationSql.at(-1)).toMatch(/NOT EXISTS/);
   });
 
   it("serves the about resource and the evidence_review prompt", async () => {
