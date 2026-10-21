@@ -15,6 +15,7 @@ import {
   X,
   ChevronDown,
   BarChart3,
+  Bot,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -94,6 +95,7 @@ const NAV_GROUPS: NavGroup[] = [
   },
   { label: "Users", icon: Users, href: "/admin/users" },
   { label: "Shopify Sync", icon: Users, href: "/admin/shopify-sync" },
+  { label: "AI / MCP", icon: Bot, href: "/admin/mcp" },
   { label: "Settings", icon: Settings, href: "/admin/settings" },
 ];
 

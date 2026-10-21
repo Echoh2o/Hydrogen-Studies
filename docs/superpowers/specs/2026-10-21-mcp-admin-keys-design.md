@@ -24,7 +24,7 @@ seconds with no redeploy, and show setup instructions next to the keys.
 | name | text not null | e.g. "Sarah – Claude Code", ≤ 100 chars |
 | key_prefix | text not null | first 8 chars of the key, for display |
 | key_hash | text not null unique | SHA-256 hex of the full key |
-| created_by | integer null | users.id of the creating admin |
+| created_by | text null | users.id (text) of the creating admin, ON DELETE SET NULL |
 | created_at | timestamptz not null default now() | |
 | last_used_at | timestamptz null | |
 | revoked_at | timestamptz null | null = active |

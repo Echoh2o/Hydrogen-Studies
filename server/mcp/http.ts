@@ -14,6 +14,7 @@ import { buildMcpServer, type McpTier } from "./server";
 import rateLimit from "express-rate-limit";
 import { clientIpKey } from "../utils/rate-limiting";
 import { logger } from "../utils/logger";
+import { verifyKey } from "../services/mcp-keys";
 
 function setCors(res: Response): void {
   // Browser-based MCP clients (e.g. the MCP Inspector) need CORS; there are
@@ -100,25 +101,10 @@ export function mcpPublicRouter(): Router {
 }
 
 /**
- * Admin keys: MCP_ADMIN_KEYS (comma-separated). Compared as SHA-256 digests
- * with timingSafeEqual so neither length nor content leaks through timing.
+ * Admin keys: issued from /admin/mcp (mcp_api_keys) or set in MCP_ADMIN_KEYS
+ * (comma-separated); see services/mcp-keys.ts.
  */
-function adminKeyDigests(): Buffer[] {
-  return (process.env.MCP_ADMIN_KEYS ?? "")
-    .split(",")
-    .map((k) => k.trim())
-    .filter((k) => k.length >= 24)
-    .map((k) => crypto.createHash("sha256").update(k).digest());
-}
-
-export function isValidAdminKey(header: string | undefined): boolean {
-  const presented = header?.match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
-  if (!presented) return false;
-  const digest = crypto.createHash("sha256").update(presented).digest();
-  let ok = false;
-  for (const d of adminKeyDigests()) ok = crypto.timingSafeEqual(d, digest) || ok;
-  return ok;
-}
+const bearerToken = (header: string | undefined) => header?.match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
 
 /** Key fingerprint for logs — never the key itself. */
 const fingerprint = (header: string | undefined) =>
@@ -131,16 +117,18 @@ const fingerprint = (header: string | undefined) =>
  */
 export function mcpAdminRouter(): Router {
   const router = Router();
-  router.use((req, res, next) => {
+  router.use(async (req, res, next) => {
     setCors(res);
     if (req.method === "OPTIONS") return res.sendStatus(204);
-    if (!isValidAdminKey(req.headers.authorization)) {
+    const presented = bearerToken(req.headers.authorization);
+    const auth: Awaited<ReturnType<typeof verifyKey>> = presented ? await verifyKey(presented) : { ok: false };
+    if (!auth.ok) {
       return res
         .status(401)
         .set("WWW-Authenticate", 'Bearer realm="hydrogen-studies-mcp-admin"')
         .json({ jsonrpc: "2.0", error: { code: -32001, message: "Unauthorized" }, id: null });
     }
-    logger.info("MCP admin request", "MCP", { key: fingerprint(req.headers.authorization) });
+    logger.info("MCP admin request", "MCP", { key: fingerprint(req.headers.authorization), keyId: auth.keyId });
     next();
   });
   router.post("/", express.json({ limit: "1mb" }), handleMcp("admin"));
