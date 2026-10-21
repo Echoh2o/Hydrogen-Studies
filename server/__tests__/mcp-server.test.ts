@@ -91,7 +91,7 @@ vi.mock("../services/ai-provider", () => ({
 
 const ADMIN_KEY = "test-admin-key-0123456789abcdef";
 process.env.MCP_ADMIN_KEYS = `another-key-that-is-long-enough-xx, ${ADMIN_KEY}`;
-const { mcpPublicRouter, mcpAdminRouter } = await import("../mcp/http");
+const { mcpPublicRouter, mcpAdminRouter, mcpRegistryAuthHandler } = await import("../mcp/http");
 
 let server: Server;
 let base: string;
@@ -107,6 +107,7 @@ async function call(name: string, args: Record<string, unknown> = {}) {
 
 beforeAll(async () => {
   const app = express();
+  app.get("/.well-known/mcp-registry-auth", mcpRegistryAuthHandler);
   app.use("/mcp/admin", mcpAdminRouter());
   app.use("/mcp", mcpPublicRouter());
   await new Promise<void>((resolve) => {
@@ -254,6 +255,23 @@ describe("redactArgs", () => {
     expect(out.n).toBe(3);
     expect(out.list).toHaveLength(10);
     expect(out.nested).toEqual({ s: "ok" });
+  });
+});
+
+describe("MCP Registry", () => {
+  it("serves the domain-verification record as plain text", async () => {
+    const res = await fetch(`${base}/.well-known/mcp-registry-auth`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toMatch(/^text\/plain/);
+    expect(await res.text()).toMatch(/^v=MCPv1; k=ed25519; p=[A-Za-z0-9+/]{43}=$/);
+  });
+
+  it("server.json names our domain namespace and the live endpoint", async () => {
+    const fs = await import("fs");
+    const manifest = JSON.parse(fs.readFileSync("mcp/server.json", "utf8"));
+    expect(manifest.name).toMatch(/^com\.hydrogenstudies\//);
+    expect(manifest.description.length).toBeLessThanOrEqual(100);
+    expect(manifest.remotes).toEqual([{ type: "streamable-http", url: "https://hydrogenstudies.com/mcp" }]);
   });
 });
 

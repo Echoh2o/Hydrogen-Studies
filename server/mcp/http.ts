@@ -147,3 +147,16 @@ export function mcpAdminRouter(): Router {
   router.all("/", methodNotAllowed);
   return router;
 }
+
+/**
+ * MCP Registry domain verification (registry.modelcontextprotocol.io): proves
+ * hydrogenstudies.com owns the com.hydrogenstudies/* server namespace. Public
+ * key only — the signing key is in Railway (MCP_REGISTRY_PRIVATE_KEY_PEM_B64)
+ * and is used solely by `mcp-publisher login http` when (re)publishing
+ * mcp/server.json.
+ */
+export const MCP_REGISTRY_AUTH = "v=MCPv1; k=ed25519; p=3+f9Qy+SPYhZU6IcFxxHSigIUMXHhJGWIOiopfLS4mI=";
+
+export function mcpRegistryAuthHandler(_req: Request, res: Response): void {
+  res.type("text/plain").set("Cache-Control", "public, max-age=3600").send(MCP_REGISTRY_AUTH);
+}

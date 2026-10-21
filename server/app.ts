@@ -74,7 +74,7 @@ import imageGenerationRoutes from "./routes/image-generation-routes";
 import doiEnhancerRoutes from "./routes/doi-enhancer-routes";
 import learnStatsRoutes from "./routes/learn-stats-routes";
 import embedRoutes from "./routes/embed-routes";
-import { mcpAdminRouter, mcpPublicRouter } from "./mcp/http";
+import { mcpAdminRouter, mcpPublicRouter, mcpRegistryAuthHandler } from "./mcp/http";
 
 // New Controllers
 import { searchController } from "./controllers/search-controller";
@@ -259,6 +259,7 @@ app.use("/embed", generalApiRateLimiter, embedRoutes);
 // MCP servers (server/mcp): admin tier (bearer key, server-side synthesis)
 // and the public read-only tier. Before the CORS allowlist / sessions / CSRF
 // for the same reason as /embed; admin first so /mcp/admin never hits public.
+app.get("/.well-known/mcp-registry-auth", mcpRegistryAuthHandler);
 app.use("/mcp/admin", mcpAdminRouter());
 app.use("/mcp", mcpPublicRouter());
 
