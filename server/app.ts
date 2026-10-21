@@ -68,6 +68,7 @@ import userDashboardRoutes from "./routes/user-dashboard-routes";
 import adminSettingsRoutes from "./routes/admin-settings-routes";
 import adminLinkRoutes from "./routes/admin-link-routes";
 import adminRedirectRoutes from "./routes/admin-redirect-routes";
+import adminMcpKeysRoutes from "./routes/admin-mcp-keys-routes";
 import contactRoutes from "./routes/contact-routes";
 import pipelineRoutes from "./routes/pipeline-routes";
 import imageGenerationRoutes from "./routes/image-generation-routes";
@@ -861,6 +862,9 @@ app.use("/api/admin/links", adminLinkRoutes);
 // Admin redirect & 404 management
 app.use("/api/admin/redirects", adminRedirectRoutes);
 
+// Internal MCP keys (/admin/mcp)
+app.use("/api/admin/mcp-keys", adminMcpKeysRoutes);
+
 // Research Intelligence Pipeline (admin-only)
 app.use("/api/pipeline", pipelineRoutes);
 
@@ -1059,6 +1063,7 @@ pool.query("SELECT 1").then(async () => {
     const { addFreshnessCheckTracking } = await import("./migrations/add-freshness-check-tracking");
     const { addStudyDesignFields } = await import("./migrations/add-study-design-fields");
     const { addStudyEmbeddingsAndMcpCalls } = await import("./migrations/add-study-embeddings-and-mcp-calls");
+    const { addMcpApiKeys } = await import("./migrations/add-mcp-api-keys");
 
     await runMigrations([
       { name: "001_add_fulltext_search", up: addFullTextSearch },
@@ -1088,6 +1093,7 @@ pool.query("SELECT 1").then(async () => {
       { name: "025_add_freshness_check_tracking", up: addFreshnessCheckTracking },
       { name: "026_add_study_design_fields", up: addStudyDesignFields },
       { name: "027_add_study_embeddings_and_mcp_calls", up: addStudyEmbeddingsAndMcpCalls },
+      { name: "028_add_mcp_api_keys", up: addMcpApiKeys },
     ]);
 
     // Hub lists cached by a prewarm that ran mid-migration would hide hub rows

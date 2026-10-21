@@ -4,6 +4,7 @@
  * SQL each query renders to).
  */
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+import { createHash } from "crypto";
 import express from "express";
 import type { AddressInfo } from "net";
 import type { Server } from "http";
@@ -18,7 +19,14 @@ const citationSql: string[] = [];
 
 const usageRows: unknown[][] = [];
 
+// Keys issued from /admin/mcp: one active, one revoked (only active rows are selected).
+const DB_KEY = "hsk_db-issued-key-0123456789abcdefghijklmnopq";
+const REVOKED_DB_KEY = "hsk_revoked-key-0123456789abcdefghijklmnopqr";
+const sha256 = (k: string) => createHash("sha256").update(k).digest("hex");
+
 function route(text: string, params: unknown[]) {
+  if (text.includes("SELECT id, key_hash FROM mcp_api_keys")) return [{ id: 7, key_hash: sha256(DB_KEY) }];
+  if (text.includes("UPDATE mcp_api_keys SET last_used_at")) return [];
   if (text.includes("INSERT INTO mcp_calls")) {
     usageRows.push(params);
     return [];
@@ -313,6 +321,11 @@ describe("admin MCP server", () => {
     expect((await initialize({ Authorization: "Bearer nope" })).status).toBe(401);
     expect((await initialize({ Authorization: `Bearer ${ADMIN_KEY}x` })).status).toBe(401);
     expect((await initialize({ Authorization: `Bearer ${ADMIN_KEY}` })).status).toBe(200);
+  });
+
+  it("accepts active keys issued from /admin/mcp, not revoked ones", async () => {
+    expect((await initialize({ Authorization: `Bearer ${DB_KEY}` })).status).toBe(200);
+    expect((await initialize({ Authorization: `Bearer ${REVOKED_DB_KEY}` })).status).toBe(401);
   });
 
   it("lists the admin tools on top of the public ones", async () => {

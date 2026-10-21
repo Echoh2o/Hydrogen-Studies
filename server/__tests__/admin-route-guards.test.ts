@@ -142,6 +142,7 @@ const ADMIN_GET_ROUTES = [
   "/api/admin/settings", //             admin-settings-routes
   "/api/admin/links", //                admin-link-routes
   "/api/admin/redirects", //            admin-redirect-routes
+  "/api/admin/mcp-keys", //             admin-mcp-keys-routes (router.use(requireAdmin))
   "/api/admin/monitoring/status", //    admin-monitoring-routes (router.use(requireAdmin))
   "/api/admin/journal-date-stats", //   inline route in app.ts
   "/api/webhooks/shopify/sync-status", // admin-facing route on the webhook router
