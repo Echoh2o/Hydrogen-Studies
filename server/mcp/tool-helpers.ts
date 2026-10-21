@@ -1,6 +1,8 @@
 /** Shared pieces for registering MCP tools (public and admin tiers). */
 import { z } from "zod";
 import { DELIVERY_METHODS, OUTCOMES, STUDY_DESIGNS } from "@shared/research-vocab";
+import { sql } from "drizzle-orm";
+import { db } from "../db";
 import type { ResearchFilters } from "../services/research-query";
 import { logger } from "../utils/logger";
 
@@ -43,16 +45,42 @@ export function toFilters(a: FilterArgs): ResearchFilters {
 export const json = (data: unknown) => ({ content: [{ type: "text" as const, text: JSON.stringify(data) }] });
 export const fail = (message: string) => ({ isError: true, content: [{ type: "text" as const, text: message }] });
 
-/** Wrap a handler with timing/logging and a uniform error result. */
+/** Arguments as stored in mcp_calls: strings truncated, nothing else touched. */
+export function redactArgs(args: unknown): unknown {
+  if (typeof args === "string") return args.length > 300 ? `${args.slice(0, 300)}…` : args;
+  if (Array.isArray(args)) return args.slice(0, 10).map(redactArgs);
+  if (args && typeof args === "object") {
+    return Object.fromEntries(Object.entries(args as Record<string, unknown>).map(([k, v]) => [k, redactArgs(v)]));
+  }
+  return args;
+}
+
+/**
+ * One mcp_calls row per tool call (migration 027): tool, tier, truncated
+ * args, latency, success. No IP or client identifiers. Fire-and-forget — a
+ * logging failure never affects the tool result.
+ */
+function recordCall(tier: McpTier, tool: string, args: unknown, ms: number, ok: boolean, bytes: number | null): void {
+  db.execute(sql`
+    INSERT INTO mcp_calls (tier, tool, args, ms, ok, response_bytes)
+    VALUES (${tier}, ${tool}, ${JSON.stringify(redactArgs(args ?? {}))}::jsonb, ${ms}, ${ok}, ${bytes})
+  `).catch((err: unknown) => logger.warn("mcp_calls insert failed", "MCP", { error: String((err as Error)?.message ?? err) }));
+}
+
+/** Wrap a handler with timing, usage recording and a uniform error result. */
 export function instrument<A>(tier: McpTier, tool: string, fn: (args: A) => Promise<ReturnType<typeof json> | ReturnType<typeof fail>>) {
   return async (args: A) => {
     const started = Date.now();
     try {
       const out = await fn(args);
-      logger.info("MCP tool call", "MCP", { tier, tool, ms: Date.now() - started, error: "isError" in out });
+      const ms = Date.now() - started;
+      const ok = !("isError" in out);
+      logger.info("MCP tool call", "MCP", { tier, tool, ms, error: !ok });
+      recordCall(tier, tool, args, ms, ok, out.content[0]?.text.length ?? null);
       return out;
     } catch (err) {
       logger.error("MCP tool failed", err, "MCP", { tier, tool });
+      recordCall(tier, tool, args, Date.now() - started, false, null);
       return fail(`${tool} failed: ${err instanceof Error ? err.message : "internal error"}`);
     }
   };

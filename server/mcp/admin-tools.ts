@@ -107,6 +107,38 @@ export function registerAdminTools(server: McpServer): void {
   );
 
   server.registerTool(
+    "mcp_usage_report",
+    {
+      title: "MCP usage report",
+      description:
+        "How the MCP server is being used: calls per tool and tier, error rate, median/p95 latency, calls per day, and the most common search queries / topics.",
+      inputSchema: { days: z.number().int().min(1).max(365).optional().describe("Look-back window (default 30)") },
+      annotations: { title: "MCP usage report", ...READ_ONLY },
+    },
+    instrument("admin", "mcp_usage_report", async ({ days }) => {
+      const d = days ?? 30;
+      const since = sql`at >= NOW() - (${d} || ' days')::interval`;
+      const [byTool, perDay, topQueries] = await Promise.all([
+        db.execute(sql`
+          SELECT tier, tool, COUNT(*)::int AS calls, COUNT(*) FILTER (WHERE NOT ok)::int AS errors,
+                 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ms)::int AS p50_ms,
+                 PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY ms)::int AS p95_ms
+            FROM mcp_calls WHERE ${since} GROUP BY tier, tool ORDER BY calls DESC`),
+        db.execute(sql`
+          SELECT to_char(date_trunc('day', at), 'YYYY-MM-DD') AS day, COUNT(*)::int AS calls
+            FROM mcp_calls WHERE ${since} GROUP BY 1 ORDER BY 1`),
+        db.execute(sql`
+          SELECT LOWER(TRIM(COALESCE(args->>'query', args->>'question', args->>'topic', args->>'condition'))) AS q,
+                 COUNT(*)::int AS n
+            FROM mcp_calls
+           WHERE ${since} AND COALESCE(args->>'query', args->>'question', args->>'topic', args->>'condition') IS NOT NULL
+           GROUP BY 1 ORDER BY n DESC LIMIT 40`),
+      ]);
+      return json({ days: d, by_tool: byTool.rows, per_day: perDay.rows, top_queries: topQueries.rows });
+    }),
+  );
+
+  server.registerTool(
     "field_coverage_report",
     {
       title: "Field coverage report",
