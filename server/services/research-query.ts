@@ -28,6 +28,7 @@ import {
   type Subject,
 } from "@shared/research-vocab";
 import { conditionHubWhere, getConditionRows, type ConditionRow } from "../middleware/seo-body-renderer";
+import { semanticScores } from "./study-embeddings";
 
 export const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
 
@@ -228,7 +229,7 @@ export function idfWeights(dfs: number[], total: number): number[] {
  * 254–362 studies and ranked any "hydrogen water improves …" paper as highly
  * as a blood-pressure trial.
  */
-async function textRanks(query: string): Promise<Map<number, number>> {
+export async function textRanks(query: string): Promise<Map<number, number>> {
   const terms = queryTerms(query);
   if (!terms.length) return new Map();
   const tsq = (t: string) => sql`to_tsquery('english', ${t})`;
@@ -260,6 +261,63 @@ async function textRanks(query: string): Promise<Map<number, number>> {
   return new Map(
     ((r.rows ?? []) as any[]).map((x) => [Number(x.id), Number(x.score) / totalWeight + Math.min(Number(x.rank), 0.99) / 100]),
   );
+}
+
+/**
+ * Hybrid relevance: keyword score (IDF-weighted term coverage, 0..1) blended
+ * with meaning-based similarity (cosine, from study-embeddings). Semantic-only
+ * matches are admitted when they sit near the best match AND above an absolute
+ * floor (so nonsense queries don't return the "least-unrelated" studies).
+ * Studies on a condition hub the query names, and stronger designs, get a small
+ * boost. With no semantic scores this reduces to the keyword ranking.
+ */
+export const BLEND = {
+  /** Semantic candidates: within WINDOW of the best cosine… */
+  WINDOW: 0.08,
+  /** …and at least this similar (bge-small cosines for unrelated text sit ~0.5–0.6). */
+  MIN_COSINE: 0.66,
+  MAX_SEMANTIC_ONLY: 120,
+  W_SEMANTIC: 0.55,
+  W_KEYWORD: 0.45,
+  HUB_BOOST: 0.15,
+  EVIDENCE_BOOST: 0.05,
+};
+
+export function blendScores(
+  keyword: Map<number, number>,
+  semantic: Map<number, number>,
+  opts: { hubIds?: Set<number> | null; evidence?: (id: number) => number } = {},
+): Map<number, number> {
+  const hub = (id: number) => (opts.hubIds?.has(id) ? 1 : 0);
+  const ev = (id: number) => Math.max(0, Math.min(1, opts.evidence?.(id) ?? 0));
+  const out = new Map<number, number>();
+  if (!semantic.size) {
+    for (const [id, k] of keyword) out.set(id, k + hub(id) + BLEND.EVIDENCE_BOOST * ev(id));
+    return out;
+  }
+  let top = -1;
+  for (const v of semantic.values()) if (v > top) top = v;
+  const floor = Math.max(BLEND.MIN_COSINE, top - BLEND.WINDOW);
+  const span = Math.max(top - floor, 1e-6);
+  const semNorm = (id: number) => {
+    const c = semantic.get(id) ?? 0;
+    return c >= floor ? Math.min(1, (c - floor) / span) : 0;
+  };
+  const semanticOnly = [...semantic]
+    .filter(([id, c]) => c >= floor && !keyword.has(id))
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, BLEND.MAX_SEMANTIC_ONLY)
+    .map(([id]) => id);
+  for (const id of [...keyword.keys(), ...semanticOnly]) {
+    out.set(
+      id,
+      BLEND.W_SEMANTIC * semNorm(id) +
+        BLEND.W_KEYWORD * Math.min(1, keyword.get(id) ?? 0) +
+        BLEND.HUB_BOOST * hub(id) +
+        BLEND.EVIDENCE_BOOST * ev(id),
+    );
+  }
+  return out;
 }
 
 /** The condition hub a free-text question names, if any (longest name wins). */
@@ -349,10 +407,25 @@ export async function findStudies(f: ResearchFilters, order?: SortOrder): Promis
       notes.push(`The query names the "${row.slug}" condition hub — its studies rank first; pass condition: "${row.slug}" to restrict to them.`);
     }
   }
-  if (f.query?.trim()) {
-    ranks = await textRanks(f.query);
-    // Studies on the hub the query names outrank equally-worded off-topic ones.
-    if (namedHubIds) for (const [id, r] of ranks) if (namedHubIds.has(id)) ranks.set(id, r + 1);
+  const doiRef = f.query?.trim() ? parseStudyRef(f.query) : null;
+  if (doiRef?.kind === "doi") {
+    // A pasted DOI is an exact lookup, not a text search.
+    const doi = doiRef.value.toLowerCase();
+    pool = pool.filter((s) => s.doi?.toLowerCase() === doi);
+    ranks = new Map(pool.map((s) => [s.id, 1]));
+    if (!pool.length) notes.push(`No live study has DOI ${doiRef.value}.`);
+  } else if (f.query?.trim()) {
+    // Hybrid: keyword ranking blended with meaning-based similarity; studies on a
+    // hub the query names and stronger designs get a small boost.
+    const [keyword, semantic] = await Promise.all([textRanks(f.query), semanticScores(f.query)]);
+    const { byId } = await getCorpus();
+    ranks = blendScores(keyword, semantic, {
+      hubIds: namedHubIds,
+      evidence: (id) => {
+        const s = byId.get(id);
+        return s ? evidenceRank(s) / 9 : 0;
+      },
+    });
     pool = pool.filter((s) => ranks!.has(s.id));
   }
 

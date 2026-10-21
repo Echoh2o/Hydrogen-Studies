@@ -3,6 +3,7 @@ import { CORPUS_ROWS, CONDITION_ROWS } from "./fixtures/research-corpus";
 
 vi.mock("../db", () => ({ db: { execute: vi.fn() } }));
 vi.mock("../middleware/seo-body-renderer", () => ({ getConditionRows: vi.fn(), conditionHubWhere: vi.fn() }));
+vi.mock("../services/study-embeddings", () => ({ semanticScores: vi.fn(async () => new Map()) }));
 
 const rq = await import("../services/research-query");
 
@@ -16,6 +17,35 @@ describe("toCorpusStudy", () => {
     expect(byId(3)).toMatchObject({ subject: "animal", species: "Rat", deliveryMethod: "inhalation" });
     expect(byId(4)).toMatchObject({ subject: "in_vitro", deliveryMethod: "culture_medium" });
     expect(byId(5)).toMatchObject({ subject: "review", species: null });
+  });
+});
+
+describe("blendScores", () => {
+  const kw = new Map([[1, 0.9], [2, 0.5]]);
+
+  it("falls back to keyword ranking (+hub) when there are no semantic scores", () => {
+    const out = rq.blendScores(kw, new Map(), { hubIds: new Set([2]) });
+    expect(out.get(1)).toBeCloseTo(0.9);
+    expect(out.get(2)).toBeCloseTo(1.5);
+  });
+
+  it("admits semantic-only matches near the best cosine and above the floor", () => {
+    const sem = new Map([[1, 0.70], [2, 0.60], [3, 0.80], [4, 0.75], [5, 0.62]]);
+    const out = rq.blendScores(kw, sem);
+    expect([...out.keys()].sort()).toEqual([1, 2, 3, 4]); // 5 is below the floor and has no keyword match
+    expect(out.get(3)!).toBeGreaterThan(out.get(4)!); // closest meaning ranks highest among semantic-only
+  });
+
+  it("returns nothing for nonsense (every cosine below the absolute floor)", () => {
+    const sem = new Map([[1, 0.55], [2, 0.57], [3, 0.52]]);
+    expect(rq.blendScores(new Map(), sem).size).toBe(0);
+  });
+
+  it("boosts hub studies and stronger designs", () => {
+    const sem = new Map([[1, 0.8], [2, 0.8]]);
+    const same = new Map([[1, 0.5], [2, 0.5]]);
+    const out = rq.blendScores(same, sem, { hubIds: new Set([2]), evidence: (id) => (id === 1 ? 1 : 0) });
+    expect(out.get(2)! - out.get(1)!).toBeCloseTo(rq.BLEND.HUB_BOOST - rq.BLEND.EVIDENCE_BOOST);
   });
 });
 

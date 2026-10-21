@@ -16,7 +16,14 @@ import { CORPUS_ROWS, CONDITION_ROWS, CONDITION_IDS, LONG_ABSTRACT } from "./fix
 const dialect = new PgDialect();
 const citationSql: string[] = [];
 
+const usageRows: unknown[][] = [];
+
 function route(text: string, params: unknown[]) {
+  if (text.includes("INSERT INTO mcp_calls")) {
+    usageRows.push(params);
+    return [];
+  }
+  if (text.includes("FROM study_embeddings")) return []; // no vectors → keyword-only path
   if (text.includes("study_quality_scores q WHERE q.study_id = s.id")) return CORPUS_ROWS;
   const cond = text.match(/cond_match_([a-z-]+)/);
   if (cond) return (CONDITION_IDS[cond[1]] ?? []).map((id) => ({ id }));
@@ -146,6 +153,23 @@ describe("public MCP server", () => {
     expect(data.studies.every((s: any) => CONDITION_IDS["blood-pressure"].includes(s.id))).toBe(true);
   });
 
+  it("search_studies treats a pasted DOI as an exact lookup", async () => {
+    const { data } = await call("search_studies", { query: "https://doi.org/10.1000/rat.3" });
+    expect(data.studies.map((s: any) => s.id)).toEqual([3]);
+    const miss = (await call("search_studies", { query: "10.9999/none" })).data;
+    expect(miss.total_matches).toBe(0);
+    expect(miss.notes.join(" ")).toMatch(/No live study has DOI/);
+  });
+
+  it("records each tool call in mcp_calls without client identifiers", async () => {
+    await call("search_studies", { query: "fatigue athletes", limit: 2 });
+    await new Promise((r) => setTimeout(r, 10));
+    const row = usageRows.at(-1)!;
+    expect(row.slice(0, 2)).toEqual(["public", "search_studies"]);
+    expect(JSON.parse(String(row[2]))).toEqual({ query: "fatigue athletes", limit: 2 });
+    expect(JSON.stringify(row)).not.toMatch(/127\.0\.0\.1/);
+  });
+
   it("search_studies ranks full-text matches and paginates", async () => {
     const { data } = await call("search_studies", { query: "fatigue", limit: 1 });
     expect(data.total_matches).toBe(1);
@@ -222,6 +246,17 @@ describe("public MCP server", () => {
   });
 });
 
+describe("redactArgs", () => {
+  it("truncates long strings and caps arrays, leaving other values alone", async () => {
+    const { redactArgs } = await import("../mcp/tool-helpers");
+    const out = redactArgs({ q: "y".repeat(500), n: 3, list: Array(20).fill("a"), nested: { s: "ok" } }) as any;
+    expect(out.q.length).toBe(301);
+    expect(out.n).toBe(3);
+    expect(out.list).toHaveLength(10);
+    expect(out.nested).toEqual({ s: "ok" });
+  });
+});
+
 describe("HTTP surface", () => {
   it("answers CORS preflight and rejects GET in stateless mode", async () => {
     const pre = await fetch(`${base}/mcp`, { method: "OPTIONS" });
@@ -264,7 +299,7 @@ describe("admin MCP server", () => {
 
   it("lists the admin tools on top of the public ones", async () => {
     const names = (await admin.listTools()).tools.map((t) => t.name);
-    expect(names).toEqual(expect.arrayContaining(["search_studies", "answer_question", "synthesize_topic", "get_quality_breakdown", "field_coverage_report"]));
+    expect(names).toEqual(expect.arrayContaining(["search_studies", "answer_question", "synthesize_topic", "get_quality_breakdown", "field_coverage_report", "mcp_usage_report"]));
   });
 
   it("answer_question returns the model answer with numbered citations", async () => {
