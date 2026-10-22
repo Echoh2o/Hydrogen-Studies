@@ -182,3 +182,91 @@ describe("output shapes", () => {
     expect(rq.parseStudyRef("h2-cells")).toEqual({ kind: "slug", value: "h2-cells" });
   });
 });
+
+describe("author queries", () => {
+  it("parses every author's surname, in either name order", () => {
+    expect(rq.authorSurnames("Ikuroh Ohsawa, Masahiro Ishikawa, Shigeo Ohta")).toEqual(["ohsawa", "ishikawa", "ohta"]);
+    expect(rq.authorSurnames("Ohta S; Ohsawa I and Kim JH")).toEqual(["ohta", "ohsawa", "kim"]);
+    expect(rq.authorSurnames(null)).toEqual([]);
+  });
+
+  const rows = [
+    { id: 1, year: 2007, journal: "Nature Medicine", authorSurnames: ["ohsawa", "ishikawa", "ohta"] },
+    { id: 2, year: 2010, journal: "Free Radic Res", authorSurnames: ["ito", "ohta"] },
+    { id: 3, year: 2007, journal: null, authorSurnames: ["nakao"] },
+    { id: 4, year: 2015, journal: null, authorSurnames: ["can", "yilmaz"] },
+    { id: 5, year: 2019, journal: null, authorSurnames: ["ohsawa"] },
+    { id: 6, year: 2007, journal: "Shock", authorSurnames: ["fukuda", "ohta"] },
+    { id: 7, year: 2012, journal: null, authorSurnames: ["sato", "ohsawa"] },
+  ];
+  const ids = (q: string) => [...rq.authorMatches(q, rows).keys()].sort();
+
+  it("matches a surname plus year to that author's paper that year", () => {
+    expect(ids("Ohta 2007 Nature Medicine")).toEqual([1, 6]);
+    expect(ids("ohta 2010")).toEqual([2]);
+  });
+
+  it("ranks the paper in the journal the query names first", () => {
+    const m = rq.authorMatches("Ohta 2007 Nature Medicine", rows);
+    expect(m.get(1)!).toBeGreaterThan(m.get(6)!);
+  });
+
+  it("orders author matches by match weight, with relevance only breaking ties", () => {
+    const ranks = new Map([[6, 1.5], [1, 0.2], [9, 1.4]]);
+    rq.applyAuthorMatches(ranks, new Map([[1, 0.9], [6, 0.8]]));
+    const order = [...ranks].sort((a, b) => b[1] - a[1]).map(([id]) => id);
+    expect(order).toEqual([1, 6, 9]);
+  });
+
+  it("matches 'et al.' to the first author only, across years", () => {
+    expect(ids("Ohsawa et al.")).toEqual([1, 5]);
+  });
+
+  it("matches a capitalized surname that isn't the first word, first authors ahead", () => {
+    expect(ids("hydrogen studies by Ohta")).toEqual([1, 2, 6]);
+    const m = rq.authorMatches("papers by Ohsawa", rows);
+    expect(m.get(5)!).toBeGreaterThan(m.get(7)!);
+  });
+
+  it("ignores plain questions with no author signal", () => {
+    expect(ids("Can hydrogen water help sleep")).toEqual([]);
+    expect(ids("can ohta help")).toEqual([]);
+    expect(ids("hydrogen 2007")).toEqual([]);
+  });
+});
+
+describe("human-first ranking", () => {
+  const same = new Map([[1, 0.9], [2, 0.9]]);
+  const sem = new Map([[1, 0.86], [2, 0.82]]);
+  const human = (id: number) => id === 2;
+
+  it("ranks a human study above an equally keyword-relevant animal study", () => {
+    const out = rq.blendScores(same, sem, { human });
+    expect(out.get(2)!).toBeGreaterThan(out.get(1)!);
+  });
+
+  it("applies on the keyword-only path too", () => {
+    const out = rq.blendScores(new Map([[1, 0.9], [2, 0.8]]), new Map(), { human });
+    expect(out.get(2)!).toBeGreaterThan(out.get(1)!);
+  });
+
+  it("only boosts human studies that are also relevant by meaning", () => {
+    // Meaning floor is 0.78 (best 0.86 − window). id 1 (animal) sits mid-band; id 2
+    // (human) matches every keyword but is below the floor, i.e. off-topic in meaning.
+    const out = rq.blendScores(new Map([[1, 0.9], [2, 1], [3, 0.2]]), new Map([[1, 0.82], [2, 0.7], [3, 0.86]]), { human });
+    expect(out.get(1)!).toBeGreaterThan(out.get(2)!);
+  });
+
+  it("does not lift a weakly relevant human study over a strong match", () => {
+    const out = rq.blendScores(new Map([[1, 1], [2, 0.3]]), new Map([[1, 0.86], [2, 0.7]]), { human });
+    expect(out.get(1)!).toBeGreaterThan(out.get(2)!);
+  });
+
+  it("counts human trials and meta-analyses as human evidence, unless the query is about animals or cells", () => {
+    expect(rq.isHumanEvidence(byId(1), "blood pressure")).toBe(true);
+    expect(rq.isHumanEvidence(byId(3), "blood pressure")).toBe(false);
+    expect(rq.isHumanEvidence({ ...byId(5), design: "meta_analysis" }, "blood pressure")).toBe(true);
+    expect(rq.isHumanEvidence(byId(1), "blood pressure in rats")).toBe(false);
+    expect(rq.isHumanEvidence(byId(1), "hydrogen in cell culture")).toBe(false);
+  });
+});
