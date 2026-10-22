@@ -52,6 +52,8 @@ export interface CorpusStudy {
   qualityScore: number | null;
   /** First author's surname ("Ohta") — distinguishes studies whose plain-language titles collide. */
   firstAuthor: string | null;
+  /** Every listed author's surname, lowercased — for "Ohta 2007" / "Ohsawa et al." queries. */
+  authorSurnames: string[];
 }
 
 export interface ResearchFilters {
@@ -73,15 +75,66 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
 // ── corpus ───────────────────────────────────────────────────
 
 /** Map a raw studies row onto the normalized corpus shape. */
+/** Surname from one author entry: "Shigeo Ohta" or "Ohta S" / "Ohta SH" (surname first, initials last). */
+function surnameOf(entry: string): string | null {
+  const name = entry.replace(/\s+/g, " ").trim();
+  if (!name) return null;
+  const parts = name.split(" ");
+  const last = parts[parts.length - 1];
+  return parts.length > 1 && /^[A-Z]{1,3}\.?$/.test(last) ? parts[0] : last;
+}
+
+const splitAuthors = (authors: string) => authors.split(/[,;]| and /);
+
 /** Surname of the first author from "Shigeo Ohta, Ikuroh Ohsawa, …" (or "Ohta S, …"). */
 export function firstAuthorSurname(authors: unknown): string | null {
   if (typeof authors !== "string") return null;
-  const first = authors.split(/[,;]| and /)[0]?.replace(/\s+/g, " ").trim();
-  if (!first) return null;
-  const parts = first.split(" ");
-  // "Ohta S" / "Ohta SH" (surname first, initials last) vs "Shigeo Ohta"
-  const last = parts[parts.length - 1];
-  return parts.length > 1 && /^[A-Z]{1,3}\.?$/.test(last) ? parts[0] : last;
+  return surnameOf(splitAuthors(authors)[0] ?? "");
+}
+
+/** Every author's surname, lowercased, in listed order. */
+export function authorSurnames(authors: unknown): string[] {
+  if (typeof authors !== "string") return [];
+  return splitAuthors(authors)
+    .map((a) => surnameOf(a)?.toLowerCase())
+    .filter((a): a is string => !!a);
+}
+
+const normText = (t: string) => ` ${t.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()} `;
+
+/**
+ * Studies an author-style query points at — "Ohta 2007 Nature Medicine",
+ * "Ohsawa et al.", "trials by Ohta" — as id → weight (0.8–1). A surname only
+ * counts with an author signal: a year, "et al.", or a capitalized word that
+ * isn't the query's first word, so "Can hydrogen help…" never matches an
+ * author named Can. A year limits matches to that year; "et al." to first
+ * authors. First authors and papers in a journal the query names weigh more.
+ */
+export function authorMatches(
+  query: string,
+  rows: ReadonlyArray<Pick<CorpusStudy, "id" | "year" | "journal" | "authorSurnames">>,
+): Map<number, number> {
+  const years = [...query.matchAll(/\b(?:19|20)\d{2}\b/g)].map((m) => Number(m[0]));
+  const etAl = /\bet\.?\s+al\b/i.test(query);
+  const words = [...query.matchAll(/[A-Za-z][A-Za-z'-]{2,}/g)];
+  const names = new Set(
+    words
+      .filter((m, i) => years.length > 0 || etAl || (i > 0 && /^[A-Z]/.test(m[0])))
+      .map((m) => m[0].toLowerCase())
+      .filter((w) => w !== "al"),
+  );
+  const out = new Map<number, number>();
+  if (!names.size) return out;
+  const q = normText(query);
+  for (const r of rows) {
+    const first = names.has(r.authorSurnames[0] ?? "");
+    if (etAl ? !first : !r.authorSurnames.some((a) => names.has(a))) continue;
+    if (years.length && (r.year === null || !years.includes(r.year))) continue;
+    const journal = r.journal ? normText(r.journal) : "";
+    const journalNamed = journal.trim().length >= 5 && q.includes(journal);
+    out.set(r.id, 0.8 + (first ? 0.1 : 0) + (journalNamed ? 0.1 : 0));
+  }
+  return out;
 }
 
 export function toCorpusStudy(r: Record<string, any>): CorpusStudy {
@@ -109,6 +162,7 @@ export function toCorpusStudy(r: Record<string, any>): CorpusStudy {
     doi: r.doi?.trim() || null,
     qualityScore: r.quality_score === null || r.quality_score === undefined ? null : Number(r.quality_score),
     firstAuthor: firstAuthorSurname(r.authors),
+    authorSurnames: authorSurnames(r.authors),
   };
 }
 
@@ -135,7 +189,7 @@ async function loadCorpus(): Promise<Corpus> {
     SELECT s.id, s.slug, COALESCE(NULLIF(s.plain_language_title, ''), s.title) AS title, s.publish_year,
            s.journal, s.country, s.study_design, s.study_type, s.is_human_trial, s.h2_delivery_method,
            s.outcome, s.sample_size, s.duration, s.health_conditions, s.key_finding, s.doi,
-           LEFT(s.authors, 120) AS authors,
+           LEFT(s.authors, 1000) AS authors,
            (SELECT q.overall_score FROM study_quality_scores q WHERE q.study_id = s.id
              ORDER BY q.id DESC LIMIT 1) AS quality_score
       FROM studies s
@@ -281,18 +335,38 @@ export const BLEND = {
   W_KEYWORD: 0.45,
   HUB_BOOST: 0.15,
   EVIDENCE_BOOST: 0.05,
+  /** Human trials and meta-analyses ahead of animal/cell work of similar relevance. */
+  HUMAN_BOOST: 0.35,
+  /** Papers by an author the query names ("Ohta 2007") rank first, ordered by match weight. */
+  AUTHOR_BOOST: 10,
+  /** Within author matches, ordinary relevance only breaks ties. */
+  AUTHOR_TIEBREAK: 0.01,
 };
+
+/** Put author matches (id → weight from authorMatches) above everything else, in weight order. */
+export function applyAuthorMatches(ranks: Map<number, number>, matches: Map<number, number>): void {
+  for (const [id, w] of matches) ranks.set(id, BLEND.AUTHOR_BOOST * w + BLEND.AUTHOR_TIEBREAK * (ranks.get(id) ?? 0));
+}
+
+/** Queries explicitly about animal or cell work don't get the human-evidence boost. */
+const NON_HUMAN_QUERY = /\b(rats?|mice|mouse|murine|rodents?|animals?|dogs?|pigs?|rabbits?|zebrafish|cells?|in vitro|culture)\b/i;
+
+/** Human primary studies and meta-analyses count as human evidence (unless the query is about animals/cells). */
+export function isHumanEvidence(s: Pick<CorpusStudy, "subject" | "design">, query: string): boolean {
+  return (s.subject === "human" || s.design === "meta_analysis") && !NON_HUMAN_QUERY.test(query);
+}
 
 export function blendScores(
   keyword: Map<number, number>,
   semantic: Map<number, number>,
-  opts: { hubIds?: Set<number> | null; evidence?: (id: number) => number } = {},
+  opts: { hubIds?: Set<number> | null; evidence?: (id: number) => number; human?: (id: number) => boolean } = {},
 ): Map<number, number> {
   const hub = (id: number) => (opts.hubIds?.has(id) ? 1 : 0);
   const ev = (id: number) => Math.max(0, Math.min(1, opts.evidence?.(id) ?? 0));
+  const human = (id: number) => (opts.human?.(id) ? BLEND.HUMAN_BOOST : 0);
   const out = new Map<number, number>();
   if (!semantic.size) {
-    for (const [id, k] of keyword) out.set(id, k + hub(id) + BLEND.EVIDENCE_BOOST * ev(id));
+    for (const [id, k] of keyword) out.set(id, k + hub(id) + BLEND.EVIDENCE_BOOST * ev(id) + human(id));
     return out;
   }
   let top = -1;
@@ -314,7 +388,9 @@ export function blendScores(
       BLEND.W_SEMANTIC * semNorm(id) +
         BLEND.W_KEYWORD * Math.min(1, keyword.get(id) ?? 0) +
         BLEND.HUB_BOOST * hub(id) +
-        BLEND.EVIDENCE_BOOST * ev(id),
+        BLEND.EVIDENCE_BOOST * ev(id) +
+        // "Similar relevance": only studies that are on-topic by meaning get the human boost.
+        (semNorm(id) > 0 ? human(id) : 0),
     );
   }
   return out;
@@ -419,13 +495,21 @@ export async function findStudies(f: ResearchFilters, order?: SortOrder): Promis
     // hub the query names and stronger designs get a small boost.
     const [keyword, semantic] = await Promise.all([textRanks(f.query), semanticScores(f.query)]);
     const { byId } = await getCorpus();
+    const query = f.query;
     ranks = blendScores(keyword, semantic, {
       hubIds: namedHubIds,
       evidence: (id) => {
         const s = byId.get(id);
         return s ? evidenceRank(s) / 9 : 0;
       },
+      human: (id) => {
+        const s = byId.get(id);
+        return !!s && isHumanEvidence(s, query);
+      },
     });
+    const byAuthor = authorMatches(query, pool);
+    applyAuthorMatches(ranks, byAuthor);
+    if (byAuthor.size) notes.push(`${byAuthor.size} ${byAuthor.size === 1 ? "study is" : "studies are"} by an author the query names — ranked first.`);
     pool = pool.filter((s) => ranks!.has(s.id));
   }
 
