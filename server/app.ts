@@ -920,13 +920,16 @@ app.use(
   "/images",
   express.static(path.join(__dirname, "..", "public", "images")),
 );
-// Serve uploaded images from database (with filesystem fallback for legacy)
+// Serve uploaded images from the bucket (database, then filesystem, as
+// fallbacks). Clients that accept WebP get the WebP sibling at the same URL.
 app.use("/uploads", async (req, res, next) => {
   const key = req.path.replace(/^\//, ""); // strip leading slash
   try {
     const { getStoredImage } = await import("./utils/storage");
-    const image = await getStoredImage(key);
+    const preferWebp = /image\/webp/i.test(req.get("accept") || "");
+    const image = await getStoredImage(key, { preferWebp });
     if (image) {
+      res.setHeader("Vary", "Accept");
       // Never let the browser sniff a different type, and only serve raster
       // images inline. Anything else (SVG, HTML masquerading as an image)
       // could execute as same-origin script if rendered inline, so force a

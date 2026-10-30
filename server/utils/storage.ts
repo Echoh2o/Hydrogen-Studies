@@ -4,8 +4,12 @@
  * S3-compatible upload abstraction that supports AWS S3, Cloudflare R2,
  * DigitalOcean Spaces, or any S3-compatible service.
  *
- * Falls back to local filesystem if S3_BUCKET is not configured,
- * so nothing breaks for existing users or local development.
+ * Falls back to the stored_images table if S3_BUCKET is not configured,
+ * so nothing breaks for local development.
+ *
+ * Raster uploads (PNG/JPEG) are also stored as a WebP sibling at
+ * `<key>.webp`. The /uploads route serves the WebP to clients that accept it
+ * and the original to everyone else, so public image URLs never change.
  *
  * Environment variables:
  *   S3_BUCKET          — bucket name (required to enable cloud storage)
@@ -13,13 +17,16 @@
  *   S3_ENDPOINT        — custom endpoint for R2/Spaces
  *   S3_ACCESS_KEY_ID   — access key
  *   S3_SECRET_ACCESS_KEY — secret key
- *   S3_PUBLIC_URL      — public URL prefix for served files
+ *   S3_PUBLIC_URL      — public URL prefix for a public bucket; when unset,
+ *                        files are served by the app under /uploads/<key>
+ *   S3_FORCE_PATH_STYLE — "true"/"false"; defaults to true when S3_ENDPOINT is set
  */
 import fs from "fs";
 import path from "path";
 import {
   S3Client,
   PutObjectCommand,
+  GetObjectCommand,
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { logger } from "./logger";
@@ -50,8 +57,11 @@ function getS3Client(): S3Client {
         accessKeyId,
         secretAccessKey,
       },
-      // Required for path-style access with some S3-compatible services
-      forcePathStyle: !!endpoint,
+      // Path-style is needed by some S3-compatible services; Railway buckets
+      // use virtual-host style, so allow an explicit override.
+      forcePathStyle: process.env.S3_FORCE_PATH_STYLE
+        ? process.env.S3_FORCE_PATH_STYLE === "true"
+        : !!endpoint,
     });
 
     logger.info("S3 client initialized", "Storage", {
@@ -103,12 +113,32 @@ export function getPublicUrl(key: string): string {
   return `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
 }
 
+/** Key of the WebP sibling stored next to a raster original. */
+export function webpKey(key: string): string {
+  return `${key}.webp`;
+}
+
+/** Whether we generate a WebP sibling for this content type. */
+export function isWebpConvertible(contentType: string): boolean {
+  return /^image\/(png|jpe?g)$/i.test(contentType);
+}
+
+/**
+ * Re-encode a raster image as WebP at the same dimensions.
+ * Quality 80 cuts our AI-generated PNGs by ~85-90% with no visible loss.
+ */
+export async function toWebp(buffer: Buffer): Promise<Buffer> {
+  const sharp = (await import("sharp")).default;
+  return sharp(buffer).webp({ quality: 80, effort: 5 }).toBuffer();
+}
+
 /**
  * Upload a file buffer to storage.
  *
- * When cloud storage is configured, uploads to S3/R2/Spaces and returns
- * the public URL. Otherwise, saves to the local `uploads/` directory and
- * returns the relative path (e.g. `/uploads/study-images/file.png`).
+ * When cloud storage is configured, uploads to the bucket (plus a WebP
+ * sibling for raster images) and returns the public URL — or, for a private
+ * bucket, the app-served path. Otherwise, saves to the stored_images table.
+ * Either way the app-served path looks like `/uploads/study-images/file.png`.
  *
  * @param buffer   The file contents
  * @param key      The object key / relative path (e.g. `study-images/file.png`)
@@ -162,7 +192,26 @@ async function uploadToS3(
 
   await client.send(command);
 
-  const url = getPublicUrl(key);
+  if (isWebpConvertible(contentType)) {
+    try {
+      await client.send(
+        new PutObjectCommand({
+          Bucket: bucket,
+          Key: webpKey(key),
+          Body: await toWebp(buffer),
+          ContentType: "image/webp",
+          CacheControl: "public, max-age=31536000, immutable",
+        }),
+      );
+    } catch (err) {
+      // The original is stored; the route falls back to it without a WebP.
+      logger.error("WebP sibling upload failed", err, "Storage", { key });
+    }
+  }
+
+  const url = process.env.S3_PUBLIC_URL
+    ? getPublicUrl(key)
+    : `/uploads/${key.replace(/\\/g, "/")}`;
   logger.info("File uploaded to S3", "Storage", { key, bucket, url });
   return url;
 }
@@ -171,12 +220,9 @@ async function deleteFromS3(key: string): Promise<void> {
   const bucket = process.env.S3_BUCKET!;
   const client = getS3Client();
 
-  const command = new DeleteObjectCommand({
-    Bucket: bucket,
-    Key: key,
-  });
-
-  await client.send(command);
+  for (const k of [key, webpKey(key)]) {
+    await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: k }));
+  }
   logger.info("File deleted from S3", "Storage", { key, bucket });
 }
 
@@ -210,13 +256,46 @@ async function deleteFromDatabase(key: string): Promise<void> {
   logger.info("File deleted from database", "Storage", { key });
 }
 
+async function getFromS3(
+  key: string,
+): Promise<{ data: Buffer; contentType: string } | null> {
+  try {
+    const res = await getS3Client().send(
+      new GetObjectCommand({ Bucket: process.env.S3_BUCKET!, Key: key }),
+    );
+    if (!res.Body) return null;
+    return {
+      data: Buffer.from(await res.Body.transformToByteArray()),
+      contentType: res.ContentType || "application/octet-stream",
+    };
+  } catch (err: any) {
+    if (err?.name === "NoSuchKey" || err?.$metadata?.httpStatusCode === 404) {
+      return null;
+    }
+    throw err;
+  }
+}
+
 /**
- * Serve an image from the database by key.
- * Returns { data: Buffer, contentType: string } or null if not found.
+ * Fetch an uploaded image by key for the /uploads route.
+ *
+ * With cloud storage configured, reads the bucket — the WebP sibling first
+ * when `preferWebp` is set — and falls back to the stored_images table for
+ * anything not yet migrated. Returns null if not found anywhere.
  */
 export async function getStoredImage(
   key: string,
+  opts: { preferWebp?: boolean } = {},
 ): Promise<{ data: Buffer; contentType: string } | null> {
+  if (isCloudStorageConfigured()) {
+    if (opts.preferWebp) {
+      const webp = await getFromS3(webpKey(key));
+      if (webp) return webp;
+    }
+    const original = await getFromS3(key);
+    if (original) return original;
+  }
+
   const { pool } = await import("../db");
   const result = await pool.query(
     `SELECT data, content_type FROM stored_images WHERE key = $1 LIMIT 1`,
