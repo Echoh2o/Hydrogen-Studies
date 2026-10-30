@@ -52,6 +52,7 @@ const bodyResult = vi.hoisted(() => ({
 }));
 vi.mock("../middleware/seo-body-renderer", () => ({
   renderPageBody: async () => bodyResult.current,
+  getConditionHubs: async () => [],
 }));
 
 import {
@@ -112,6 +113,8 @@ describe("isBot — AI crawler detection", () => {
     "Mozilla/5.0 (compatible; ClaudeBot/1.0; +claudebot@anthropic.com)",
     "Mozilla/5.0 (compatible; Claude-Web/1.0)",
     "anthropic-ai/1.0",
+    "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Claude-User/1.0; +Claude-User@anthropic.com)",
+    "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Claude-SearchBot/1.0; +Claude-SearchBot@anthropic.com)",
     "Mozilla/5.0 (compatible; PerplexityBot/1.0; +https://perplexity.ai/perplexitybot)",
     "Perplexity-User/1.0",
     "CCBot/2.0 (https://commoncrawl.org/faq/)",

@@ -49,12 +49,17 @@ import {
   studyUpdatedAt,
   withoutPlaceholders,
 } from "@shared/seo-markup";
+import { studyBreadcrumbs, studyEvidence, type HubLink } from "@shared/study-page";
 
 const SITE_URL = "https://hydrogenstudies.com";
 
 interface Study {
   id: number;
   title: string;
+  hubLinks?: HubLink[];
+  studyDesign?: string | null;
+  studyType?: string | null;
+  isHumanTrial?: boolean | null;
   plainLanguageTitle?: string;
   plain_language_title?: string;
   slug?: string;
@@ -287,9 +292,12 @@ export default function SEOStudyPage() {
     ? rawImage
     : `${SITE_URL}${rawImage.startsWith("/") ? "" : "/"}${rawImage}`;
   // No `abstract` field and a ≤300-char description (publisher copyright).
+  const hubLinks: HubLink[] = study.hubLinks ?? [];
+  const crumbs = studyBreadcrumbs(plainTitle || study.title, hubLinks);
+  const evidence = studyEvidence(study);
   const studyLd = studyJsonLd(
     { ...study, plainLanguageTitle: plainTitle },
-    { canonical: canonicalUrl, siteUrl: SITE_URL, image: absoluteImage },
+    { canonical: canonicalUrl, siteUrl: SITE_URL, image: absoluteImage, breadcrumbs: crumbs },
   );
 
   // CLAUDE.md: ≤300-char abstract excerpt + a link to PubMed/DOI — never the
@@ -344,46 +352,26 @@ export default function SEOStudyPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Main Content Column */}
               <div className="lg:col-span-2">
-                {/* Breadcrumb */}
+                {/* Breadcrumb — same trail as the crawler HTML and the
+                    BreadcrumbList JSON-LD (shared/study-page.ts). */}
                 <nav aria-label="Breadcrumb" className="mb-6">
-                  <ol className="flex items-center text-sm text-neutral-500">
-                    <li className="inline-flex items-center">
-                      <Link href="/">
-                        <span className="hover:text-primary cursor-pointer">
-                          Home
-                        </span>
-                      </Link>
-                      <span className="mx-2" aria-hidden="true">
-                        /
-                      </span>
-                    </li>
-                    {/* /categories and /category/<x> are SPA-only redirects
-                        that 404 for crawlers — link /studies like the
-                        crawler breadcrumb; the category is a plain label. */}
-                    <li className="inline-flex items-center">
-                      <Link href="/studies">
-                        <span className="hover:text-primary cursor-pointer">
-                          Studies
-                        </span>
-                      </Link>
-                      <span className="mx-2" aria-hidden="true">
-                        /
-                      </span>
-                    </li>
-                    {study.category && (
-                      <li className="inline-flex items-center">
-                        <span>{study.category}</span>
-                        <span className="mx-2" aria-hidden="true">
-                          /
-                        </span>
+                  <ol className="flex flex-wrap items-center text-sm text-neutral-500">
+                    {crumbs.map((c, i) => (
+                      <li key={i} className="inline-flex items-center">
+                        {c.href ? (
+                          <>
+                            <Link href={c.href}>
+                              <span className="hover:text-primary cursor-pointer">{c.label}</span>
+                            </Link>
+                            <span className="mx-2" aria-hidden="true">/</span>
+                          </>
+                        ) : (
+                          <span className="text-neutral-800 line-clamp-1" aria-current="page">
+                            {c.label.length > 50 ? `${c.label.slice(0, 50).trimEnd()}…` : c.label}
+                          </span>
+                        )}
                       </li>
-                    )}
-                    <li
-                      className="inline-flex items-center"
-                      aria-current="page"
-                    >
-                      <span className="text-neutral-800">Study</span>
-                    </li>
+                    ))}
                   </ol>
                 </nav>
 
@@ -443,6 +431,33 @@ export default function SEOStudyPage() {
                       </>
                     )}
                   </p>
+
+                  {hubLinks.length > 0 && (
+                    <p className="topic-hubs text-sm text-neutral-600 mb-3">
+                      Research hubs:{" "}
+                      {hubLinks.map((l, i) => (
+                        <span key={l.href}>
+                          {i > 0 && " · "}
+                          <Link href={l.href} className="underline hover:text-primary">
+                            {l.label}
+                          </Link>
+                        </span>
+                      ))}
+                    </p>
+                  )}
+
+                  {evidence && (
+                    <div className="mb-4 text-sm">
+                      <p className="text-neutral-700">
+                        Evidence type: <span className="font-medium">{evidence.label}</span>
+                      </p>
+                      {evidence.note && (
+                        <p className="evidence-note mt-1 text-amber-800 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+                          {evidence.note}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {/* Study metadata */}
                   <div className="space-y-2 md:space-y-0 md:flex md:flex-wrap md:items-center text-neutral-600 text-sm">

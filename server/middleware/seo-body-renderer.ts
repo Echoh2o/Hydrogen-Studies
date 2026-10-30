@@ -69,6 +69,7 @@ import {
   type ExploreHubSummary,
   type ListedExploreHubType,
 } from "../../shared/explore-hubs";
+import { studyBreadcrumbs, studyEvidence, studyHubLinks } from "../../shared/study-page";
 
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
 
@@ -251,7 +252,7 @@ export async function getConditionHubSummaries(): Promise<ExploreHubSummary[]> {
  * Condition hubs as { slug, name } — study pages link a condition only when
  * it is in this list. A DB error links nothing rather than risk 404 links.
  */
-async function getConditionHubs(): Promise<ConditionHubRef[]> {
+export async function getConditionHubs(): Promise<ConditionHubRef[]> {
   try {
     return (await getConditionHubSummaries()).map(({ slug, name }) => ({ slug, name }));
   } catch {
@@ -558,7 +559,7 @@ async function getRecentBlogs(limit = 10): Promise<{ slug: string; title: string
 export async function renderStudy(slugOrId: string): Promise<string | null> {
   try {
     const studyCols = sql`id, title, plain_language_title, slug, authors, journal, publish_year,
-      doi, pmid, url, study_type, outcome, peer_reviewed, country, category,
+      doi, pmid, url, study_type, study_design, is_human_trial, outcome, peer_reviewed, country, category,
       health_conditions, body_systems,
       tldr, key_finding, plain_summary, summary_100_words, summary_50_words,
       practical_takeaway, how_to_apply, abstract, last_modified, created_at`;
@@ -592,31 +593,48 @@ export async function renderStudy(slugOrId: string): Promise<string | null> {
     const conditionHref = conditionHub ? exploreHubPath("condition", conditionHub.slug) : null;
     const bodySystemHref = bodySystemHubPathForValue(bodySystem);
 
-    const crumbs: { label: string; href?: string }[] = [
-      { label: "Home", href: "/" },
-      { label: "Studies", href: "/studies" },
-    ];
-    if (condition && conditionHref) {
-      crumbs.push({ label: condition, href: conditionHref });
-    }
-    crumbs.push({ label: truncate(title, 50) });
+    // Hub links + trail are shared with SEOStudyPage (shared/study-page.ts) and
+    // feed the BreadcrumbList in the head JSON-LD — schema = visible trail.
+    const hubLinks = studyHubLinks(
+      { healthConditions: conditionsArr, bodySystems: bodySystemsArr },
+      conditionHubs,
+    );
+    const crumbs = studyBreadcrumbs(title, hubLinks).map((c, i, all) =>
+      i === all.length - 1 ? { label: truncate(c.label, 50) } : c,
+    );
+    const evidence = studyEvidence({
+      studyDesign: s.study_design,
+      studyType: s.study_type,
+      isHumanTrial: s.is_human_trial,
+    });
 
     let h = breadcrumbs(crumbs);
-    h += `<article itemscope itemtype="https://schema.org/MedicalScholarlyArticle">\n`;
-    h += `<h1 itemprop="headline">${esc(title)}</h1>\n`;
+    // Structured data lives in the head JSON-LD (studyJsonLd) only — no
+    // microdata here, so the page carries one consistent description.
+    h += `<article>\n`;
+    h += `<h1>${esc(title)}</h1>\n`;
+    if (s.plain_language_title && s.title && s.plain_language_title !== s.title) {
+      h += `<h2 class="original-title">${esc(s.title)}</h2>\n`;
+    }
     // Author/reviewer + date line (CLAUDE.md: every indexable page shows one).
     // Same copy as SEOStudyPage.tsx.
     const updated = studyUpdatedAt({ lastModified: s.last_modified, createdAt: s.created_at });
     h += `<p class="byline">Summary by <a href="/methodology">${esc(EDITORIAL_TEAM)}</a>`;
     if (updated) h += ` · Updated <time datetime="${isoDate(updated)}">${esc(formatLongDate(updated))}</time>`;
     h += `</p>\n`;
+    if (hubLinks.length) {
+      h += `<p class="topic-hubs">Research hubs: ${hubLinks
+        .map((l) => `<a href="${esc(l.href)}">${esc(l.label)}</a>`)
+        .join(" · ")}</p>\n`;
+    }
 
     // Metadata table
     const doi = normalizeDoi(s.doi);
     h += `<dl>`;
-    if (s.authors) h += `<dt>Authors</dt><dd itemprop="author">${esc(s.authors)}</dd>`;
+    if (evidence) h += `<dt>Evidence type</dt><dd>${esc(evidence.label)}</dd>`;
+    if (s.authors) h += `<dt>Authors</dt><dd>${esc(s.authors)}</dd>`;
     if (s.journal) h += `<dt>Journal</dt><dd>${esc(s.journal)}</dd>`;
-    if (s.publish_year) h += `<dt>Year</dt><dd itemprop="datePublished">${s.publish_year}</dd>`;
+    if (s.publish_year) h += `<dt>Year</dt><dd>${s.publish_year}</dd>`;
     if (doi) h += `<dt>DOI</dt><dd><a href="https://doi.org/${esc(doi)}" rel="noopener">${esc(doi)}</a></dd>`;
     if (s.study_type) h += `<dt>Study Type</dt><dd>${esc(s.study_type)}</dd>`;
     if (s.outcome) h += `<dt>Outcome</dt><dd>${esc(s.outcome)}</dd>`;
@@ -629,16 +647,17 @@ export async function renderStudy(slugOrId: string): Promise<string | null> {
       h += `<dt>Body System</dt><dd>${bodySystemHref ? `<a href="${esc(bodySystemHref)}">${esc(bodySystem)}</a>` : esc(bodySystem)}</dd>`;
     }
     h += `</dl>\n`;
+    if (evidence?.note) h += `<p class="evidence-note">${esc(evidence.note)}</p>\n`;
 
     // Content sections
     if (s.tldr) h += `<section><h2>TL;DR</h2><p>${esc(s.tldr)}</p></section>\n`;
     if (s.key_finding) h += `<section><h2>Key Finding</h2><p>${esc(s.key_finding)}</p></section>\n`;
     if (s.plain_summary) {
-      h += `<section><h2>Summary</h2><p itemprop="description">${esc(s.plain_summary)}</p></section>\n`;
+      h += `<section><h2>Summary</h2><p>${esc(s.plain_summary)}</p></section>\n`;
     } else if (s.summary_100_words) {
-      h += `<section><h2>Summary</h2><p itemprop="description">${esc(s.summary_100_words)}</p></section>\n`;
+      h += `<section><h2>Summary</h2><p>${esc(s.summary_100_words)}</p></section>\n`;
     } else if (s.summary_50_words) {
-      h += `<section><h2>Summary</h2><p itemprop="description">${esc(s.summary_50_words)}</p></section>\n`;
+      h += `<section><h2>Summary</h2><p>${esc(s.summary_50_words)}</p></section>\n`;
     }
     if (s.practical_takeaway) h += `<section><h2>Practical Takeaway</h2><p>${esc(s.practical_takeaway)}</p></section>\n`;
     if (s.how_to_apply) h += `<section><h2>How to Apply This Research</h2><p>${esc(s.how_to_apply)}</p></section>\n`;

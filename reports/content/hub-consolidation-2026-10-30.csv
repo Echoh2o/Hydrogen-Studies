@@ -1,0 +1,16 @@
+blog_id,slug,impr_90d,clicks_90d,avg_pos,target,target_has_intro,recommendation
+11536,how-to-use-hydrogen-water-for-gut-health-a-science-backed-guide-646080,365,2,10.9,/explore-by-condition/gut-health,no,write hub intro (absorb post) then 301
+9842,how-to-use-hydrogen-water-for-cholesterol-a-science-backed-guide-385114,362,2,9.2,/explore-by-condition/cholesterol,no,write hub intro (absorb post) then 301
+11527,hydrogen-water-and-cholesterol-what-2024-research-shows-308932,43,2,16.1,/explore-by-condition/cholesterol,no,301 with the cholesterol intro
+7598,how-to-use-hydrogen-water-for-blood-sugar-a-science-backed-guide-038838,142,1,7.6,/explore-by-condition/type-2-diabetes,no,write hub intro (absorb post + 9983) then 301
+9983,hydrogen-water-diabetes-research,21,1,7.9,/explore-by-condition/type-2-diabetes,no,301 with the type-2-diabetes intro
+8774,how-to-use-hydrogen-water-for-liver-health-boost-cholesterol-control-184817,53,0,14.2,/explore-by-condition/fatty-liver-nafld,no,write hub intro then 301
+9971,hydrogen-water-weight-loss,146,1,11.1,/explore-by-condition/weight-loss-metabolism,no,write hub intro (absorb post) then 301
+9155,hydrogen-water-health-benefits-for-arthritis-your-questions-answered-290536,5,0,59.8,/explore-by-condition/rheumatoid-arthritis,no,301 now (negligible traffic)
+10822,how-to-use-hydrogen-water-for-cancer-support-a-science-backed-guide-529960,193,5,10.1,/hydrogen-for/cancer-support,yes (FAQ),merge useful content into topic page then 301
+10096,how-to-use-hydrogen-water-for-psoriasis-relief-a-science-backed-guide-099066,5,0,42.2,/hydrogen-for/skin-health,yes (FAQ),301 now (negligible traffic)
+11785,hydrogen-water-general-health-your-questions-answered-180766,44,0,46.2,/blog/what-is-hydrogen-water,n/a,301 now
+11654,how-to-use-hydrogen-water-for-kids-surgery-safety-a-science-backed-guide-218367,32,0,22.3,/blog/hydrogen-water-side-effects,n/a,301 now (page also requests a 410'd study)
+9002,hydrogen-water-pregnancy-safety-your-questions-answered-524158,60,1,10.5,/blog/hydrogen-water-side-effects,n/a,add a pregnancy section to the side-effects guide then 301
+8012,how-to-use-hydrogen-water-for-spine-pain-a-science-backed-guide-855883,349,4,6.7,(none),n/a,KEEP — ranks 6.7 and no hub covers it; refresh with evidence grading
+8953,how-to-use-hydrogen-water-for-bladder-control-a-science-backed-guide-082030,227,0,7.6,(none),n/a,KEEP — ranks 7.6 and no hub covers it; refresh with evidence grading

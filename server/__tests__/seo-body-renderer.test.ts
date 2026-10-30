@@ -167,6 +167,30 @@ describe("#2/#3/#12 bot study page", () => {
     );
   });
 
+  it("shows the evidence type and an animal-research caveat; no conflicting microdata", async () => {
+    state.handler = baseHandler((text) =>
+      /FROM studies WHERE slug/.test(text)
+        ? [{ ...STUDY, plain_language_title: "Hydrogen Water Lowers Stress Markers in Rats", study_design: "animal", study_type: "Rat" }]
+        : [],
+    );
+    const html = (await renderStudy("h2-oxidative-stress"))!;
+    expect(html).toContain("<dt>Evidence type</dt><dd>Animal study (rat)</dd>");
+    expect(html).toContain('<p class="evidence-note">This research was done in animals.');
+    // Original paper title is visible (it is the JSON-LD `about.name`).
+    expect(html).toContain('<h2 class="original-title">Hydrogen-rich water and oxidative stress in healthy adults</h2>');
+    // Schema lives in the head JSON-LD only.
+    expect(html).not.toMatch(/itemscope|itemprop/);
+  });
+
+  it("labels a human RCT", async () => {
+    state.handler = baseHandler((text) =>
+      /FROM studies WHERE slug/.test(text) ? [{ ...STUDY, study_design: "rct", is_human_trial: true }] : [],
+    );
+    const html = (await renderStudy("h2-oxidative-stress"))!;
+    expect(html).toContain("<dt>Evidence type</dt><dd>Randomized controlled trial · Human study</dd>");
+    expect(html).not.toContain("evidence-note");
+  });
+
   it("related-article queries only use live blog posts", async () => {
     await renderStudy("h2-oxidative-stress");
     const blogQueries = state.queries.filter((q) => /FROM blog_articles/.test(q));

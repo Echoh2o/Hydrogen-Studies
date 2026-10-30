@@ -378,8 +378,17 @@ describe("abstract excerpt + source link", () => {
     expect(ld.abstract).toBeUndefined();
     expect(JSON.stringify(ld)).not.toContain(LONG_ABSTRACT);
     expect(ld.description.length).toBeLessThanOrEqual(300);
-    expect(ld["@type"]).toBe("MedicalScholarlyArticle");
-    expect(ld.author).toEqual([{ "@type": "Person", name: "A. One" }, { "@type": "Person", name: "B. Two" }]);
+    // The page is our summary ABOUT the paper: the paper's authors belong to
+    // `about`, never to the page (2026-10-30 structural SEO pass).
+    expect(ld["@type"]).toBe("MedicalWebPage");
+    expect(ld.author).toEqual({
+      "@type": "Organization",
+      name: "Hydrogen Studies Editorial Team",
+      url: "https://hydrogenstudies.com/methodology",
+    });
+    expect(ld.about["@type"]).toBe("MedicalScholarlyArticle");
+    expect(ld.about.author).toEqual([{ "@type": "Person", name: "A. One" }, { "@type": "Person", name: "B. Two" }]);
+    expect(ld.about.sameAs).toBe("https://doi.org/10.1/x");
   });
 
   it("studyDescription prefers our own summary over the abstract", () => {

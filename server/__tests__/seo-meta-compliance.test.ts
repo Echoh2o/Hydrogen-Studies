@@ -51,7 +51,7 @@ describe("#1/#2/#11 study meta", () => {
   it("never emits FAQPage (no visible FAQ on study pages)", () => {
     const meta = buildStudyMeta(study);
     const types = asArray(meta.jsonLd).map((ld) => ld["@type"]);
-    expect(types).toEqual(["MedicalScholarlyArticle"]);
+    expect(types).toEqual(["MedicalWebPage"]);
     expect(JSON.stringify(meta.jsonLd)).not.toContain("FAQPage");
   });
 
