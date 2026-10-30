@@ -461,7 +461,8 @@ async function runWaterfall(
 /**
  * Execute a single waterfall step.
  */
-async function executeStep(step: WaterfallStep, studyId: number): Promise<void> {
+// Exported for tests.
+export async function executeStep(step: WaterfallStep, studyId: number): Promise<void> {
   switch (step) {
     case "seo": {
       const { enrichAndSaveStudy } = await import("./study-seo-enrichment");
@@ -571,6 +572,12 @@ Return ONLY a JSON array of strings, nothing else. Example: ["gut health", "infl
     }
 
     case "blogs": {
+      // Kept as a (no-op) step so in-flight rows' completedSteps stay valid.
+      const { autoStudyBlogDraftsEnabled } = await import("../utils/generation-flags");
+      if (!autoStudyBlogDraftsEnabled()) {
+        logger.info(`Skipping blog drafts for study ${studyId} (auto drafts off)`, "ContentWorker");
+        break;
+      }
       const { generateBlogArticlesForStudy } = await import("./blog-generator-enhanced");
       const { studyService } = await import("./study-service");
 

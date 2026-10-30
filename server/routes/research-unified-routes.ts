@@ -1515,25 +1515,21 @@ router.put(
             logger.warn("Content enrichment had issues", "ResearchUnifiedRoutes", { message: enrichmentResult.message });
           }
 
-          // 3. Generate 7-10 blog posts (parallel generation for efficiency)
-          logger.info("Generating blog articles", "ResearchUnifiedRoutes");
-          const blogGenerationPromise = generateBlogArticlesForStudy(
-            createdStudy,
-            {
-              count: 10, // Generate up to 10 blog posts
-              fallbackToBasic: true,
-            },
-          );
-
-          // 4. Generate 2 scientific articles
-          logger.info("Generating scientific articles", "ResearchUnifiedRoutes");
-          const scientificGenerationPromise =
-            generateScientificArticlesForStudy(
-              createdStudy,
-              {
+          // 3-4. Blog posts + scientific articles — only when auto drafts are
+          // opted in (off by default; see server/utils/generation-flags.ts).
+          const { autoStudyBlogDraftsEnabled } = await import("../utils/generation-flags");
+          const autoDrafts = autoStudyBlogDraftsEnabled();
+          const skipped = Promise.resolve({ articles: [] as unknown[], errors: [] as unknown[] });
+          if (autoDrafts) logger.info("Generating blog + scientific articles", "ResearchUnifiedRoutes");
+          const blogGenerationPromise = autoDrafts
+            ? generateBlogArticlesForStudy(createdStudy, {
+                count: 10, // Generate up to 10 blog posts
                 fallbackToBasic: true,
-              },
-            );
+              })
+            : skipped;
+          const scientificGenerationPromise = autoDrafts
+            ? generateScientificArticlesForStudy(createdStudy, { fallbackToBasic: true })
+            : skipped;
 
           // 5. Generate study image using Grok (xAI) or DALL-E fallback
           logger.info("Generating study image", "ResearchUnifiedRoutes");
