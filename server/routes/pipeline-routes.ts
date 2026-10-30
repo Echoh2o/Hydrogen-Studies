@@ -27,6 +27,12 @@ import { logger } from "../utils/logger";
  * instead of waiting for the 6-hour batch timer.
  */
 async function triggerContentWaterfall(studyId: number) {
+  const { autoStudyBlogDraftsEnabled } = await import("../utils/generation-flags");
+  if (!autoStudyBlogDraftsEnabled()) {
+    logger.info("Skipping content waterfall — auto drafts off", "PipelineRoutes", { studyId });
+    return;
+  }
+
   const study = await db.query.studies.findFirst({
     where: eq(studies.id, studyId),
   });

@@ -135,32 +135,39 @@ export async function runStudyLifecyclePipeline(studyId: number): Promise<Pipeli
 
   await delay(2000);
 
-  // Step 6: Blog Article Generation
-  try {
-    const existingBlog = await db
-      .select({ id: blogArticles.id })
-      .from(blogArticles)
-      .where(eq(blogArticles.studyId, studyId))
-      .limit(1);
+  // Step 6: Blog Article Generation (off unless auto drafts are opted in)
+  const { autoStudyBlogDraftsEnabled, AUTO_DRAFTS_DISABLED_MESSAGE } = await import(
+    "../utils/generation-flags"
+  );
+  if (!autoStudyBlogDraftsEnabled()) {
+    steps.blogGeneration = { success: true, message: AUTO_DRAFTS_DISABLED_MESSAGE };
+  } else {
+    try {
+      const existingBlog = await db
+        .select({ id: blogArticles.id })
+        .from(blogArticles)
+        .where(eq(blogArticles.studyId, studyId))
+        .limit(1);
 
-    if (existingBlog.length === 0) {
-      const [study] = await db.select().from(studies).where(eq(studies.id, studyId)).limit(1);
-      if (study) {
-        const { generateBlogArticlesForStudy } = await import("./blog-generator-enhanced");
-        // generateBlogArticlesForStudy already inserts articles into the DB — do NOT re-insert
-        const result = await generateBlogArticlesForStudy(study, { count: 1, fallbackToBasic: true });
-        if (result.articles.length > 0) {
-          steps.blogGeneration = { success: true, message: `Generated ${result.articles.length} article(s)` };
-        } else {
-          steps.blogGeneration = { success: false, message: result.errors?.[0]?.error || "No articles generated" };
+      if (existingBlog.length === 0) {
+        const [study] = await db.select().from(studies).where(eq(studies.id, studyId)).limit(1);
+        if (study) {
+          const { generateBlogArticlesForStudy } = await import("./blog-generator-enhanced");
+          // generateBlogArticlesForStudy already inserts articles into the DB — do NOT re-insert
+          const result = await generateBlogArticlesForStudy(study, { count: 1, fallbackToBasic: true });
+          if (result.articles.length > 0) {
+            steps.blogGeneration = { success: true, message: `Generated ${result.articles.length} article(s)` };
+          } else {
+            steps.blogGeneration = { success: false, message: result.errors?.[0]?.error || "No articles generated" };
+          }
         }
+      } else {
+        steps.blogGeneration = { success: true, message: "Already has blog" };
       }
-    } else {
-      steps.blogGeneration = { success: true, message: "Already has blog" };
+    } catch (err: any) {
+      steps.blogGeneration = { success: false, message: err.message };
+      logger.warn(`Blog generation failed for study ${studyId}: ${err.message}`, "StudyLifecycle");
     }
-  } catch (err: any) {
-    steps.blogGeneration = { success: false, message: err.message };
-    logger.warn(`Blog generation failed for study ${studyId}: ${err.message}`, "StudyLifecycle");
   }
 
   await delay(1000);
