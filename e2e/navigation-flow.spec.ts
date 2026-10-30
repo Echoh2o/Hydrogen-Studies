@@ -6,8 +6,9 @@ test.describe("End-to-End Navigation Flows", () => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
-    // Navigate to studies
-    const studiesLink = page.getByRole("link", { name: /studies|research/i }).first();
+    // Navigate to studies. Match the "Browse (All) Studies" CTA — a bare
+    // /studies|research/ also matches the "Hydrogen Studies" logo link to "/".
+    const studiesLink = page.getByRole("link", { name: /browse (all )?studies/i }).first();
     if (await studiesLink.isVisible()) {
       await studiesLink.click();
       await page.waitForLoadState("networkidle");

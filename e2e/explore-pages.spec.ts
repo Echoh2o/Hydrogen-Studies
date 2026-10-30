@@ -32,10 +32,9 @@ test.describe("Explore Pages - Deep Tests", () => {
       await page.goto("/explore-by-benefit");
       await page.waitForLoadState("networkidle");
 
-      // Look for badge elements with study count text
-      const badges = page.locator("[class*='badge'], .badge");
-      const count = await badges.count();
-      expect(count).toBeGreaterThan(0);
+      // Cards render their count as plain text ("79 studies"), not badges.
+      const counts = page.getByText(/\b\d+\s+stud(y|ies)\b/i);
+      expect(await counts.count()).toBeGreaterThan(0);
     });
   });
 
