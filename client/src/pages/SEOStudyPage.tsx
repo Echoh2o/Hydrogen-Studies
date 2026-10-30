@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
-import { formatAuthors } from "@/lib/utils";
+import { formatAuthors, imageSrc } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/components/auth/ProtectedRoute";
 import { Button } from "@/components/ui/button";
@@ -490,13 +490,7 @@ export default function SEOStudyPage() {
                         <section className="mb-8">
                           <figure className="rounded-lg overflow-hidden shadow-md">
                             <img
-                              src={
-                                (study.imageUrl || study.image_url)?.startsWith(
-                                  "http",
-                                )
-                                  ? study.imageUrl || study.image_url
-                                  : `/${study.imageUrl || study.image_url}`
-                              }
+                              src={imageSrc(study.imageUrl || study.image_url || "")}
                               alt={
                                 study.imageAlt ||
                                 study.image_alt ||

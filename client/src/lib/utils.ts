@@ -82,3 +82,13 @@ export function errMessage(err: unknown, fallback = "An unexpected error occurre
   }
   return fallback;
 }
+
+/**
+ * Normalize a stored image path into an <img> src. Absolute URLs pass through;
+ * site paths get exactly one leading slash. ("/uploads/x.png" must not become
+ * "//uploads/x.png", which browsers read as a host named "uploads".)
+ */
+export function imageSrc(url: string): string {
+  if (/^(https?|data|blob):/i.test(url)) return url;
+  return `/${url.replace(/^\/+/, "")}`;
+}
