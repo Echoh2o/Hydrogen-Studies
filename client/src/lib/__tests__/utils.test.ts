@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatAuthors, formatDate } from "../utils";
+import { formatAuthors, formatDate, imageSrc } from "../utils";
 
 describe("formatAuthors", () => {
   it("handles string authors", () => {
@@ -59,5 +59,18 @@ describe("formatDate", () => {
   it("handles ISO date string", () => {
     const result = formatDate("2023-06-01T00:00:00Z");
     expect(result).toContain("2023");
+  });
+});
+
+describe("imageSrc", () => {
+  it("keeps a single leading slash on stored site paths", () => {
+    expect(imageSrc("/uploads/study-images/a.png")).toBe("/uploads/study-images/a.png");
+    expect(imageSrc("uploads/study-images/a.png")).toBe("/uploads/study-images/a.png");
+    expect(imageSrc("//uploads/study-images/a.png")).toBe("/uploads/study-images/a.png");
+  });
+
+  it("passes absolute and inline URLs through", () => {
+    expect(imageSrc("https://cdn.example.com/a.png")).toBe("https://cdn.example.com/a.png");
+    expect(imageSrc("data:image/png;base64,AAAA")).toBe("data:image/png;base64,AAAA");
   });
 });
