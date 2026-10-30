@@ -5,8 +5,10 @@
  * Read-only against Postgres — it never deletes rows. Emptying stored_images
  * is a separate, manual step once `--verify` reports every key present.
  *
- * Resumable: an image whose WebP sibling already exists is skipped, so a
- * crashed run can simply be restarted.
+ * Resumable: the bucket is listed up front and images whose WebP sibling
+ * already exists are skipped, so a crashed run can simply be restarted
+ * (a dropped socket can kill the process with an unhandled EPIPE — wrap the
+ * command in a retry loop for long runs).
  *
  *   --verify      list the bucket and report any stored_images key missing
  *                 its original or WebP copy. Uploads nothing.
@@ -96,11 +98,20 @@ async function verify() {
 }
 
 async function migrate() {
-  const { rows: ids } = await pool.query<{ id: number }>(
-    `SELECT id FROM stored_images ORDER BY id`,
+  // List the bucket once up front so a resumed run doesn't re-download
+  // image bytes from Postgres for rows that are already copied.
+  const have = await listBucketKeys();
+  const { rows: all } = await pool.query<{ id: number; key: string; content_type: string }>(
+    `SELECT id, key, content_type FROM stored_images ORDER BY id`,
   );
-  const todo = ids.slice(0, LIMIT === Infinity ? undefined : LIMIT).map((r) => r.id);
-  console.log(`${todo.length} images to process (concurrency ${CONCURRENCY})`);
+  const pending = all.filter(
+    (r) => !have.has(isWebpConvertible(r.content_type) ? webpKey(r.key) : r.key),
+  );
+  const todo = pending.slice(0, LIMIT === Infinity ? undefined : LIMIT).map((r) => r.id);
+  console.log(
+    `${all.length - pending.length} already in bucket; ` +
+    `${todo.length} images to process (concurrency ${CONCURRENCY})`,
+  );
 
   let done = 0, skipped = 0, failed = 0, origBytes = 0, webpBytes = 0;
   const started = Date.now();
