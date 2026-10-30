@@ -305,42 +305,95 @@ export function studyUpdatedAt(study: Pick<StudyLike, "lastModified" | "createdA
 }
 
 /**
- * MedicalScholarlyArticle JSON-LD for a study page. Deliberately has NO
- * `abstract` field and a ≤300-char description (publisher copyright).
+ * Normalize a stored publication date to ISO 8601 ("YYYY-MM-DD", "YYYY-MM" or
+ * "YYYY"). 627 rows store "YYYY-MM-DD-HH-MM", which is not a valid date.
+ * Returns "" when nothing usable is present.
+ */
+export function normalizePubDate(raw: string | Date | null | undefined): string {
+  if (raw instanceof Date) return isNaN(raw.getTime()) ? "" : raw.toISOString().slice(0, 10);
+  const m = realContent(raw).match(/^(\d{4})(?:-(\d{1,2})(?:-(\d{1,2}))?)?/);
+  if (!m) return "";
+  const [, y, mo, d] = m;
+  const month = mo ? Number(mo) : 0;
+  const day = d ? Number(d) : 0;
+  if (!month || month > 12) return y;
+  const mm = String(month).padStart(2, "0");
+  if (!day || day > 31) return `${y}-${mm}`;
+  return `${y}-${mm}-${String(day).padStart(2, "0")}`;
+}
+
+/**
+ * JSON-LD for a study page: a MedicalWebPage (our summary, written by the
+ * editorial team) that is ABOUT the original paper (MedicalScholarlyArticle
+ * with its own authors, journal and DOI). The page is not the paper, so the
+ * paper's authors are never credited as authors of our summary.
+ *
+ * Deliberately has NO `abstract` field and a ≤300-char description
+ * (publisher copyright). `breadcrumbs` must be the visible trail.
  */
 export function studyJsonLd(
   study: StudyLike,
-  opts: { canonical: string; siteUrl: string; image?: string },
+  opts: {
+    canonical: string;
+    siteUrl: string;
+    image?: string;
+    breadcrumbs?: readonly { label: string; href?: string }[];
+  },
 ): Record<string, any> {
-  const headlineSource = realContent(study.title) || realContent(study.plainLanguageTitle);
-  const ld: Record<string, any> = {
-    "@context": "https://schema.org",
-    "@type": "MedicalScholarlyArticle",
-    headline: cutAtWordBoundary(headlineSource, 110),
-    description: studyDescription(study, 300),
-    url: opts.canonical,
-    ...(opts.image ? { image: opts.image } : {}),
-    ...(realContent(study.journalPublishDate || study.publishDate)
-      ? { datePublished: realContent(study.journalPublishDate || study.publishDate) }
-      : {}),
-    ...(isoDate(studyUpdatedAt(study)) ? { dateModified: isoDate(studyUpdatedAt(study)) } : {}),
-    publisher: {
-      "@type": "Organization",
-      name: SITE_NAME,
-      url: opts.siteUrl,
-      logo: { "@type": "ImageObject", url: `${opts.siteUrl}/logo.png` },
-    },
-    mainEntityOfPage: { "@type": "WebPage", "@id": opts.canonical },
-  };
+  const originalTitle = realContent(study.title);
+  const pageTitle = realContent(study.plainLanguageTitle) || originalTitle;
+
+  const paper: Record<string, any> = { "@type": "MedicalScholarlyArticle" };
+  if (originalTitle) {
+    paper.name = originalTitle;
+    paper.headline = cutAtWordBoundary(originalTitle, 110);
+  }
   const authors = realContent(study.authors)
     .split(",")
     .map((a) => a.trim())
     .filter((a) => a && !isPlaceholder(a));
-  if (authors.length) ld.author = authors.map((name) => ({ "@type": "Person", name }));
-  if (realContent(study.journal)) ld.isPartOf = { "@type": "Periodical", name: realContent(study.journal) };
+  if (authors.length) paper.author = authors.map((name) => ({ "@type": "Person", name }));
+  if (realContent(study.journal)) paper.isPartOf = { "@type": "Periodical", name: realContent(study.journal) };
+  const published = normalizePubDate(study.journalPublishDate || study.publishDate);
+  if (published) paper.datePublished = published;
   const doi = normalizeDoi(study.doi);
-  if (doi) ld.sameAs = `https://doi.org/${doi}`;
-  if (Array.isArray(study.keywords) && study.keywords.length) ld.keywords = study.keywords.join(", ");
+  const pmid = String(study.pmid ?? "").match(/\d{4,}/)?.[0];
+  const ids: Record<string, string>[] = [];
+  if (doi) {
+    paper.sameAs = `https://doi.org/${doi}`;
+    ids.push({ "@type": "PropertyValue", propertyID: "DOI", value: doi });
+  }
+  if (pmid) ids.push({ "@type": "PropertyValue", propertyID: "PMID", value: pmid });
+  if (ids.length) paper.identifier = ids;
+  if (Array.isArray(study.keywords) && study.keywords.length) paper.keywords = study.keywords.join(", ");
+
+  const updated = isoDate(studyUpdatedAt(study));
+  const ld: Record<string, any> = {
+    "@context": "https://schema.org",
+    "@type": "MedicalWebPage",
+    "@id": opts.canonical,
+    url: opts.canonical,
+    name: cutAtWordBoundary(pageTitle, 110),
+    description: studyDescription(study, 300),
+    inLanguage: "en",
+    ...(opts.image ? { image: opts.image } : {}),
+    ...(updated ? { dateModified: updated } : {}),
+    author: { "@type": "Organization", name: EDITORIAL_TEAM, url: `${opts.siteUrl}/methodology` },
+    publisher: { "@type": "Organization", "@id": `${opts.siteUrl}/#organization`, name: SITE_NAME },
+    isPartOf: { "@type": "WebSite", "@id": `${opts.siteUrl}/#website` },
+    about: paper,
+  };
+  if (opts.breadcrumbs?.length) {
+    ld.breadcrumb = {
+      "@type": "BreadcrumbList",
+      itemListElement: opts.breadcrumbs.map((c, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        name: c.label,
+        ...(c.href ? { item: `${opts.siteUrl}${c.href}` } : {}),
+      })),
+    };
+  }
   return ld;
 }
 

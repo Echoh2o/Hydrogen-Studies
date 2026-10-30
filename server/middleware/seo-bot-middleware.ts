@@ -35,8 +35,10 @@ import {
   exploreDetailMeta,
   exploreIndexCopy,
   mechanismHubMeta,
+  type ConditionHubRef,
   type ListedExploreHubType,
 } from "../../shared/explore-hubs";
+import { studyBreadcrumbs, studyHubLinks } from "../../shared/study-page";
 import { marked } from "marked";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -85,6 +87,9 @@ const BOT_PATTERNS = [
   /gptbot/i, /oai-searchbot/i, /chatgpt-user/i, /claudebot/i, /claude-web/i,
   /anthropic-ai/i, /perplexitybot/i, /perplexity-user/i, /ccbot/i,
   /meta-externalagent/i,
+  // Claude's user-initiated fetch and search agents (2026-10-30): both got
+  // the empty SPA shell, so Claude web search/fetch saw no content.
+  /claude-user/i, /claude-searchbot/i,
   // Previously-missing crawlers (audit 2026-08-31): each of these got the
   // empty SPA shell instead of prerendered HTML — invisible content to any
   // fetcher that doesn't execute JS.
@@ -153,10 +158,10 @@ async function resolvePageMeta(pathname: string): Promise<PageMeta | null> {
         // Excluded (off-topic) studies never render: the 410 guard in app.ts
         // answers first; this keeps the prerender honest if reached directly.
         const [study] = await db.select().from(studies).where(and(eq(studies.id, parseInt(slug)), eq(studies.isExcluded, false))).limit(1);
-        if (study) return buildStudyMeta(study);
+        if (study) return buildStudyMeta(study, await getConditionHubs());
       } else {
         const [study] = await db.select().from(studies).where(and(eq(studies.slug, slug), eq(studies.isExcluded, false))).limit(1);
-        if (study) return buildStudyMeta(study);
+        if (study) return buildStudyMeta(study, await getConditionHubs());
       }
       return null;
     }
@@ -166,7 +171,7 @@ async function resolvePageMeta(pathname: string): Promise<PageMeta | null> {
     if (studiesSlugMatch && !/^(tags)$/.test(studiesSlugMatch[1])) {
       const slug = studiesSlugMatch[1];
       const [study] = await db.select().from(studies).where(and(eq(studies.slug, slug), eq(studies.isExcluded, false))).limit(1);
-      if (study) return buildStudyMeta(study);
+      if (study) return buildStudyMeta(study, await getConditionHubs());
       return null;
     }
 
@@ -203,10 +208,16 @@ async function resolvePageMeta(pathname: string): Promise<PageMeta | null> {
   }
 }
 
-export function buildStudyMeta(study: any): PageMeta {
+export function buildStudyMeta(study: any, conditionHubs: readonly ConditionHubRef[] = []): PageMeta {
   const slug = study.slug || `id/${study.id}`;
   const canonical = canonicalForStudy(slug);
   const ogImage = toAbsoluteUrl(study.ogImage || study.imageUrl || "/logo.png", SITE_URL);
+  // Same trail the body renderer shows (shared/study-page.ts).
+  const pageLabel = realContent(study.plainLanguageTitle) || realContent(study.title);
+  const breadcrumbs = studyBreadcrumbs(
+    pageLabel,
+    studyHubLinks({ healthConditions: study.healthConditions, bodySystems: study.bodySystems }, conditionHubs),
+  );
 
   // Shared with the SPA (SEOStudyPage) so both paths emit identical schema.
   // No `abstract` field and a ≤300-char description (publisher copyright).
@@ -214,7 +225,7 @@ export function buildStudyMeta(study: any): PageMeta {
   // No FAQPage: study pages render no visible FAQ, and the hidden
   // question_answer_pairs column must never become schema (CLAUDE.md: no
   // FAQPage without a visible FAQ).
-  const jsonLd = studyJsonLd(study, { canonical, siteUrl: SITE_URL, image: ogImage });
+  const jsonLd = studyJsonLd(study, { canonical, siteUrl: SITE_URL, image: ogImage, breadcrumbs });
 
   return {
     title: studyPageTitle(study),
@@ -646,7 +657,7 @@ export function invalidateBotCache(path?: string): void {
 
 // ── Middleware ─────────────────────────────────────────────────
 
-import { renderPageBody } from "./seo-body-renderer";
+import { getConditionHubs, renderPageBody } from "./seo-body-renderer";
 
 /**
  * Express middleware: intercepts requests from bots, injects correct

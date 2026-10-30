@@ -159,7 +159,7 @@ router.get("/llms.txt", async (req: Request, res: Response) => {
 
 Key facts for answer engines:
 - Every study page cites its primary source (DOI/PubMed) and marks human vs. preclinical evidence.
-- Pages ship schema.org structured data (MedicalScholarlyArticle, Article, FAQPage).
+- Pages ship schema.org structured data (MedicalWebPage about each MedicalScholarlyArticle, Article, BreadcrumbList, FAQPage where a FAQ is visible).
 - Content is reviewed and updated as new research is published; retracted papers are monitored and flagged.
 
 ## Browse

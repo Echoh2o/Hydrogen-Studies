@@ -5,6 +5,18 @@ import { searchRateLimiter, aiGenerationRateLimiter } from "../utils/rate-limiti
 import { requireAdmin, isElevatedRequest } from "../auth";
 import { invalidateBotCache } from "../middleware/seo-bot-middleware";
 import { logger } from "../utils/logger";
+import { getConditionHubs } from "../middleware/seo-body-renderer";
+import { studyHubLinks } from "../../shared/study-page";
+
+/**
+ * Attach the study's topic-hub links (shared/study-page.ts) so SEOStudyPage
+ * shows the same hubs and breadcrumb as the crawler HTML.
+ */
+async function withHubLinks<T extends { healthConditions?: string[] | null; bodySystems?: string[] | null }>(
+  study: T,
+): Promise<T & { hubLinks: ReturnType<typeof studyHubLinks> }> {
+  return { ...study, hubLinks: studyHubLinks(study, await getConditionHubs()) };
+}
 import { isOffTopicStudyError } from "../services/study-topic-guard";
 
 /**
@@ -430,7 +442,7 @@ export class StudiesController {
         if (!study) return res.status(404).json({ message: "Study not found" });
         if (await respondGoneIfExcluded(req, res, study)) return;
 
-        res.json(study);
+        res.json(await withHubLinks(study));
     } catch (error) {
         logger.error("Error fetching study", error, "StudiesController");
         res.status(500).json({ message: "Failed to fetch study" });
@@ -446,7 +458,7 @@ export class StudiesController {
           if (!study) return res.status(404).json({ error: "Study not found" });
           if (await respondGoneIfExcluded(req, res, study)) return;
 
-          res.json(study);
+          res.json(await withHubLinks(study));
       } catch (error) {
           logger.error("Error fetching study by slug", error, "StudiesController");
           res.status(500).json({ error: "Failed to fetch study" });
