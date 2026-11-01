@@ -196,6 +196,13 @@ app.use(
 // vite-plugin-compression + express-static-gzip if that is wired up later.
 app.use(compression());
 
+// API JSON is crawlable (robots.txt allows public read APIs so Google can
+// render pages) but must never be indexed as a page.
+app.use("/api", (_req, res, next) => {
+  res.setHeader("X-Robots-Tag", "noindex");
+  next();
+});
+
 // Redirect middleware — must be very early (before routes) to intercept 301/302s
 app.use(redirectMiddleware());
 // Excluded (off-topic hydrogen-energy) studies: every public URL answers 410

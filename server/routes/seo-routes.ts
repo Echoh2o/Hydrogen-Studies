@@ -108,7 +108,13 @@ Allow: /recommendations
 Allow: /contact
 
 Disallow: /admin/
-Disallow: /api/
+# Public read APIs stay crawlable: Google renders the JavaScript app, and a
+# blocked data fetch renders an error page that Google files as "Soft 404"
+# (2026-11-01: every blog guide was Soft 404). API responses carry
+# X-Robots-Tag: noindex, so JSON is never indexed. Private APIs stay blocked.
+Disallow: /api/admin/
+Disallow: /api/me/
+Disallow: /api/auth/
 Disallow: /login
 Disallow: /logout
 Disallow: /reset-password
