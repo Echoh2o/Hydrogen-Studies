@@ -45,6 +45,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Build Next.js front door (web/)
+        run: npm run build:web
+
       - name: Run tests with coverage
         # --coverage produces the report; the modest per-metric thresholds are
         # enforced here (not in vitest.config.ts) so CI fails if coverage

@@ -49,3 +49,6 @@ products/
 
 # Study-exclusion row backups (contain full publisher abstracts — never commit)
 reports/backups/study-exclusions/
+
+# Next.js front door build output
+web/.next/

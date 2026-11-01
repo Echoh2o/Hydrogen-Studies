@@ -24,7 +24,10 @@
     "enrich-summaries": "npx tsx server/scripts/enrich-study-summaries.ts",
     "check-pubmed": "npx tsx server/scripts/check-pubmed.ts",
     "regenerate-blogs": "npx tsx server/scripts/regenerate-blogs.ts",
-    "backfill-shopify-customers": "npx tsx server/scripts/backfill-shopify-customers.ts"
+    "backfill-shopify-customers": "npx tsx server/scripts/backfill-shopify-customers.ts",
+    "build:web": "next build web && cp -r web/.next/static web/.next/standalone/web/.next/static",
+    "start:web": "node web/.next/standalone/web/server.js",
+    "dev:web": "next dev web -p 3001"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",
@@ -104,6 +107,7 @@
     "memoizee": "^0.4.17",
     "memorystore": "^1.6.7",
     "multer": "^2.2.0",
+    "next": "^14.2.35",
     "openai": "^4.104.0",
     "pg": "^8.18.0",
     "react": "^18.3.1",
