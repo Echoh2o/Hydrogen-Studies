@@ -179,6 +179,11 @@ describe("admin route guards (unauthenticated)", () => {
     }
   });
 
+  it("every /api response carries X-Robots-Tag: noindex (APIs are crawlable for rendering, never indexed)", async () => {
+    const res = await request(app).get(ADMIN_GET_ROUTES[0]);
+    expect(res.headers["x-robots-tag"]).toBe("noindex");
+  });
+
   describe("2. OAuth callbacks bypass the admin guard (state-cookie gated instead)", () => {
     for (const route of [
       "/api/admin/gsc/oauth/callback",

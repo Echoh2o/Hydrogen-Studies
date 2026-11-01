@@ -237,6 +237,18 @@ describe("/benefits → /blog/molecular-hydrogen-benefits-guide-pillar cleanup",
     expect(res.text).toMatch(/^Allow: \/explore-by-benefit\/$/m);
   });
 
+  it("robots.txt keeps public read APIs crawlable (Google renders the SPA from them)", async () => {
+    const app = express();
+    app.use(seoRoutes);
+    const res = await request(app).get("/robots.txt");
+    // A blanket API block made every blog guide render "Failed to load the
+    // article" for Googlebot → Soft 404 (2026-11-01).
+    expect(res.text).not.toMatch(/^Disallow: \/api\/$/m);
+    expect(res.text).toMatch(/^Disallow: \/api\/admin\/$/m);
+    expect(res.text).toMatch(/^Disallow: \/api\/me\/$/m);
+    expect(res.text).toMatch(/^Disallow: \/api\/auth\/$/m);
+  });
+
   it("has no crawler page of its own (the 301 row owns the URL)", async () => {
     expect(resolveStaticPageMeta("/benefits")).toBeNull();
     expect(await renderPageBody("/benefits")).toBeNull();
