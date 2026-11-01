@@ -124,7 +124,9 @@ Sitemap: ${baseUrl}/sitemap-index.xml
 `;
 
   res.set("Content-Type", "text/plain");
-  res.set("Cache-Control", "public, max-age=86400");
+  // 1 h, not 1 day: Cloudflare caches this file, and a day-long edge copy
+  // kept a robots.txt fix from reaching crawlers (2026-11-01).
+  res.set("Cache-Control", "public, max-age=3600");
   res.send(robotsTxt);
 });
 

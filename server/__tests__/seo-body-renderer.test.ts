@@ -182,6 +182,11 @@ describe("#2/#3/#12 bot study page", () => {
     expect(html).not.toMatch(/itemscope|itemprop/);
   });
 
+  it("shows the PMID (it is in the JSON-LD identifiers) as a visible PubMed link", async () => {
+    const html = (await renderStudy("h2-oxidative-stress"))!;
+    expect(html).toContain('<dt>PMID</dt><dd><a href="https://pubmed.ncbi.nlm.nih.gov/38000001/" rel="noopener">38000001</a></dd>');
+  });
+
   it("labels a human RCT", async () => {
     state.handler = baseHandler((text) =>
       /FROM studies WHERE slug/.test(text) ? [{ ...STUDY, study_design: "rct", is_human_trial: true }] : [],
