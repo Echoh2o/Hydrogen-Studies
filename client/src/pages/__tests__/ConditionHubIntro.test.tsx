@@ -1,6 +1,6 @@
 /**
  * Keyword plan wave 3 — /explore-by-condition/<slug> as a BROWSER renders it
- * for the 4 hubs with an evidence-graded intro. Same record as the crawler
+ * for the hubs with an evidence-graded intro (waves 3–5). Same record as the crawler
  * (server/__tests__/condition-hub-intros.test.ts): title, description, H1,
  * byline, intro, FAQ + FAQPage, sources, study list, owner guide — and none
  * of the old generic copy or the health_conditions description.
@@ -25,13 +25,21 @@ vi.mock("@/components/layout/SiteHeader", () => ({ default: () => null }));
 import { getQueryFn } from "@/lib/queryClient";
 import ConditionCategoryPage from "../ConditionCategoryPage";
 
-const SLUGS = ["kidney-health", "chronic-fatigue", "exercise-recovery", "skin-aging", "sleep-quality"];
+const SLUGS = [
+  "kidney-health", "chronic-fatigue", "exercise-recovery", "skin-aging", "sleep-quality",
+  "cholesterol", "type-2-diabetes", "fatty-liver-nafld", "weight-loss-metabolism", "gut-health",
+];
 const OLD = {
   "kidney-health": { name: "Kidney Health", description: "The functional integrity of the kidneys. Hydrogen may protect against kidney damage from various causes including ischemia and toxins." },
   "chronic-fatigue": { name: "Chronic Fatigue", description: "Persistent exhaustion not relieved by rest. Hydrogen may support energy production through mitochondrial function improvement." },
   "exercise-recovery": { name: "Exercise Recovery", description: "The process of muscle repair and adaptation after physical exercise. Hydrogen water may reduce exercise-induced oxidative stress and accelerate recovery." },
   "skin-aging": { name: "Skin Aging", description: "The progressive deterioration of skin structure and function. Hydrogen water bathing may reduce UV damage and improve skin elasticity." },
   "sleep-quality": { name: "Sleep Quality", description: "Research on molecular hydrogen and sleep in adults, from small drinking, jelly and inhalation trials to animal studies." },
+  cholesterol: { name: "Cholesterol", description: "Blood lipid levels including LDL, HDL, and total cholesterol. Hydrogen may help maintain healthy cholesterol through antioxidant mechanisms." },
+  "type-2-diabetes": { name: "Type 2 Diabetes", description: "A chronic condition affecting how the body processes blood sugar (glucose). Hydrogen water research shows promising effects on glycemic control and insulin sensitivity." },
+  "fatty-liver-nafld": { name: "Fatty Liver (NAFLD)", description: "Non-alcoholic fatty liver disease, a condition of excess fat stored in the liver. Hydrogen may reduce hepatic oxidative stress and inflammation." },
+  "weight-loss-metabolism": { name: "Weight Loss & Metabolism", description: "Body weight management and metabolic rate. Emerging research suggests hydrogen may support healthy metabolism and body composition." },
+  "gut-health": { name: "Gut Health", description: "The function and balance of the gastrointestinal tract and its microbiome. Hydrogen water may positively influence gut barrier function and microbial diversity." },
 } as Record<string, { name: string; description: string }>;
 
 const fetchMock = vi.fn();
@@ -156,7 +164,8 @@ describe.each(SLUGS)("ConditionCategoryPage with an evidence-graded intro — %s
       at('id="faq"'),
       at('id="sources"'),
       at(`>${CONDITION_HUB_STUDIES_HEADING}</h2>`),
-      at(`${OLD[slug].name} trial`),
+      // innerHTML escapes "&" ("Weight Loss & Metabolism").
+      at(`${OLD[slug].name.replace(/&/g, "&amp;")} trial`),
       at(`${CONDITION_HUB_OWNER_GUIDE_LEAD}</strong>`),
     ];
     expect([...order].sort((a, b) => a - b)).toEqual(order);
@@ -172,18 +181,18 @@ describe.each(SLUGS)("ConditionCategoryPage with an evidence-graded intro — %s
 });
 
 describe("ConditionCategoryPage without an intro record keeps its rendering", () => {
-  it("type-2-diabetes: generic H1/intro, no byline, FAQ or sources", async () => {
+  it("blood-pressure: generic H1/intro, no byline, FAQ or sources", async () => {
     fetchMock.mockImplementation(
       async () =>
         new Response(
           JSON.stringify({
-            hub: { slug: "type-2-diabetes", name: "Type 2 Diabetes", description: null },
-            studies: [{ slug: "t2d-1", title: "T2D trial", publish_year: 2024, journal: "J", study_type: "human", excerpt: "" }],
+            hub: { slug: "blood-pressure", name: "Blood Pressure", description: null },
+            studies: [{ slug: "bp-1", title: "BP trial", publish_year: 2024, journal: "J", study_type: "human", excerpt: "" }],
           }),
           { status: 200 },
         ),
     );
-    const { hook } = memoryLocation({ path: "/explore-by-condition/type-2-diabetes" });
+    const { hook } = memoryLocation({ path: "/explore-by-condition/blood-pressure" });
     const client = new QueryClient({ defaultOptions: { queries: { retry: false, queryFn: getQueryFn({ on401: "throw" }) } } });
     const { container } = render(
       <QueryClientProvider client={client}>
@@ -192,12 +201,12 @@ describe("ConditionCategoryPage without an intro record keeps its rendering", ()
         </Router>
       </QueryClientProvider>,
     );
-    await screen.findByText("T2D trial");
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Hydrogen Studies for Type 2 Diabetes");
+    await screen.findByText("BP trial");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Hydrogen Studies for Blood Pressure");
     expect(container.querySelector("p.byline")).toBeNull();
     expect(container.querySelector('section[aria-labelledby="faq"]')).toBeNull();
     expect(container.querySelector('section[aria-labelledby="sources"]')).toBeNull();
-    await waitFor(() => expect(document.title).toMatch(/Type 2 Diabetes/));
+    await waitFor(() => expect(document.title).toMatch(/Blood Pressure/));
     expect(jsonLd().map((x) => x["@type"])).toEqual(["CollectionPage"]);
   });
 });
