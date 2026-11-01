@@ -636,6 +636,9 @@ export async function renderStudy(slugOrId: string): Promise<string | null> {
     if (s.journal) h += `<dt>Journal</dt><dd>${esc(s.journal)}</dd>`;
     if (s.publish_year) h += `<dt>Year</dt><dd>${s.publish_year}</dd>`;
     if (doi) h += `<dt>DOI</dt><dd><a href="https://doi.org/${esc(doi)}" rel="noopener">${esc(doi)}</a></dd>`;
+    // PMID is in the JSON-LD identifier list, so it must be visible too.
+    const pmid = String(s.pmid ?? "").match(/^\d{4,}$/)?.[0];
+    if (pmid) h += `<dt>PMID</dt><dd><a href="https://pubmed.ncbi.nlm.nih.gov/${pmid}/" rel="noopener">${pmid}</a></dd>`;
     if (s.study_type) h += `<dt>Study Type</dt><dd>${esc(s.study_type)}</dd>`;
     if (s.outcome) h += `<dt>Outcome</dt><dd>${esc(s.outcome)}</dd>`;
     if (s.peer_reviewed) h += `<dt>Peer Reviewed</dt><dd>Yes</dd>`;

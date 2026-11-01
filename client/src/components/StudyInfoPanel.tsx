@@ -290,6 +290,22 @@ export function StudyInfoPanel({
                 </div>
               )}
 
+              {/^\d{4,}$/.test(String(study.pmid ?? "")) && (
+                <div>
+                  <span className="text-xs text-neutral-500">PMID:</span>
+                  <p className="text-xs font-mono">
+                    <a
+                      href={`https://pubmed.ncbi.nlm.nih.gov/${study.pmid}/`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-teal-600 hover:text-teal-800"
+                    >
+                      {study.pmid}
+                    </a>
+                  </p>
+                </div>
+              )}
+
               {(study.url || study.doi) && (
                 <div>
                   <a

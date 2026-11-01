@@ -114,6 +114,8 @@ export default async function StudyPage({ params }: { params: { slug: string } }
   if (study.journal) details.push(["Journal", study.journal]);
   if (study.publishYear) details.push(["Year", study.publishYear]);
   if (doi) details.push(["DOI", <a key="doi" href={`https://doi.org/${doi}`} rel="noopener" className="text-primary underline">{doi}</a>]);
+  const pmid = String(study.pmid ?? "").match(/^\d{4,}$/)?.[0];
+  if (pmid) details.push(["PMID", <a key="pmid" href={`https://pubmed.ncbi.nlm.nih.gov/${pmid}/`} rel="noopener" className="text-primary underline">{pmid}</a>]);
   if (study.studyType) details.push(["Study Type", study.studyType]);
   if (study.outcome) details.push(["Outcome", study.outcome]);
   if (study.peerReviewed) details.push(["Peer Reviewed", "Yes"]);
