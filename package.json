@@ -25,7 +25,7 @@
     "check-pubmed": "npx tsx server/scripts/check-pubmed.ts",
     "regenerate-blogs": "npx tsx server/scripts/regenerate-blogs.ts",
     "backfill-shopify-customers": "npx tsx server/scripts/backfill-shopify-customers.ts",
-    "build:web": "next build web && cp -r web/.next/static web/.next/standalone/web/.next/static",
+    "build:web": "next build web && cp -r web/.next/static web/.next/standalone/web/.next/static && node -e \"require('fs').writeFileSync('web/.next/standalone/web/package.json','{\\\"type\\\":\\\"commonjs\\\"}')\"",
     "start:web": "node web/.next/standalone/web/server.js",
     "dev:web": "next dev web -p 3001"
   },
