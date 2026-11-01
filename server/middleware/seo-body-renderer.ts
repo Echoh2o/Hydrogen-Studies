@@ -104,7 +104,7 @@ function fmtDate(d: string | Date | null | undefined): string {
 let _topConditions: { name: string; slug: string }[] | null = null;
 let _topConditionsAt = 0;
 
-async function getTopConditions(): Promise<{ name: string; slug: string }[]> {
+export async function getTopConditions(): Promise<{ name: string; slug: string }[]> {
   if (_topConditions && Date.now() - _topConditionsAt < 30 * 60 * 1000) return _topConditions;
   try {
     const r = await db.execute(sql`
@@ -492,7 +492,7 @@ function markdownToHtml(md: string): string {
 
 // ── Data queries ──────────────────────────────────────────────
 
-async function getRelatedStudies(studyId: number, condition: string | null, limit = 8): Promise<{ slug: string; title: string; year: number | null }[]> {
+export async function getRelatedStudies(studyId: number, condition: string | null, limit = 8): Promise<{ slug: string; title: string; year: number | null }[]> {
   if (!condition) return [];
   try {
     const r = await db.execute(sql`
@@ -507,7 +507,7 @@ async function getRelatedStudies(studyId: number, condition: string | null, limi
   } catch { return []; }
 }
 
-async function getRelatedBlogs(keyword: string, limit = 5): Promise<{ slug: string; title: string }[]> {
+export async function getRelatedBlogs(keyword: string, limit = 5): Promise<{ slug: string; title: string }[]> {
   if (!keyword) return [];
   try {
     const r = await db.execute(sql`

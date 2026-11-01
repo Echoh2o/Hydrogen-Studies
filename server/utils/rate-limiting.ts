@@ -29,8 +29,16 @@ export const skipForAdmin = (req: Request): boolean => {
  * var is set ONLY in CI (.github/workflows/ci.yml), never in a deployed environment.
  * Otherwise defer to the admin skip.
  */
+/**
+ * The Next.js front door (web/) fetches /api/page-data/* for every page it
+ * renders, all from one private IP — authenticated by a shared key so it
+ * never trips the per-IP limiters meant for clients.
+ */
+export const isPageDataRequest = (req: Request): boolean =>
+  !!process.env.PAGE_DATA_KEY && req.get("x-page-data-key") === process.env.PAGE_DATA_KEY;
+
 const skipRateLimit = (req: Request): boolean =>
-  process.env.E2E_DISABLE_RATE_LIMIT === "1" || skipForAdmin(req);
+  process.env.E2E_DISABLE_RATE_LIMIT === "1" || isPageDataRequest(req) || skipForAdmin(req);
 
 /**
  * Rate-limit key: the REAL client IP (PLAN.md 0.2a).

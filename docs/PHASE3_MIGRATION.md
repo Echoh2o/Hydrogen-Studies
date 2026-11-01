@@ -1,5 +1,20 @@
 # Phase 3 — Public-route SSR migration proposal (PLAN.md §Phase 3)
 
+> **As built (2026-11-01) — three changes from the proposal below:**
+> 1. **Next.js 14.2** (App Router, ISR), not 15: Next 15's App Router needs React 19 and the
+>    SPA is on React 18. Next lives in the root package so `shared/`, drizzle and React are
+>    single copies.
+> 2. **Page data over HTTP, not direct DB.** Express serves `/api/page-data/*`
+>    (`server/routes/page-data-routes.ts`) built from the same helpers as the crawler renderer;
+>    Next fetches it over Railway's private network with an `x-page-data-key` header (exempt
+>    from per-IP rate limits). Redirects/410s stay in Express: Next middleware asks
+>    `/api/page-data/route-status` for migrated route families.
+> 3. **Next is the front door.** `rewrites.fallback` proxies every route Next doesn't render
+>    (and `/api`, `/admin`, `/uploads`, auth) to Express — cutover is moving the custom domain to
+>    the `web` service; rollback is moving it back. No Cloudflare Worker.
+>
+> Build: `npm run build:web` · start: `npm run start:web` · env: `EXPRESS_ORIGIN`, `PAGE_DATA_KEY`.
+
 **Framework: Next.js 15, App Router, ISR** (decided under Josh's full-autonomy directive,
 2026-09-01; reversible until scaffold work starts). Rationale over Astro: the entire client
 is already React (~300 components port incrementally rather than rewrite), and Phases 6–7

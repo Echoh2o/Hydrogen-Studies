@@ -90,6 +90,7 @@ import {
 import { qualityAudit } from "./utils/comprehensive-quality-audit";
 import { redirectMiddleware, resolveRedirect, ensureRedirectIndexes } from "./services/redirect-service";
 import { excludedStudyGoneMiddleware } from "./services/excluded-studies";
+import pageDataRoutes from "./routes/page-data-routes";
 import {
   searchRateLimiter,
   generalApiRateLimiter,
@@ -288,6 +289,10 @@ app.use(express.urlencoded({ extended: true, limit: "2mb" }));
 
 // Dynamic SEO routes (sitemaps, robots.txt) — must be before CSRF and session
 app.use(seoRoutes);
+
+// Page data for the Next.js front door (web/): read-only JSON per page type,
+// plus the redirect/410 decision for a path. No session or CSRF needed.
+app.use("/api/page-data", pageDataRoutes);
 
 // Liveness + readiness probe for external uptime monitors (Railway, UptimeRobot,
 // Datadog). Public, no auth, no CSRF. Returns 200 when the DB is reachable and
