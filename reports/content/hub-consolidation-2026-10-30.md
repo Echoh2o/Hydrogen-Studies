@@ -23,6 +23,11 @@ the posts that would fold in). That is one content wave (PLAN §1 cap: ≤5/week
 ## Rows that can go now (negligible traffic)
 arthritis-290536, psoriasis-099066, general-health-180766, kids-surgery-218367.
 
+**APPLIED 2026-11-01** (Josh: "I approve 1-4"): all four unpublished + 301'd via
+`scripts/content/merge-articles.cjs` (`--target` added for hub owners); audit rows in
+`redirect_actions_log`; backups in `reports/backups/2026-11-01/`. The remaining rows
+are approved too and run once each target hub has its intro (wave 5).
+
 ## Keep
 spine-pain-855883 (pos 6.7) and bladder-control-082030 (pos 7.6): no hub
 covers them and they rank — refresh with evidence grading instead.
