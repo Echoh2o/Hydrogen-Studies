@@ -16,8 +16,9 @@
  *  - Byline: no named reviewer, so the date shows as "Updated", never "Last
  *    reviewed" (shared/seo-markup blogByline; CLAUDE.md).
  *  - `bridgeTopic` is null on every hub: no product/sponsor content
- *    (kidney-health and chronic-fatigue are disease topics — PLAN.md
- *    Appendix E; the other two carry no bridge either).
+ *    (kidney-health, chronic-fatigue and the wave-5 cholesterol,
+ *    type-2-diabetes, fatty-liver-nafld and gut-health hubs are disease
+ *    topics — PLAN.md Appendix E; the others carry no bridge either).
  *  - Meta: title ≤ 60 chars including " | Hydrogen Studies"; description
  *    140–160 chars (server/__tests__/condition-hub-intros.test.ts).
  *  - introMarkdown uses "## " headings only (the page owns the one H1; both
@@ -513,6 +514,452 @@ This page covers sleep quality in adults. Insomnia and sleep apnea are medical c
     ownerLink: { href: "/blog/molecular-hydrogen-benefits-guide-pillar#can-hydrogen-water-help-with-sleep-mood-or-stress", label: "Can hydrogen water help with sleep, mood or stress? From our evidence-graded benefits guide" },
     bridgeTopic: null,
     lastReviewed: "2026-09-29",
+  },
+
+  // ── Wave 5 (2026-11): metabolic and digestive hubs. Each absorbs the
+  // blog posts listed for it in reports/content/hub-consolidation-2026-10-30.csv
+  // (301s run after merge); sources: reports/content/wave5-sources-2026-11.csv.
+
+  "cholesterol": {
+    slug: "cholesterol",
+    h1: "Hydrogen Water and Cholesterol: What the Studies Show",
+    metaTitle: "Does Hydrogen Water Lower Cholesterol? | Hydrogen Studies",
+    metaDescription:
+      "Hydrogen water and cholesterol, graded: pooled trials found small drops in total and LDL cholesterol, too small to cut heart risk. Doses, trials and gaps.",
+    evidenceGrade: "low",
+    introMarkdown: `*Hydrogen Studies is funded by Echo Technologies LLC, which sells hydrogen water products. Echo doesn't decide which studies we cover or how we describe them — see our [editorial policy](/editorial-policy).*
+
+**Evidence at a glance: Low.** Three meta-analyses of small randomized trials found that hydrogen-rich water lowered total and LDL cholesterol slightly. In the largest, 13 trials with 757 adults with overweight or obesity, total cholesterol fell by about 7 mg/dL and LDL by about 3 mg/dL, and the authors judged both changes too small to lower heart risk. No trial has measured heart attacks or strokes.
+
+This page covers blood cholesterol and triglycerides. If your cholesterol is high, talk to your doctor before trying hydrogen water, and don't stop or change a statin or any other prescribed medicine. For the short answer, see the [cholesterol and blood sugar section of our benefits guide](/blog/molecular-hydrogen-benefits-guide-pillar#does-hydrogen-water-lower-cholesterol-or-blood-sugar).
+
+## What pooled trials found
+
+- **2026: 13 trials, 757 adults with overweight or obesity.** Compared with plain or placebo water, hydrogen-rich water lowered total cholesterol by 6.7 mg/dL and LDL ("bad") cholesterol by 3.2 mg/dL. HDL ("good") cholesterol fell slightly, by 1.2 mg/dL, and triglycerides didn't change significantly. The authors concluded that the results don't justify using hydrogen water to lower cholesterol outside research [[1]](/study/the-effect-of-hydrogen-rich-water-interventions-on-lipid-profiles-in-adults-with-overweight-or-obesity-and-associated-metabolic-disorders-a-systematic-review-and-meta-analysis-of-randomized-controlled-trials-1775826876384).
+- **2024: 8 trials, 357 people with metabolic disorders.** Triglycerides, total cholesterol and LDL dropped slightly; HDL results were inconsistent across trials [[2]](/study/the-effects-of-hydrogen-rich-water-on-blood-lipid-profiles-in-metabolic-disorders-clinical-trials-a-systematic-review-and-meta-analysis-1777577956391).
+- **2023: 7 studies in clinical populations.** Total cholesterol, LDL and triglycerides fell by small-to-moderate amounts. Five of the seven authors work at a Serbian lab that has run several hydrogen trials [[3]](/study/the-effects-of-hydrogen-rich-water-on-blood-lipid-profiles-in-clinical-populations-a-systematic-review-and-meta-analysis-1777577956390).
+
+The three analyses pool many of the same small trials, so they aren't independent confirmations of each other.
+
+## What individual human trials found
+
+**Randomized, placebo-controlled trials**
+
+- In China, 68 adults with untreated high cholesterol drank 0.9 liters a day of hydrogen-rich water or placebo water for 10 weeks. HDL cholesterol levels didn't change, but lab tests of how well HDL particles worked improved, and total cholesterol fell in more people on hydrogen (47% vs 18%), as did LDL (47% vs 24%) [[4]](/study/hydrogen-activates-atp-binding-cassette-transporter-a1-dependent-efflux-ex-vivo-and-improves-high-density-lipoprotein-function-in-patients-with-hypercholesterolemia-a-double-blinded-randomized-and-placebo-controlled-trial-1775650467150).
+- In Serbia, 36 adults with obesity drank 1 liter a day of hydrogen-rich water (15 mg of hydrogen) or placebo water for 8 weeks. Total cholesterol fell by about 12 mg/dL in the hydrogen group, significantly more than with placebo, and LDL fell more too. The drinks were supplied by a hydrogen products company that employs one of the authors [[5]](/study/the-effects-of-8-week-hydrogen-rich-water-consumption-on-appetite-body-composition-sleep-quality-and-circulating-glucagon-like-peptide-1-in-obese-men-and-women-hydrappet-a-randomized-controlled-trial-1775650467179).
+- In India, 60 adults with metabolic syndrome drank water made with hydrogen-producing tablets (more than 5.5 millimoles, about 11 mg, of hydrogen a day) or placebo water for 24 weeks, and blood cholesterol fell more with hydrogen. The lead author is affiliated with the Molecular Hydrogen Institute, a nonprofit that promotes hydrogen research, and the tablets came from a hydrogen-tablet company [[6]](/study/the-effects-of-24-week-high-concentration-hydrogen-rich-water-on-body-composition-blood-lipid-profiles-and-inflammation-biomarkers-in-men-and-women-with-metabolic-syndrome-a-randomized-controlled-trial-1775650467136).
+- In a crossover trial in Japan, 30 people with type 2 diabetes and 6 with prediabetes drank 900 mL a day of hydrogen-rich water or placebo water for 8 weeks each. With hydrogen, chemically modified LDL fell by 15.5% and small, dense LDL particles by 5.7% [[7]](/study/supplementation-of-hydrogen-rich-water-improves-lipid-and-glucose-metabolism-in-patients-with-type-2-diabetes-or-impaired-glucose-tolerance-1775650467160) (see our [type 2 diabetes hub](/explore-by-condition/type-2-diabetes)).
+
+**Studies without a comparison group**
+
+- In 20 people with signs of metabolic syndrome, 10 weeks of hydrogen-rich water (0.9 to 1 liter a day) was followed by lower total and LDL cholesterol [[8]](/study/hydrogen-rich-water-decreases-serum-ldl-cholesterol-levels-and-improves-hdl-function-in-patients-with-potential-metabolic-syndrome-1775650467154). In another 20, 1.5 to 2 liters a day was followed by 8% higher HDL at week 4 [[9]](/study/effectiveness-of-hydrogen-rich-water-on-antioxidant-status-of-subjects-with-potential-metabolic-syndrome-an-open-label-pilot-study-1775650467159). Without a control group, these changes can't be credited to hydrogen.
+
+## What animal studies suggest (not human evidence)
+
+- Mice bred to develop clogged arteries (apolipoprotein E knockout mice) that drank hydrogen water from 2 to 6 months of age had smaller artery plaques and less oxidative stress in the aorta [[10]](/study/consumption-of-hydrogen-water-prevents-atherosclerosis-in-apolipoprotein-e-knockout-mice-1775650467160).
+- In mice and cells, magnesium hydride, a compound that releases hydrogen, added to the lipid-lowering effect of the statin atorvastatin. The authors proposed that it slows the liver enzyme that breaks statins down, raising statin levels in the blood [[11]](/study/the-augment-effects-of-magnesium-hydride-on-the-lipid-lowering-effect-of-atorvastatin-an-in-vivo-and-in-vitro-investigation-1775650467175). That points to a possible drug interaction to test in people, not a reason to combine the two.
+
+## Doses and durations studied
+
+- **Drinking:** 0.9 to 2 liters a day [4][7][8][9], or about 11 to 15 mg of hydrogen a day [5][6].
+- **Duration:** 8 to 24 weeks in the placebo-controlled trials [5][6][7].
+
+No trial compared doses.
+
+## What we don't know
+
+- **Whether the changes matter.** The largest pooled analysis judged them below the level that lowers heart risk [1].
+- **Heart attacks and strokes.** No trial has measured them.
+- **Hydrogen with statins.** We found no human trial; one mouse study points to a possible interaction [11].
+- **Longer use.** The longest placebo-controlled trial lasted 24 weeks [6].
+- **Independence.** Two trials and one pooled analysis involve the same Serbian lab [3][5][6], two trials come from one Chinese group [4][8], and two used products from hydrogen companies [5][6].
+
+*Drafted with AI assistance and checked against each linked source by our editorial team. General information, not medical advice.*`,
+    faqs: [
+      {
+        question: "How much does hydrogen water lower LDL cholesterol?",
+        answer:
+          "Very little. In a 2026 meta-analysis of 13 randomized trials with 757 adults with overweight or obesity, hydrogen-rich water lowered LDL cholesterol by about 3 mg/dL and total cholesterol by about 7 mg/dL compared with plain or placebo water. The authors judged these changes too small to reduce heart risk and said they don't justify using hydrogen water as a cholesterol treatment.",
+      },
+      {
+        question: "Can hydrogen water replace statins?",
+        answer:
+          "No. Statins lower LDL cholesterol far more than the few mg/dL seen in hydrogen water trials, and they have been shown to prevent heart attacks and strokes, which no hydrogen trial has measured. A mouse study suggested that a hydrogen-releasing compound raises statin levels in the blood, which hasn't been tested in people. If you take a statin, talk to your doctor before adding hydrogen water, and don't stop your medicine.",
+      },
+      {
+        question: "Does hydrogen water lower triglycerides?",
+        answer:
+          "The results are inconsistent. A 2026 meta-analysis of 13 trials found no significant change in triglycerides, while two smaller meta-analyses from 2023 and 2024 reported small drops. The individual trials were small, lasted 8 to 24 weeks and often enrolled people with obesity or metabolic syndrome. Diet, exercise, alcohol and blood sugar control have larger, better-proven effects on triglycerides.",
+      },
+      {
+        question: "Does hydrogen water raise HDL (good) cholesterol?",
+        answer:
+          "Not in the pooled trials. A 2026 meta-analysis of 13 randomized trials found that HDL cholesterol fell slightly, by about 1 mg/dL, with hydrogen-rich water. In a 68-person trial in people with high cholesterol, HDL levels didn't change, although lab tests found that HDL particles worked better. Whether that changes heart risk is unknown.",
+      },
+    ],
+    sources: [
+      { n: 1, citation: "Ye H, et al. The effect of hydrogen-rich water interventions on lipid profiles in adults with overweight or obesity and associated metabolic disorders: a systematic review and meta-analysis of randomized controlled trials. Diabetol Metab Syndr. 2026;18(1).", pmid: "41888952", doi: "10.1186/s13098-026-02124-0", ourStudyPath: "/study/the-effect-of-hydrogen-rich-water-interventions-on-lipid-profiles-in-adults-with-overweight-or-obesity-and-associated-metabolic-disorders-a-systematic-review-and-meta-analysis-of-randomized-controlled-trials-1775826876384" },
+      { n: 2, citation: "Jamialahmadi H, et al. The effects of hydrogen-rich water on blood lipid profiles in metabolic disorders clinical trials: a systematic review and meta-analysis. Int J Endocrinol Metab. 2024;22(3):e148600.", pmid: "39839806", doi: "10.5812/ijem-148600", ourStudyPath: "/study/the-effects-of-hydrogen-rich-water-on-blood-lipid-profiles-in-metabolic-disorders-clinical-trials-a-systematic-review-and-meta-analysis-1777577956391" },
+      { n: 3, citation: "Todorovic N, et al. The effects of hydrogen-rich water on blood lipid profiles in clinical populations: a systematic review and meta-analysis. Pharmaceuticals (Basel). 2023;16(2):142.", pmid: "37259294", doi: "10.3390/ph16020142", ourStudyPath: "/study/the-effects-of-hydrogen-rich-water-on-blood-lipid-profiles-in-clinical-populations-a-systematic-review-and-meta-analysis-1777577956390" },
+      { n: 4, citation: "Song G, et al. Hydrogen activates ATP-binding cassette transporter A1-dependent efflux ex vivo and improves high-density lipoprotein function in patients with hypercholesterolemia: a double-blinded, randomized, and placebo-controlled trial. J Clin Endocrinol Metab. 2015;100(7):2724-33.", pmid: "25978109", doi: "10.1210/jc.2015-1321", ourStudyPath: "/study/hydrogen-activates-atp-binding-cassette-transporter-a1-dependent-efflux-ex-vivo-and-improves-high-density-lipoprotein-function-in-patients-with-hypercholesterolemia-a-double-blinded-randomized-and-placebo-controlled-trial-1775650467150" },
+      { n: 5, citation: "Todorovic N, et al. The effects of 8-week hydrogen-rich water consumption on appetite, body composition, sleep quality, and circulating glucagon-like peptide-1 in obese men and women (HYDRAPPET): a randomized controlled trial. Medicina (Kaunas). 2025;61(7):1299.", pmid: "40731927", doi: "10.3390/medicina61071299", ourStudyPath: "/study/the-effects-of-8-week-hydrogen-rich-water-consumption-on-appetite-body-composition-sleep-quality-and-circulating-glucagon-like-peptide-1-in-obese-men-and-women-hydrappet-a-randomized-controlled-trial-1775650467179" },
+      { n: 6, citation: "LeBaron TW, et al. The effects of 24-week, high-concentration hydrogen-rich water on body composition, blood lipid profiles and inflammation biomarkers in men and women with metabolic syndrome: a randomized controlled trial. Diabetes Metab Syndr Obes. 2020;13:889-896.", pmid: "32273740", doi: "10.2147/DMSO.S240122", ourStudyPath: "/study/the-effects-of-24-week-high-concentration-hydrogen-rich-water-on-body-composition-blood-lipid-profiles-and-inflammation-biomarkers-in-men-and-women-with-metabolic-syndrome-a-randomized-controlled-trial-1775650467136" },
+      { n: 7, citation: "Kajiyama S, et al. Supplementation of hydrogen-rich water improves lipid and glucose metabolism in patients with type 2 diabetes or impaired glucose tolerance. Nutr Res. 2008;28(3):137-43.", pmid: "19083400", doi: "10.1016/j.nutres.2008.01.008", ourStudyPath: "/study/supplementation-of-hydrogen-rich-water-improves-lipid-and-glucose-metabolism-in-patients-with-type-2-diabetes-or-impaired-glucose-tolerance-1775650467160" },
+      { n: 8, citation: "Song G, et al. Hydrogen-rich water decreases serum LDL-cholesterol levels and improves HDL function in patients with potential metabolic syndrome. J Lipid Res. 2013;54(7):1884-93.", pmid: "23610159", doi: "10.1194/jlr.M036640", ourStudyPath: "/study/hydrogen-rich-water-decreases-serum-ldl-cholesterol-levels-and-improves-hdl-function-in-patients-with-potential-metabolic-syndrome-1775650467154" },
+      { n: 9, citation: "Nakao A, et al. Effectiveness of hydrogen rich water on antioxidant status of subjects with potential metabolic syndrome: an open label pilot study. J Clin Biochem Nutr. 2010;46(2):140-9.", pmid: "20216947", doi: "10.3164/jcbn.09-100", ourStudyPath: "/study/effectiveness-of-hydrogen-rich-water-on-antioxidant-status-of-subjects-with-potential-metabolic-syndrome-an-open-label-pilot-study-1775650467159" },
+      { n: 10, citation: "Ohsawa I, et al. Consumption of hydrogen water prevents atherosclerosis in apolipoprotein E knockout mice. Biochem Biophys Res Commun. 2008;377(4):1195-8.", pmid: "18996093", doi: "10.1016/j.bbrc.2008.10.156", ourStudyPath: "/study/consumption-of-hydrogen-water-prevents-atherosclerosis-in-apolipoprotein-e-knockout-mice-1775650467160" },
+      { n: 11, citation: "Chen W, et al. The augment effects of magnesium hydride on the lipid lowering effect of atorvastatin: an in vivo and in vitro investigation. Med Gas Res. 2024 (issue 2025;15(1):148-155).", pmid: "39436189", doi: "10.4103/mgr.MEDGASRES-D-23-00047", ourStudyPath: "/study/the-augment-effects-of-magnesium-hydride-on-the-lipid-lowering-effect-of-atorvastatin-an-in-vivo-and-in-vitro-investigation-1775650467175" },
+    ],
+    ownerLink: { href: "/blog/molecular-hydrogen-benefits-guide-pillar#does-hydrogen-water-lower-cholesterol-or-blood-sugar", label: "Does hydrogen water lower cholesterol or blood sugar? From our evidence-graded benefits guide" },
+    bridgeTopic: null,
+    lastReviewed: "2026-11-01",
+  },
+
+  "type-2-diabetes": {
+    slug: "type-2-diabetes",
+    h1: "Hydrogen and Type 2 Diabetes: What the Studies Show",
+    metaTitle: "Hydrogen Water and Type 2 Diabetes | Hydrogen Studies",
+    metaDescription:
+      "Hydrogen water and type 2 diabetes, graded: the main trial found no change in insulin resistance, and other trials are small or mixed. Doses, gaps, safety.",
+    evidenceGrade: "very low",
+    introMarkdown: `*Hydrogen Studies is funded by Echo Technologies LLC, which sells hydrogen water products. Echo doesn't decide which studies we cover or how we describe them — see our [editorial policy](/editorial-policy).*
+
+**Evidence at a glance: Very low.** In the main double-blind trial in type 2 diabetes, 50 people drank electrolyzed hydrogen water or filtered water, and insulin resistance, the main outcome, didn't differ between groups. Other trials were small, short or in people without diabetes, with mixed results. The largest data, on inhaled hydrogen, come from medical records, not randomized trials. No study has tested whether hydrogen prevents diabetes complications.
+
+This page covers type 2 diabetes and prediabetes. Hydrogen is not a treatment for diabetes. Don't change your medicine, and if you use insulin or other glucose-lowering drugs, check your levels and tell your doctor before adding anything new. See also our [diabetes research overview](/hydrogen-for/diabetes) and our [cholesterol hub](/explore-by-condition/cholesterol).
+
+## What human trials found
+
+**Drinking hydrogen water: randomized trials**
+
+- **Type 2 diabetes, 50 people.** In a multicenter double-blind trial in Japan, electrolyzed hydrogen water didn't change insulin resistance (measured as HOMA-IR) compared with filtered water. Blood lactate fell in the hydrogen group, and no treatment-related side effects were seen. Two authors work for Nihon Trim, a maker of electrolyzed water devices [[1]](/study/electrolyzed-hydrogen-rich-water-for-oxidative-stress-suppression-and-improvement-of-insulin-resistance-a-multicenter-prospective-double-blind-randomized-control-trial-1775650467165).
+- **Type 2 diabetes or prediabetes, 36 people.** In an 8-week crossover trial (900 mL a day), hydrogen water lowered chemically modified LDL cholesterol and a urine marker of oxidative stress. In 4 of the 6 people with prediabetes, a glucose tolerance test returned to normal [[2]](/study/supplementation-of-hydrogen-rich-water-improves-lipid-and-glucose-metabolism-in-patients-with-type-2-diabetes-or-impaired-glucose-tolerance-1775650467160).
+- **High fasting blood sugar, 73 people.** Over 8 weeks, fasting glucose fell in both the hydrogen water group (1 liter a day, about 1.4 mg of hydrogen per liter) and the plain-water group, slightly more with hydrogen. The share of people whose fasting glucose returned to normal didn't differ significantly (69% vs 54%) [[3]](/study/hydrogen-rich-water-ameliorates-metabolic-disorder-via-modifying-gut-microbiota-in-impaired-fasting-glucose-patients-a-randomized-controlled-study-1775650467170).
+- **Metabolic syndrome, 60 people.** After 24 weeks of water made with hydrogen-producing tablets, fasting glucose and HbA1c were lower than with placebo water. The lead author is affiliated with the Molecular Hydrogen Institute, a nonprofit that promotes hydrogen research [[4]](/study/the-effects-of-24-week-high-concentration-hydrogen-rich-water-on-body-composition-blood-lipid-profiles-and-inflammation-biomarkers-in-men-and-women-with-metabolic-syndrome-a-randomized-controlled-trial-1775650467136).
+- **Metabolic syndrome or pre-metabolic syndrome, 181 people.** In a 3-month double-blind trial, HbA1c and blood glucose rose slightly with filtered water and fell with electrolyzed hydrogen water, but the difference wasn't statistically significant. One author works for the device maker [[5]](/study/health-effects-of-electrolyzed-hydrogen-water-for-the-metabolic-syndrome-and-pre-metabolic-syndrome-a-3-month-randomized-controlled-trial-and-subsequent-analyses-1775650467171).
+
+**Inhaled hydrogen: medical-record studies, not randomized**
+
+- In the records of 1,088 Chinese adults with type 2 diabetes on usual medicine, those who also inhaled hydrogen for 6 months had a larger drop in HbA1c than matched patients who didn't (0.94 vs 0.46 percentage points) [[6]](/study/effectiveness-and-safety-of-hydrogen-inhalation-as-an-adjunct-treatment-in-chinese-type-2-diabetes-patients-a-retrospective-observational-double-arm-real-life-clinical-study-1775650467169). People who choose an add-on therapy can differ in ways records don't capture.
+- In a single-group record review of 431 adults, HbA1c fell from 9.0% to 8.0% over 6 months of inhalation, with no comparison group. Low blood sugar was the most common side effect [[7]](/study/real-world-effectiveness-and-safety-of-hydrogen-inhalation-in-chinese-patients-with-type-2-diabetes-a-single-arm-retrospective-study-1775650467170).
+
+## What animal studies suggest (not human evidence)
+
+- Obese, diabetic mice (db/db mice) that drank hydrogen water long term had lower blood glucose, insulin and triglycerides, less fatty liver and lower body weight, without eating more. The effect on blood sugar was similar to restricting their food [[8]](/study/molecular-hydrogen-improves-obesity-and-diabetes-by-inducing-hepatic-fgf21-and-stimulating-energy-metabolism-in-dbdb-mice-1775650467157).
+
+## Doses and durations studied
+
+- **Drinking:** 900 mL to 1 liter a day for 8 weeks [2][3]; tablets supplying more than 5.5 millimoles (about 11 mg) of hydrogen a day for 24 weeks [4]; electrolyzed water for 3 months [5].
+- **Inhaling:** daily, for 6 months, in the record reviews [6][7].
+
+No trial compared doses.
+
+## What we don't know
+
+- **Blood sugar control in diabetes.** The main type 2 diabetes trial found no change in insulin resistance [1]; the lower HbA1c results come from a metabolic syndrome trial [4] and non-randomized inhalation records [6][7].
+- **Complications.** No human trial has measured kidney, eye, nerve or heart complications.
+- **Medicines.** Interactions haven't been studied; low blood sugar was the most common side effect in one inhalation study [7].
+- **Longer use.** The longest randomized trial lasted 24 weeks [4].
+- **Independence.** Two trials list authors from Nihon Trim, a maker of electrolyzed water devices [1][5].
+
+*Drafted with AI assistance and checked against each linked source by our editorial team. General information, not medical advice.*`,
+    faqs: [
+      {
+        question: "Does hydrogen water lower HbA1c?",
+        answer:
+          "Not reliably. In a 24-week trial of 60 adults with metabolic syndrome, HbA1c fell more with hydrogen water made from tablets than with placebo water. In a 3-month trial of 181 people with metabolic syndrome or pre-metabolic syndrome, the HbA1c difference wasn't statistically significant. We found no randomized trial showing that drinking hydrogen water lowers HbA1c in people with type 2 diabetes.",
+      },
+      {
+        question: "Can hydrogen water reverse prediabetes?",
+        answer:
+          "There's no good evidence that it can. In 73 adults with high fasting blood sugar, fasting glucose fell over 8 weeks in both the hydrogen water and plain-water groups, slightly more with hydrogen, and the share who returned to normal didn't differ significantly. In a smaller trial, 4 of 6 people with prediabetes had a normal glucose tolerance test after 8 weeks of hydrogen water. Weight loss and exercise are proven to lower the risk of diabetes.",
+      },
+      {
+        question: "Does inhaling hydrogen help type 2 diabetes?",
+        answer:
+          "It hasn't been tested in a randomized trial. Two Chinese studies reviewed the records of people with type 2 diabetes who inhaled hydrogen alongside their usual medicine for 6 months: HbA1c fell more than in matched patients who didn't, or fell from 9.0% to 8.0% in a single group. Without randomization, other differences between patients could explain the results. Low blood sugar was the most common side effect.",
+      },
+      {
+        question: "Should people with type 2 diabetes try hydrogen water?",
+        answer:
+          "Talk to your doctor first. Hydrogen water hasn't been shown to control blood sugar or prevent diabetes complications, so it can't replace medicine, diet or exercise. The main trial in type 2 diabetes reported no treatment-related side effects, but interactions with diabetes drugs haven't been studied. If you use insulin or other glucose-lowering medicine and add anything new, check your blood sugar more often.",
+      },
+    ],
+    sources: [
+      { n: 1, citation: "Ogawa S, et al. Electrolyzed hydrogen-rich water for oxidative stress suppression and improvement of insulin resistance: a multicenter prospective double-blind randomized control trial. Diabetol Int. 2021 (issue 2022;13(1):209-219).", pmid: "35059257", doi: "10.1007/s13340-021-00524-3", ourStudyPath: "/study/electrolyzed-hydrogen-rich-water-for-oxidative-stress-suppression-and-improvement-of-insulin-resistance-a-multicenter-prospective-double-blind-randomized-control-trial-1775650467165" },
+      { n: 2, citation: "Kajiyama S, et al. Supplementation of hydrogen-rich water improves lipid and glucose metabolism in patients with type 2 diabetes or impaired glucose tolerance. Nutr Res. 2008;28(3):137-43.", pmid: "19083400", doi: "10.1016/j.nutres.2008.01.008", ourStudyPath: "/study/supplementation-of-hydrogen-rich-water-improves-lipid-and-glucose-metabolism-in-patients-with-type-2-diabetes-or-impaired-glucose-tolerance-1775650467160" },
+      { n: 3, citation: "Liang B, et al. Hydrogen-rich water ameliorates metabolic disorder via modifying gut microbiota in impaired fasting glucose patients: a randomized controlled study. Antioxidants (Basel). 2023;12(6):1245.", pmid: "37371975", doi: "10.3390/antiox12061245", ourStudyPath: "/study/hydrogen-rich-water-ameliorates-metabolic-disorder-via-modifying-gut-microbiota-in-impaired-fasting-glucose-patients-a-randomized-controlled-study-1775650467170" },
+      { n: 4, citation: "LeBaron TW, et al. The effects of 24-week, high-concentration hydrogen-rich water on body composition, blood lipid profiles and inflammation biomarkers in men and women with metabolic syndrome: a randomized controlled trial. Diabetes Metab Syndr Obes. 2020;13:889-896.", pmid: "32273740", doi: "10.2147/DMSO.S240122", ourStudyPath: "/study/the-effects-of-24-week-high-concentration-hydrogen-rich-water-on-body-composition-blood-lipid-profiles-and-inflammation-biomarkers-in-men-and-women-with-metabolic-syndrome-a-randomized-controlled-trial-1775650467136" },
+      { n: 5, citation: "Moribe R, et al. Health effects of electrolyzed hydrogen water for the metabolic syndrome and pre-metabolic syndrome: a 3-month randomized controlled trial and subsequent analyses. Antioxidants (Basel). 2024;13(2):145.", pmid: "38397743", doi: "10.3390/antiox13020145", ourStudyPath: "/study/health-effects-of-electrolyzed-hydrogen-water-for-the-metabolic-syndrome-and-pre-metabolic-syndrome-a-3-month-randomized-controlled-trial-and-subsequent-analyses-1775650467171" },
+      { n: 6, citation: "Zhao Z, et al. Effectiveness and safety of hydrogen inhalation as an adjunct treatment in Chinese type 2 diabetes patients: a retrospective, observational, double-arm, real-life clinical study. Front Endocrinol (Lausanne). 2023;13:1114221.", pmid: "36743938", doi: "10.3389/fendo.2022.1114221", ourStudyPath: "/study/effectiveness-and-safety-of-hydrogen-inhalation-as-an-adjunct-treatment-in-chinese-type-2-diabetes-patients-a-retrospective-observational-double-arm-real-life-clinical-study-1775650467169" },
+      { n: 7, citation: "Ji H, et al. Real-world effectiveness and safety of hydrogen inhalation in Chinese patients with type 2 diabetes: a single-arm, retrospective study. Diabetes Metab Syndr Obes. 2023;16:2039-2050.", pmid: "37431394", doi: "10.2147/DMSO.S412898", ourStudyPath: "/study/real-world-effectiveness-and-safety-of-hydrogen-inhalation-in-chinese-patients-with-type-2-diabetes-a-single-arm-retrospective-study-1775650467170" },
+      { n: 8, citation: "Kamimura N, et al. Molecular hydrogen improves obesity and diabetes by inducing hepatic FGF21 and stimulating energy metabolism in db/db mice. Obesity (Silver Spring). 2011;19(7):1396-403.", pmid: "21293445", doi: "10.1038/oby.2011.6", ourStudyPath: "/study/molecular-hydrogen-improves-obesity-and-diabetes-by-inducing-hepatic-fgf21-and-stimulating-energy-metabolism-in-dbdb-mice-1775650467157" },
+    ],
+    ownerLink: { href: "/blog/molecular-hydrogen-benefits-guide-pillar#does-hydrogen-water-lower-cholesterol-or-blood-sugar", label: "Does hydrogen water lower cholesterol or blood sugar? From our evidence-graded benefits guide" },
+    bridgeTopic: null,
+    lastReviewed: "2026-11-01",
+  },
+
+  "fatty-liver-nafld": {
+    slug: "fatty-liver-nafld",
+    h1: "Hydrogen and Fatty Liver Disease (NAFLD): What the Studies Show",
+    metaTitle: "Hydrogen Water and Fatty Liver (NAFLD) | Hydrogen Studies",
+    metaDescription:
+      "Hydrogen and fatty liver disease (NAFLD), graded: a few trials of 12 to 43 people, one with less liver fat on MRI and one with no enzyme change. Gaps.",
+    evidenceGrade: "very low",
+    introMarkdown: `*Hydrogen Studies is funded by Echo Technologies LLC, which sells hydrogen water products. Echo doesn't decide which studies we cover or how we describe them — see our [editorial policy](/editorial-policy).*
+
+**Evidence at a glance: Very low.** A handful of small trials have tested hydrogen in people with fatty liver disease, each with 12 to 43 participants and 4 to 13 weeks of treatment. One found slightly less liver fat on MRI after 4 weeks of hydrogen water; another, 8 weeks long, found no significant change in liver enzymes. No trial has looked at liver scarring or long-term outcomes, and most positive findings come from mice.
+
+This page covers non-alcoholic fatty liver disease (NAFLD), now often called metabolic dysfunction-associated steatotic liver disease (MASLD). Gradual weight loss, physical activity and treating diabetes and high cholesterol are the approaches with the strongest evidence. Talk to your doctor before adding anything, and don't replace your care. For blood fats, including a mouse study of a hydrogen compound taken with a statin, see our [cholesterol hub](/explore-by-condition/cholesterol).
+
+## What human trials found
+
+**Drinking hydrogen water**
+
+- **12 adults with overweight and mild-to-moderate NAFLD, 4 weeks.** In a double-blind crossover trial, 1 liter a day of hydrogen-rich water reduced liver fat on MRI more than placebo water. AST, a liver enzyme, fell about 10%, but that change wasn't clearly different from no effect. Weight and body composition didn't differ. One author is affiliated with the Molecular Hydrogen Institute, a nonprofit that promotes hydrogen research [[1]](/study/hydrogen-rich-water-reduces-liver-fat-accumulation-and-improves-liver-enzyme-profiles-in-patients-with-non-alcoholic-fatty-liver-disease-a-randomized-controlled-pilot-trial-1775650467139).
+- **30 adults with NAFLD, 8 weeks.** In a double-blind trial in Slovakia, hydrogen-rich water didn't significantly change liver enzymes. Weight (by about 1 kg) and blood lipids trended lower, and two oxidative-stress markers trended higher, all without statistical significance [[2]](/study/biological-effects-of-hydrogen-water-on-subjects-with-nafld-a-randomized-placebo-controlled-trial-1793389519014).
+- **30 adults with NAFLD, 8 weeks (lab measures).** A paper from the same Slovak group, in which 17 patients drank water made with hydrogen tablets (three 330 mL servings a day) and 13 got placebo tablets, reported higher coenzyme Q10 in blood platelets and less of a blood marker of oxidation in the hydrogen group. These are lab measures, not liver outcomes [[3]](/study/the-effect-of-adjuvant-therapy-with-molecular-hydrogen-on-endogenous-coenzyme-q10-levels-and-platelet-mitochondrial-bioenergetics-in-patients-with-non-alcoholic-fatty-liver-disease-1775650467170).
+- **Fatty liver in people with high fasting blood sugar, 8 weeks.** In a trial of 73 adults, 35 also had fatty liver on ultrasound at the start. It was no longer seen in 10 of 16 (63%) on hydrogen water and 6 of 19 (32%) on plain water, a difference the authors called marginally significant [[4]](/study/hydrogen-rich-water-ameliorates-metabolic-disorder-via-modifying-gut-microbiota-in-impaired-fasting-glucose-patients-a-randomized-controlled-study-1775650467170) (see our [type 2 diabetes hub](/explore-by-condition/type-2-diabetes)).
+
+**Inhaled hydrogen**
+
+- **43 adults with NAFLD, 13 weeks.** In a randomized, placebo-controlled trial in China, breathing a hydrogen-oxygen gas improved blood lipids and liver enzymes. Liver fat on ultrasound and CT improved significantly only in people with moderate-to-severe disease [[5]](/study/a-randomized-placebo-controlled-clinical-trial-of-hydrogenoxygen-inhalation-for-non-alcoholic-fatty-liver-disease-1775650467167).
+
+**Pooled results**
+
+- A 2024 meta-analysis of 8 randomized trials with 433 people who had various liver problems, not only fatty liver, found slight drops in the liver enzymes ALT, AST and ALP with hydrogen-rich water [[6]](https://pubmed.ncbi.nlm.nih.gov/40406427/).
+
+## What animal studies suggest (not human evidence)
+
+- In mice fed a diet that causes fatty liver with inflammation (NASH), 8 weeks of hydrogen-rich water lowered liver inflammation, oxidative stress and liver-cell death, much like the diabetes drug pioglitazone. In a mouse model in which NASH leads to liver cancer, mice given hydrogen water had fewer liver tumors [[7]](/study/hydrogen-rich-water-prevents-progression-of-nonalcoholic-steatohepatitis-and-accompanying-hepatocarcinogenesis-in-mice-1775650467155).
+- Obese, diabetic mice and mice on a high-fat diet that drank hydrogen water had less fatty liver [[8]](/study/molecular-hydrogen-improves-obesity-and-diabetes-by-inducing-hepatic-fgf21-and-stimulating-energy-metabolism-in-dbdb-mice-1775650467157).
+
+## Doses and durations studied
+
+- **Drinking:** 1 liter a day for 4 to 8 weeks [1][4]; hydrogen tablets in three 330 mL servings a day for 8 weeks [3].
+- **Inhaling:** a hydrogen-oxygen gas for 13 weeks [5].
+
+No trial compared doses.
+
+## What we don't know
+
+- **Liver scarring and long-term outcomes.** None of the trials above reported liver biopsy results or followed people for longer than 13 weeks [1]–[5].
+- **Whether less liver fat lasts.** The MRI trial lasted 4 weeks per treatment [1].
+- **How hydrogen compares with weight loss.** No trial compared it with diet or exercise.
+- **Independence.** Several trials come from the same research groups or include authors affiliated with the Molecular Hydrogen Institute [1][2][3].
+
+*Drafted with AI assistance and checked against each linked source by our editorial team. General information, not medical advice.*`,
+    faqs: [
+      {
+        question: "Can hydrogen water reduce liver fat?",
+        answer:
+          "Possibly a little, but the evidence is very weak. In a 4-week crossover trial of 12 adults with mild-to-moderate fatty liver disease, liver fat on MRI fell more with 1 liter a day of hydrogen-rich water than with placebo water. An 8-week trial of 30 people found no significant change in liver enzymes. No trial has shown that hydrogen water reverses fatty liver disease.",
+      },
+      {
+        question: "Does hydrogen water lower liver enzymes like ALT and AST?",
+        answer:
+          "Slightly, at most. A 2024 meta-analysis of 8 small randomized trials with 433 people who had various liver problems found small drops in ALT, AST and ALP with hydrogen-rich water. In an 8-week placebo-controlled trial of 30 people with fatty liver disease, liver enzymes didn't change significantly. Liver enzymes rise and fall for many reasons, so ask your doctor what your results mean.",
+      },
+      {
+        question: "Has inhaled hydrogen been tested for fatty liver disease?",
+        answer:
+          "In one trial. In China, 43 adults with fatty liver disease breathed a hydrogen-oxygen gas or a placebo for 13 weeks. Blood lipids and liver enzymes improved, and liver fat on ultrasound and CT improved significantly only in people with moderate-to-severe disease. It is a single small trial from one research group, and hydrogen inhalation is not a standard liver treatment.",
+      },
+      {
+        question: "Should people with fatty liver disease try hydrogen water?",
+        answer:
+          "Talk to your doctor first. Hydrogen water hasn't been shown to reverse fatty liver disease or prevent liver scarring, and the trials were small and lasted 4 to 13 weeks. Gradual weight loss, regular physical activity and managing diabetes and cholesterol are the approaches with the strongest evidence. Hydrogen water isn't a substitute for them or for regular follow-up of your liver.",
+      },
+    ],
+    sources: [
+      { n: 1, citation: "Korovljev D, et al. Hydrogen-rich water reduces liver fat accumulation and improves liver enzyme profiles in patients with non-alcoholic fatty liver disease: a randomized controlled pilot trial. Clin Res Hepatol Gastroenterol. 2019;43(6):688-693.", pmid: "30982748", doi: "10.1016/j.clinre.2019.03.008", ourStudyPath: "/study/hydrogen-rich-water-reduces-liver-fat-accumulation-and-improves-liver-enzyme-profiles-in-patients-with-non-alcoholic-fatty-liver-disease-a-randomized-controlled-pilot-trial-1775650467139" },
+      { n: 2, citation: "Kura B, et al. Biological effects of hydrogen water on subjects with NAFLD: a randomized, placebo-controlled trial. Antioxidants (Basel). 2022;11(10):1935.", pmid: "36290657", doi: "10.3390/antiox11101935", ourStudyPath: "/study/biological-effects-of-hydrogen-water-on-subjects-with-nafld-a-randomized-placebo-controlled-trial-1793389519014" },
+      { n: 3, citation: "Sumbalová Z, et al. The effect of adjuvant therapy with molecular hydrogen on endogenous coenzyme Q10 levels and platelet mitochondrial bioenergetics in patients with non-alcoholic fatty liver disease. Int J Mol Sci. 2023;24(15):12477.", pmid: "37569850", doi: "10.3390/ijms241512477", ourStudyPath: "/study/the-effect-of-adjuvant-therapy-with-molecular-hydrogen-on-endogenous-coenzyme-q10-levels-and-platelet-mitochondrial-bioenergetics-in-patients-with-non-alcoholic-fatty-liver-disease-1775650467170" },
+      { n: 4, citation: "Liang B, et al. Hydrogen-rich water ameliorates metabolic disorder via modifying gut microbiota in impaired fasting glucose patients: a randomized controlled study. Antioxidants (Basel). 2023;12(6):1245.", pmid: "37371975", doi: "10.3390/antiox12061245", ourStudyPath: "/study/hydrogen-rich-water-ameliorates-metabolic-disorder-via-modifying-gut-microbiota-in-impaired-fasting-glucose-patients-a-randomized-controlled-study-1775650467170" },
+      { n: 5, citation: "Tao G, et al. A randomized, placebo-controlled clinical trial of hydrogen/oxygen inhalation for non-alcoholic fatty liver disease. J Cell Mol Med. 2022;26(14):4113-4123.", pmid: "35734974", doi: "10.1111/jcmm.17456", ourStudyPath: "/study/a-randomized-placebo-controlled-clinical-trial-of-hydrogenoxygen-inhalation-for-non-alcoholic-fatty-liver-disease-1775650467167" },
+      { n: 6, citation: "Khalili-Tanha G, et al. The impact of hydrogen-rich water on liver enzyme levels in clinical populations: a comprehensive review and meta-analysis. Gastroenterol Hepatol Bed Bench. 2024;17(4):338-348.", pmid: "40406427", doi: "10.22037/ghfbb.v17i4.2990", ourStudyPath: null },
+      { n: 7, citation: "Kawai D, et al. Hydrogen-rich water prevents progression of nonalcoholic steatohepatitis and accompanying hepatocarcinogenesis in mice. Hepatology. 2012;56(3):912-21.", pmid: "22505328", doi: "10.1002/hep.25782", ourStudyPath: "/study/hydrogen-rich-water-prevents-progression-of-nonalcoholic-steatohepatitis-and-accompanying-hepatocarcinogenesis-in-mice-1775650467155" },
+      { n: 8, citation: "Kamimura N, et al. Molecular hydrogen improves obesity and diabetes by inducing hepatic FGF21 and stimulating energy metabolism in db/db mice. Obesity (Silver Spring). 2011;19(7):1396-403.", pmid: "21293445", doi: "10.1038/oby.2011.6", ourStudyPath: "/study/molecular-hydrogen-improves-obesity-and-diabetes-by-inducing-hepatic-fgf21-and-stimulating-energy-metabolism-in-dbdb-mice-1775650467157" },
+    ],
+    ownerLink: { href: "/blog/molecular-hydrogen-benefits-guide-pillar#does-molecular-hydrogen-therapy-treat-any-disease", label: "Does molecular hydrogen therapy treat any disease? From our evidence-graded benefits guide" },
+    bridgeTopic: null,
+    lastReviewed: "2026-11-01",
+  },
+
+  "weight-loss-metabolism": {
+    slug: "weight-loss-metabolism",
+    h1: "Hydrogen Water, Weight Loss and Metabolism: What the Studies Show",
+    metaTitle: "Does Hydrogen Water Help Weight Loss? | Hydrogen Studies",
+    metaDescription:
+      "Hydrogen water and weight loss, graded: in placebo-controlled trials, body weight didn't differ; small studies saw fewer cravings or less body fat. Gaps.",
+    evidenceGrade: "very low",
+    introMarkdown: `*Hydrogen Studies is funded by Echo Technologies LLC, which sells hydrogen water products. Echo doesn't decide which studies we cover or how we describe them — see our [editorial policy](/editorial-policy).*
+
+**Evidence at a glance: Very low.** No trial has shown that hydrogen water causes meaningful weight loss. In placebo-controlled trials of 4 and 8 weeks, body weight didn't differ from placebo, and a 24-week trial in metabolic syndrome reported only a trend toward a mild drop in BMI. A few small trials reported slightly less body fat, fewer food cravings or smaller waists, mostly as secondary or subgroup findings.
+
+This page covers body weight, body fat, appetite and metabolism. Lasting weight loss comes from changes in eating and activity and, for some people, medicine or surgery; talk to your doctor about what fits you. For blood fats in people with overweight, see our [cholesterol hub](/explore-by-condition/cholesterol); for liver fat, see our [fatty liver hub](/explore-by-condition/fatty-liver-nafld).
+
+## What human trials found
+
+**Drinking hydrogen water**
+
+- **36 adults with obesity, 8 weeks.** People drank 1 liter a day of hydrogen-rich water (15 mg of hydrogen) or placebo water. Weight and body composition didn't differ between groups; men on hydrogen lost about 2 kg from their starting weight, but that wasn't significantly different from placebo. Food-craving scores, the main outcome, fell more with hydrogen, and blood levels of GLP-1, an appetite hormone, rose. The drinks were supplied by a hydrogen products company that employs one of the authors [[1]](/study/the-effects-of-8-week-hydrogen-rich-water-consumption-on-appetite-body-composition-sleep-quality-and-circulating-glucagon-like-peptide-1-in-obese-men-and-women-hydrappet-a-randomized-controlled-trial-1775650467179).
+- **10 women with overweight, 4 weeks.** In a crossover trial, caplets of hydrogen-generating minerals didn't change weight, BMI or body measurements compared with placebo, but body fat percentage fell more (3.2% vs 0.9%, p = 0.05), as did triglycerides [[2]](/study/molecular-hydrogen-affects-body-composition-metabolic-profiles-and-mitochondrial-function-in-middle-aged-overweight-women-1775650467141).
+- **60 adults with metabolic syndrome, 24 weeks.** Water made with hydrogen-producing tablets lowered cholesterol and blood sugar compared with placebo water, with a trend toward a mild drop in BMI and waist-to-hip ratio [[3]](/study/the-effects-of-24-week-high-concentration-hydrogen-rich-water-on-body-composition-blood-lipid-profiles-and-inflammation-biomarkers-in-men-and-women-with-metabolic-syndrome-a-randomized-controlled-trial-1775650467136).
+- **181 adults with metabolic or pre-metabolic syndrome, 3 months.** Waist size fell more with electrolyzed hydrogen water than with filtered water only in a subgroup of people who were also very physically active. One author works for the device maker [[4]](/study/health-effects-of-electrolyzed-hydrogen-water-for-the-metabolic-syndrome-and-pre-metabolic-syndrome-a-3-month-randomized-controlled-trial-and-subsequent-analyses-1775650467171).
+- **61 healthy workers, 8 weeks.** By the authors' analysis, fat mass fell more in people who drank 1.5 liters a day of electrolyzed-reduced water than in those who drank mineral water. The abstract doesn't report how much hydrogen the water contained [[5]](/study/outcomes-assessment-of-sustainable-and-innovatively-simple-lifestyle-modification-at-the-workplace-drinking-electrolyzed-reduced-water-oasis-erw-a-randomized-double-blind-placebo-controlled-trial-1775650467134).
+- **30 adults with fatty liver disease, 8 weeks.** Weight trended about 1 kg lower with hydrogen-rich water, without statistical significance [[6]](/study/biological-effects-of-hydrogen-water-on-subjects-with-nafld-a-randomized-placebo-controlled-trial-1793389519014).
+
+**Inhaled hydrogen**
+
+- **20 young women, one 60-minute session.** Breathing hydrogen at rest lowered the respiratory exchange ratio compared with air, a sign that the body was burning relatively more fat than carbohydrate during that hour. The study measured one hour, not body weight [[7]](/study/molecular-hydrogen-inhalation-modulates-resting-metabolism-in-healthy-females-findings-from-a-randomized-double-blind-placebo-controlled-crossover-study-1775650467176).
+
+**Pooled results**
+
+- We found no meta-analysis of body weight. A 2026 analysis of 13 trials in adults with overweight or obesity pooled blood fats only, and found small drops in total and LDL cholesterol [[8]](/study/the-effect-of-hydrogen-rich-water-interventions-on-lipid-profiles-in-adults-with-overweight-or-obesity-and-associated-metabolic-disorders-a-systematic-review-and-meta-analysis-of-randomized-controlled-trials-1775826876384).
+
+## What animal studies suggest (not human evidence)
+
+- Obese, diabetic mice (db/db mice) that drank hydrogen water long term gained less fat and body weight without eating or drinking more, and used more oxygen, a sign of higher energy use [[9]](/study/molecular-hydrogen-improves-obesity-and-diabetes-by-inducing-hepatic-fgf21-and-stimulating-energy-metabolism-in-dbdb-mice-1775650467157).
+
+## Doses and durations studied
+
+- **Drinking:** 1 to 1.5 liters a day [1][5]; about 11 to 15 mg of hydrogen a day [1][3]; from 4 weeks to 24 weeks [2][3].
+- **Inhaling:** a single 60-minute session at rest [7].
+
+No trial compared doses.
+
+## What we don't know
+
+- **Whether there is any effect on weight.** The two trials built around body composition found no weight difference from placebo [1][2].
+- **Who it applies to.** The trials were small and mostly in adults with obesity, overweight or metabolic syndrome.
+- **Longer use.** The longest trial lasted 24 weeks [3].
+- **Independence.** Three trials come from one Serbian lab or its collaborators [1][2][3], and three used products or had authors from hydrogen companies [1][3][4].
+
+*Drafted with AI assistance and checked against each linked source by our editorial team. General information, not medical advice.*`,
+    faqs: [
+      {
+        question: "Does hydrogen water burn fat?",
+        answer:
+          "Not in any way shown to matter for weight. In a 4-week trial of 10 women with overweight, body fat percentage fell slightly more with hydrogen-generating caplets than with placebo, but weight didn't change. In 20 young women, breathing hydrogen for an hour shifted the body slightly toward burning fat at rest. Neither shows that hydrogen leads to fat loss over months.",
+      },
+      {
+        question: "Does hydrogen water reduce appetite or cravings?",
+        answer:
+          "One small trial found fewer cravings. In 36 adults with obesity, 8 weeks of hydrogen-rich water lowered food-craving scores more than placebo water and raised the appetite hormone GLP-1, but body weight didn't differ between groups. Cravings were self-reported, it is a single trial, and the drinks came from a hydrogen products company. Hydrogen water is not comparable to GLP-1 medicines.",
+      },
+      {
+        question: "Is hydrogen water better than plain water for weight loss?",
+        answer:
+          "There's no good evidence that it is. In placebo-controlled trials of 4 and 8 weeks, people drinking hydrogen water didn't lose more weight than people drinking placebo water, and a 24-week trial in metabolic syndrome found only a trend toward a mild drop in BMI. Drinking water instead of sugary drinks can cut calories, whether or not the water contains hydrogen.",
+      },
+      {
+        question: "Does hydrogen water boost metabolism?",
+        answer:
+          "Not in a way shown to affect weight. In mice bred to become obese and diabetic, long-term hydrogen water raised oxygen use and lowered body weight without the mice eating less. In people, the only direct measurement we found was one hour of breathing hydrogen, which shifted fuel use toward fat at rest in 20 young women. Neither shows that hydrogen water speeds up metabolism over time.",
+      },
+    ],
+    sources: [
+      { n: 1, citation: "Todorovic N, et al. The effects of 8-week hydrogen-rich water consumption on appetite, body composition, sleep quality, and circulating glucagon-like peptide-1 in obese men and women (HYDRAPPET): a randomized controlled trial. Medicina (Kaunas). 2025;61(7):1299.", pmid: "40731927", doi: "10.3390/medicina61071299", ourStudyPath: "/study/the-effects-of-8-week-hydrogen-rich-water-consumption-on-appetite-body-composition-sleep-quality-and-circulating-glucagon-like-peptide-1-in-obese-men-and-women-hydrappet-a-randomized-controlled-trial-1775650467179" },
+      { n: 2, citation: "Korovljev D, et al. Molecular hydrogen affects body composition, metabolic profiles, and mitochondrial function in middle-aged overweight women. Ir J Med Sci. 2017 (issue 2018;187(1):85-89).", pmid: "28560519", doi: "10.1007/s11845-017-1638-4", ourStudyPath: "/study/molecular-hydrogen-affects-body-composition-metabolic-profiles-and-mitochondrial-function-in-middle-aged-overweight-women-1775650467141" },
+      { n: 3, citation: "LeBaron TW, et al. The effects of 24-week, high-concentration hydrogen-rich water on body composition, blood lipid profiles and inflammation biomarkers in men and women with metabolic syndrome: a randomized controlled trial. Diabetes Metab Syndr Obes. 2020;13:889-896.", pmid: "32273740", doi: "10.2147/DMSO.S240122", ourStudyPath: "/study/the-effects-of-24-week-high-concentration-hydrogen-rich-water-on-body-composition-blood-lipid-profiles-and-inflammation-biomarkers-in-men-and-women-with-metabolic-syndrome-a-randomized-controlled-trial-1775650467136" },
+      { n: 4, citation: "Moribe R, et al. Health effects of electrolyzed hydrogen water for the metabolic syndrome and pre-metabolic syndrome: a 3-month randomized controlled trial and subsequent analyses. Antioxidants (Basel). 2024;13(2):145.", pmid: "38397743", doi: "10.3390/antiox13020145", ourStudyPath: "/study/health-effects-of-electrolyzed-hydrogen-water-for-the-metabolic-syndrome-and-pre-metabolic-syndrome-a-3-month-randomized-controlled-trial-and-subsequent-analyses-1775650467171" },
+      { n: 5, citation: "Choi YA, et al. Outcomes assessment of sustainable and innovatively simple lifestyle modification at the workplace: drinking electrolyzed-reduced water (OASIS-ERW): a randomized, double-blind, placebo-controlled trial. Antioxidants (Basel). 2020;9(7):564.", pmid: "32605142", doi: "10.3390/antiox9070564", ourStudyPath: "/study/outcomes-assessment-of-sustainable-and-innovatively-simple-lifestyle-modification-at-the-workplace-drinking-electrolyzed-reduced-water-oasis-erw-a-randomized-double-blind-placebo-controlled-trial-1775650467134" },
+      { n: 6, citation: "Kura B, et al. Biological effects of hydrogen water on subjects with NAFLD: a randomized, placebo-controlled trial. Antioxidants (Basel). 2022;11(10):1935.", pmid: "36290657", doi: "10.3390/antiox11101935", ourStudyPath: "/study/biological-effects-of-hydrogen-water-on-subjects-with-nafld-a-randomized-placebo-controlled-trial-1793389519014" },
+      { n: 7, citation: "Grepl P, et al. Molecular hydrogen inhalation modulates resting metabolism in healthy females: findings from a randomized, double-blind, placebo-controlled crossover study. Med Gas Res. 2025;15(3):367-373.", pmid: "39923133", doi: "10.4103/mgr.MEDGASRES-D-24-00085", ourStudyPath: "/study/molecular-hydrogen-inhalation-modulates-resting-metabolism-in-healthy-females-findings-from-a-randomized-double-blind-placebo-controlled-crossover-study-1775650467176" },
+      { n: 8, citation: "Ye H, et al. The effect of hydrogen-rich water interventions on lipid profiles in adults with overweight or obesity and associated metabolic disorders: a systematic review and meta-analysis of randomized controlled trials. Diabetol Metab Syndr. 2026;18(1).", pmid: "41888952", doi: "10.1186/s13098-026-02124-0", ourStudyPath: "/study/the-effect-of-hydrogen-rich-water-interventions-on-lipid-profiles-in-adults-with-overweight-or-obesity-and-associated-metabolic-disorders-a-systematic-review-and-meta-analysis-of-randomized-controlled-trials-1775826876384" },
+      { n: 9, citation: "Kamimura N, et al. Molecular hydrogen improves obesity and diabetes by inducing hepatic FGF21 and stimulating energy metabolism in db/db mice. Obesity (Silver Spring). 2011;19(7):1396-403.", pmid: "21293445", doi: "10.1038/oby.2011.6", ourStudyPath: "/study/molecular-hydrogen-improves-obesity-and-diabetes-by-inducing-hepatic-fgf21-and-stimulating-energy-metabolism-in-dbdb-mice-1775650467157" },
+    ],
+    ownerLink: { href: "/blog/molecular-hydrogen-benefits-guide-pillar", label: "Hydrogen water benefits, graded by evidence" },
+    bridgeTopic: null,
+    lastReviewed: "2026-11-01",
+  },
+
+  "gut-health": {
+    slug: "gut-health",
+    h1: "Hydrogen Water and Gut Health: What the Studies Show",
+    metaTitle: "Hydrogen Water for Gut Health, Graded | Hydrogen Studies",
+    metaDescription:
+      "Hydrogen water and gut health, graded: small, short trials, mostly of alkaline electrolyzed water, saw normal stools or gut bacteria shifts, not treatment.",
+    evidenceGrade: "very low",
+    introMarkdown: `*Hydrogen Studies is funded by Echo Technologies LLC, which sells hydrogen water products. Echo doesn't decide which studies we cover or how we describe them — see our [editorial policy](/editorial-policy).*
+
+**Evidence at a glance: Very low.** Human studies of hydrogen and the gut are small and short, and most tested alkaline electrolyzed water, which differs from plain water in pH as well as hydrogen. Some found more normal stools or shifts in gut bacteria; none showed that hydrogen treats a digestive disease. In the only trial in ulcerative colitis, with 10 patients, inhaled hydrogen had no clear treatment effect.
+
+This page covers digestion, bowel habits and the gut microbiome (the bacteria living in the intestine). Diarrhea or constipation that lasts, belly pain, blood in the stool or unexplained weight loss deserve a medical checkup. If you have IBS or inflammatory bowel disease, talk to your doctor before trying hydrogen, and don't change your treatment. See also our [digestive health research overview](/hydrogen-for/gut-health).
+
+## What human trials found
+
+**Alkaline electrolyzed water that contains hydrogen**
+
+- **20 healthy men, 2 weeks.** In a double-blind trial in Japan, 500 mL a day of alkaline electrolyzed water (0.3 mg of hydrogen per liter, pH 9.5) shifted stool consistency toward "normal" on a standard stool chart and raised Bifidobacterium, a common gut bacterium, compared with purified water. Overall gut bacterial diversity didn't change. The lead author works for Panasonic, which made the water device [[1]](/study/the-effects-of-ingestion-of-hydrogen-dissolved-alkaline-electrolyzed-water-on-stool-consistency-and-gut-microbiota-a-double-blind-randomized-trial-1775650467162).
+- **60 healthy adults, 4 weeks.** In a double-blind trial, 500 mL or more a day of alkaline electrolyzed water (0.2 mg of hydrogen per liter, pH 9.2) didn't clearly change stomach or bowel symptoms compared with purified water, though stools became slightly more normal in the electrolyzed water group. Two authors work for Panasonic [[2]](/study/daily-ingestion-of-alkaline-electrolyzed-water-containing-hydrogen-influences-human-health-including-gastrointestinal-symptoms-1775650467139).
+- **27 adults with diarrhea-predominant IBS, 8 weeks.** At least 2 liters a day of alkaline-reduced water improved IBS quality-of-life scores more than placebo water, but abdominal pain, and the share of people reporting relief for most weeks (62% vs 43%), didn't differ significantly. The abstract doesn't report the water's hydrogen content [[3]](/study/effects-of-alkaline-reduced-drinking-water-on-irritable-bowel-syndrome-with-diarrhea-a-randomized-double-blind-placebo-controlled-pilot-study-1775650467142).
+
+**Hydrogen-rich water**
+
+- **73 adults with high fasting blood sugar, 8 weeks.** One liter a day of hydrogen-rich water shifted the mix of gut bacteria compared with plain water. Digestive symptoms weren't the focus [[4]](/study/hydrogen-rich-water-ameliorates-metabolic-disorder-via-modifying-gut-microbiota-in-impaired-fasting-glucose-patients-a-randomized-controlled-study-1775650467170) (see our [type 2 diabetes hub](/explore-by-condition/type-2-diabetes)).
+- **Young female soccer players, 2 months.** Measures of gut bacterial diversity rose with hydrogen-rich water, but the groups already differed before the study started, and the overall makeup of their gut bacteria didn't change significantly [[5]](/study/effects-of-the-long-term-consumption-of-hydrogen-rich-water-on-the-antioxidant-activity-and-the-gut-flora-in-female-juvenile-soccer-players-from-suzhou-china-1775650467139).
+
+**Inhaled hydrogen**
+
+- **10 adults with active ulcerative colitis, 8 weeks.** In a double-blind trial in Japan, 5 people inhaled 5–6% hydrogen and 5 inhaled air, 4 hours a day. Gut bacteria changed more in the hydrogen group and endoscopy scores improved more, but symptom scores didn't differ, and the authors saw no clear treatment effect. The inhalers came from a hydrogen device company [[6]](/study/hydrogen-gas-inhalation-improved-intestinal-microbiota-in-ulcerative-colitis-a-randomised-double-blind-placebo-controlled-trial-1775650467179).
+
+## What animal studies suggest (not human evidence)
+
+- In mice given a chemical in their drinking water that inflames the colon, a common model of inflammatory bowel disease, adding hydrogen to the water for the same 7 days limited weight loss, colon shortening and colon inflammation [[7]](/study/hydrogen-mediates-suppression-of-colon-inflammation-induced-by-dextran-sodium-sulfate-1775650467159). Chemically induced colitis in mice develops in days; human inflammatory bowel disease lasts for years.
+
+## Doses and durations studied
+
+- **Alkaline electrolyzed water:** about 500 mL a day, with 0.2 to 0.3 mg of hydrogen per liter, for 2 to 4 weeks [1][2]; at least 2 liters a day of alkaline-reduced water for 8 weeks [3].
+- **Hydrogen-rich water:** 1 liter a day for 8 weeks [4].
+- **Inhaling:** 5–6% hydrogen, 4 hours a day for 8 weeks [6].
+
+No trial compared doses.
+
+## What we don't know
+
+- **Hydrogen or alkalinity?** Most drinking trials used alkaline electrolyzed or reduced water, so their results can't be credited to hydrogen alone [1][2][3].
+- **Digestive diseases.** We found no trial in Crohn's disease, and the only ulcerative colitis trial had 10 patients [6].
+- **What gut bacteria shifts mean.** The changes seen [1][4][5] haven't been linked to better digestion or health.
+- **Independence.** Three trials list authors or devices from companies that make hydrogen water or inhalers [1][2][6].
+
+*Drafted with AI assistance and checked against each linked source by our editorial team. General information, not medical advice.*`,
+    faqs: [
+      {
+        question: "Does hydrogen water change your gut bacteria?",
+        answer:
+          "Possibly, in small ways. In a 2-week trial of 20 healthy men, alkaline electrolyzed water containing hydrogen raised Bifidobacterium, a common gut bacterium, but didn't change overall diversity. In 73 adults with high fasting blood sugar, 8 weeks of hydrogen-rich water shifted the mix of gut bacteria compared with plain water. No study has shown that these shifts improve digestion or health.",
+      },
+      {
+        question: "Can hydrogen help IBS or ulcerative colitis?",
+        answer:
+          "It hasn't been shown to. In 27 adults with diarrhea-predominant IBS, alkaline-reduced water improved quality-of-life scores more than placebo water, but abdominal pain didn't differ. In 10 people with ulcerative colitis, 8 weeks of inhaled hydrogen changed gut bacteria but had no clear treatment effect. Most positive colitis results come from mice. If you have IBS or inflammatory bowel disease, stay with the plan you have made with your doctor.",
+      },
+      {
+        question: "Does hydrogen water help with constipation?",
+        answer:
+          "There's no good evidence that it does. In 20 healthy men, 2 weeks of alkaline electrolyzed water containing hydrogen shifted stool consistency toward normal on a standard stool chart, and a 4-week trial in 60 healthy adults saw stools become slightly more normal. Neither trial enrolled people with constipation. Fiber, fluids and activity are the usual first steps; see a doctor if constipation is new or lasting.",
+      },
+      {
+        question: "Is alkaline electrolyzed water the same as hydrogen water?",
+        answer:
+          "Not exactly. Alkaline electrolyzed water is made by passing an electric current through water. It contains some dissolved hydrogen, about 0.2 to 0.3 mg per liter in the gut trials, but it is also strongly alkaline, around pH 9 to 9.5. Because most gut trials used this kind of water, their results can't be credited to hydrogen alone.",
+      },
+    ],
+    sources: [
+      { n: 1, citation: "Tanaka Y, et al. The effects of ingestion of hydrogen-dissolved alkaline electrolyzed water on stool consistency and gut microbiota: a double-blind randomized trial. Med Gas Res. 2021;11(4):138-144.", pmid: "34213495", doi: "10.4103/2045-9912.318858", ourStudyPath: "/study/the-effects-of-ingestion-of-hydrogen-dissolved-alkaline-electrolyzed-water-on-stool-consistency-and-gut-microbiota-a-double-blind-randomized-trial-1775650467162" },
+      { n: 2, citation: "Tanaka Y, et al. Daily ingestion of alkaline electrolyzed water containing hydrogen influences human health, including gastrointestinal symptoms. Med Gas Res. 2018;8(4):160-166.", pmid: "30713669", doi: "10.4103/2045-9912.248267", ourStudyPath: "/study/daily-ingestion-of-alkaline-electrolyzed-water-containing-hydrogen-influences-human-health-including-gastrointestinal-symptoms-1775650467139" },
+      { n: 3, citation: "Shin DW, et al. Effects of alkaline-reduced drinking water on irritable bowel syndrome with diarrhea: a randomized double-blind, placebo-controlled pilot study. Evid Based Complement Alternat Med. 2018;2018:9147914.", pmid: "29849734", doi: "10.1155/2018/9147914", ourStudyPath: "/study/effects-of-alkaline-reduced-drinking-water-on-irritable-bowel-syndrome-with-diarrhea-a-randomized-double-blind-placebo-controlled-pilot-study-1775650467142" },
+      { n: 4, citation: "Liang B, et al. Hydrogen-rich water ameliorates metabolic disorder via modifying gut microbiota in impaired fasting glucose patients: a randomized controlled study. Antioxidants (Basel). 2023;12(6):1245.", pmid: "37371975", doi: "10.3390/antiox12061245", ourStudyPath: "/study/hydrogen-rich-water-ameliorates-metabolic-disorder-via-modifying-gut-microbiota-in-impaired-fasting-glucose-patients-a-randomized-controlled-study-1775650467170" },
+      { n: 5, citation: "Sha JB, et al. Effects of the long-term consumption of hydrogen-rich water on the antioxidant activity and the gut flora in female juvenile soccer players from Suzhou, China. Med Gas Res. 2018;8(4):135-143.", pmid: "30713665", doi: "10.4103/2045-9912.248263", ourStudyPath: "/study/effects-of-the-long-term-consumption-of-hydrogen-rich-water-on-the-antioxidant-activity-and-the-gut-flora-in-female-juvenile-soccer-players-from-suzhou-china-1775650467139" },
+      { n: 6, citation: "Maruyama T, et al. Hydrogen gas inhalation improved intestinal microbiota in ulcerative colitis: a randomised double-blind placebo-controlled trial. Biomedicines. 2025;13(8):1799.", pmid: "40868053", doi: "10.3390/biomedicines13081799", ourStudyPath: "/study/hydrogen-gas-inhalation-improved-intestinal-microbiota-in-ulcerative-colitis-a-randomised-double-blind-placebo-controlled-trial-1775650467179" },
+      { n: 7, citation: "Kajiya M, et al. Hydrogen mediates suppression of colon inflammation induced by dextran sodium sulfate. Biochem Biophys Res Commun. 2009;386(1):11-5.", pmid: "19486890", doi: "10.1016/j.bbrc.2009.05.117", ourStudyPath: "/study/hydrogen-mediates-suppression-of-colon-inflammation-induced-by-dextran-sodium-sulfate-1775650467159" },
+    ],
+    ownerLink: { href: "/hydrogen-for/gut-health", label: "Hydrogen and digestive health: what the research tested" },
+    bridgeTopic: null,
+    lastReviewed: "2026-11-01",
   },
 };
 

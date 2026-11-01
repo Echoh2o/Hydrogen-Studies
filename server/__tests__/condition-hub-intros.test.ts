@@ -72,7 +72,10 @@ import {
 import { invalidateBotCache, resolveStaticPageMeta, seoBotMiddleware } from "../middleware/seo-bot-middleware";
 
 const SITE = "https://hydrogenstudies.com";
-const SLUGS = ["kidney-health", "chronic-fatigue", "exercise-recovery", "skin-aging", "sleep-quality"];
+const SLUGS = [
+  "kidney-health", "chronic-fatigue", "exercise-recovery", "skin-aging", "sleep-quality",
+  "cholesterol", "type-2-diabetes", "fatty-liver-nafld", "weight-loss-metabolism", "gut-health",
+];
 const GOOGLEBOT = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)";
 
 /** What the seed (007_seed_health_conditions) stores — must never render on these hubs. */
@@ -96,6 +99,26 @@ const OLD_DESCRIPTIONS: Record<string, { name: string; description: string }> = 
   "sleep-quality": {
     name: "Sleep Quality",
     description: "Research on molecular hydrogen and sleep in adults, from small drinking, jelly and inhalation trials to animal studies.",
+  },
+  cholesterol: {
+    name: "Cholesterol",
+    description: "Blood lipid levels including LDL, HDL, and total cholesterol. Hydrogen may help maintain healthy cholesterol through antioxidant mechanisms.",
+  },
+  "type-2-diabetes": {
+    name: "Type 2 Diabetes",
+    description: "A chronic condition affecting how the body processes blood sugar (glucose). Hydrogen water research shows promising effects on glycemic control and insulin sensitivity.",
+  },
+  "fatty-liver-nafld": {
+    name: "Fatty Liver (NAFLD)",
+    description: "Non-alcoholic fatty liver disease, a condition of excess fat stored in the liver. Hydrogen may reduce hepatic oxidative stress and inflammation.",
+  },
+  "weight-loss-metabolism": {
+    name: "Weight Loss & Metabolism",
+    description: "Body weight management and metabolic rate. Emerging research suggests hydrogen may support healthy metabolism and body composition.",
+  },
+  "gut-health": {
+    name: "Gut Health",
+    description: "The function and balance of the gastrointestinal tract and its microbiome. Hydrogen water may positively influence gut barrier function and microbial diversity.",
   },
 };
 
@@ -131,14 +154,14 @@ beforeEach(() => {
   state.conditions = [
     ...SLUGS.map((slug, i) => ({ slug, ...OLD_DESCRIPTIONS[slug], study_count: 100 - i })),
     {
-      name: "Type 2 Diabetes",
-      slug: "type-2-diabetes",
-      study_count: 265,
-      description: "A metabolic disorder. Hydrogen water may improve insulin sensitivity.",
+      name: "Blood Pressure",
+      slug: "blood-pressure",
+      study_count: 150,
+      description: "The force of blood pushing against artery walls. Hydrogen may help maintain healthy blood pressure.",
     },
   ];
   state.conditionStudies = Object.fromEntries(
-    [...SLUGS.map((s) => OLD_DESCRIPTIONS[s].name), "Type 2 Diabetes"].map((name, i) => [
+    [...SLUGS.map((s) => OLD_DESCRIPTIONS[s].name), "Blood Pressure"].map((name, i) => [
       name,
       studyRows(name.toLowerCase().replace(/\W+/g, "-"), 3 + i),
     ]),
@@ -148,13 +171,13 @@ beforeEach(() => {
 // ── The shared records ──────────────────────────────────────────
 
 describe("shared/condition-hub-intros records", () => {
-  it("covers exactly the wave-3 and wave-4 hubs; lookup is case-insensitive", () => {
+  it("covers exactly the wave-3, wave-4 and wave-5 hubs; lookup is case-insensitive", () => {
     expect(Object.keys(CONDITION_HUB_INTROS).sort()).toEqual([...SLUGS].sort());
     for (const slug of SLUGS) {
       expect(CONDITION_HUB_INTROS[slug].slug).toBe(slug);
       expect(getConditionHubIntro(slug.toUpperCase())).toBe(CONDITION_HUB_INTROS[slug]);
     }
-    expect(getConditionHubIntro("type-2-diabetes")).toBeNull();
+    expect(getConditionHubIntro("blood-pressure")).toBeNull();
     expect(getConditionHubIntro("")).toBeNull();
     expect(getConditionHubIntro(undefined)).toBeNull();
   });
@@ -389,10 +412,10 @@ describe("crawler body (seo-body-renderer) for hubs with an intro", () => {
   });
 
   it("a hub without a record keeps its current rendering", async () => {
-    const html = (await renderPageBody("/explore-by-condition/type-2-diabetes"))!;
-    expect(html).toContain("<h1>Hydrogen Research for Type 2 Diabetes</h1>");
-    expect(html).toContain("<p>A metabolic disorder. Hydrogen water may improve insulin sensitivity.</p>");
-    expect(html).toContain(`<p>${state.conditionStudies["Type 2 Diabetes"].length} research studies on hydrogen therapy for type 2 diabetes.</p>`);
+    const html = (await renderPageBody("/explore-by-condition/blood-pressure"))!;
+    expect(html).toContain("<h1>Hydrogen Research for Blood Pressure</h1>");
+    expect(html).toContain("<p>The force of blood pushing against artery walls. Hydrogen may help maintain healthy blood pressure.</p>");
+    expect(html).toContain(`<p>${state.conditionStudies["Blood Pressure"].length} research studies on hydrogen therapy for blood pressure.</p>`);
     expect(html).not.toContain('class="byline"');
     expect(html).not.toContain(CONDITION_HUB_FAQ_HEADING);
     expect(html).not.toContain('<h2 id="sources">');
@@ -414,8 +437,8 @@ describe("crawler meta (seo-bot-middleware) for hubs with an intro", () => {
   });
 
   it("a hub without a record keeps the generic meta and no FAQPage", () => {
-    const meta = resolveStaticPageMeta("/explore-by-condition/type-2-diabetes")!;
-    expect(meta.title).toBe("Hydrogen Research for Type 2 Diabetes | Hydrogen Studies");
+    const meta = resolveStaticPageMeta("/explore-by-condition/blood-pressure")!;
+    expect(meta.title).toBe("Hydrogen Research for Blood Pressure | Hydrogen Studies");
     expect(meta.jsonLd).toBeUndefined();
   });
 

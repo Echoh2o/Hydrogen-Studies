@@ -487,6 +487,28 @@ describe("blog byline + Article JSON-LD", () => {
 
 // ── #7 /hydrogen-for topic meta + #4 wiring ─────────────────────
 
+/**
+ * Overclaim phrases banned from evidence-graded copy: /hydrogen-for FAQs and
+ * every condition-hub intro + FAQ (keyword plan waves 3–5).
+ */
+const OVERCLAIMS: RegExp[] = [
+  /\b(several|multiple|many) (clinical |peer-reviewed )?studies (suggest|show|have shown|demonstrate)/i,
+  /\bstudies (show|have shown|demonstrate)\b/i,
+  /\bresearch suggests\b/i,
+  /\bgenerally (show|shown|considered)\b/i,
+  /\bmay (support|provide)\b/i,
+  /cross(es)? the blood-brain barrier/i,
+  /neuroprotective/i,
+  /renoprotective/i,
+  /improv\w* (renal|kidney) function/i,
+  /improv\w* symptoms in patients/i,
+  /selective antioxidant that targets/i,
+  /\bmay help\b/i,
+  /\b(anti-inflammatory|antioxidant) properties\b/i,
+  /most studied approach/i,
+  /\bcures?\b|\bheals?\b/i,
+];
+
 describe("/hydrogen-for topic records", () => {
   it("has the 10 sitemap slugs with compliant title/description lengths", () => {
     expect(Object.keys(HYDROGEN_FOR_TOPICS).sort()).toEqual([
@@ -537,24 +559,6 @@ describe("/hydrogen-for topic records", () => {
   // treatment claims; send people with a disease to their clinician.
   const ALL_FAQS = Object.values(HYDROGEN_FOR_TOPICS).flatMap((t) => t.faqs.map((f) => ({ slug: t.slug, ...f })));
   const wordCount = (s: string) => s.trim().split(/\s+/).length;
-  const OVERCLAIMS: RegExp[] = [
-    /\b(several|multiple|many) (clinical |peer-reviewed )?studies (suggest|show|have shown|demonstrate)/i,
-    /\bstudies (show|have shown|demonstrate)\b/i,
-    /\bresearch suggests\b/i,
-    /\bgenerally (show|shown|considered)\b/i,
-    /\bmay (support|provide)\b/i,
-    /cross(es)? the blood-brain barrier/i,
-    /neuroprotective/i,
-    /renoprotective/i,
-    /improv\w* (renal|kidney) function/i,
-    /improv\w* symptoms in patients/i,
-    /selective antioxidant that targets/i,
-    /\bmay help\b/i,
-    /\b(anti-inflammatory|antioxidant) properties\b/i,
-    /most studied approach/i,
-    /\bcures?\b|\bheals?\b/i,
-  ];
-
   it("every topic has 4–6 FAQs of 40–90 words, as plain self-contained text", () => {
     for (const t of Object.values(HYDROGEN_FOR_TOPICS)) {
       expect(t.faqs.length, t.slug).toBeGreaterThanOrEqual(4);
@@ -640,10 +644,11 @@ describe("/hydrogen-for topic records", () => {
 
 // ── Keyword plan wave 3: evidence-graded condition hubs ─────────
 
-describe("condition hub intro records (/explore-by-condition, waves 3–4)", () => {
+describe("condition hub intro records (/explore-by-condition, waves 3–5)", () => {
   it("meta title ≤ 60 incl. suffix, description 140–160, no product bridge", () => {
     expect(Object.keys(CONDITION_HUB_INTROS).sort()).toEqual([
-      "chronic-fatigue", "exercise-recovery", "kidney-health", "skin-aging", "sleep-quality",
+      "cholesterol", "chronic-fatigue", "exercise-recovery", "fatty-liver-nafld", "gut-health",
+      "kidney-health", "skin-aging", "sleep-quality", "type-2-diabetes", "weight-loss-metabolism",
     ]);
     for (const r of Object.values(CONDITION_HUB_INTROS)) {
       expect(r.metaTitle.length, r.slug).toBeLessThanOrEqual(60);
@@ -663,6 +668,22 @@ describe("condition hub intro records (/explore-by-condition, waves 3–4)", () 
       expect(faqPairsIfVisible(pairs, visible), r.slug).toEqual(pairs);
       // One H1, and the intro's headings are H2s.
       expect((visible.match(/<h1\b/g) ?? []).length, r.slug).toBe(1);
+    }
+  });
+
+  it("no overclaim phrases in any hub intro or FAQ answer", () => {
+    for (const r of Object.values(CONDITION_HUB_INTROS)) {
+      const texts = [r.introMarkdown, ...r.faqs.map((f) => f.answer)];
+      for (const t of texts) for (const re of OVERCLAIMS) expect(t, `${r.slug}: ${re}`).not.toMatch(re);
+    }
+  });
+
+  it("disease hubs (wave 5) never carry a bridge, and their FAQ points readers to a doctor", () => {
+    for (const slug of ["cholesterol", "type-2-diabetes", "fatty-liver-nafld", "gut-health"]) {
+      const r = CONDITION_HUB_INTROS[slug];
+      expect(isBridgeAllowed(slug), slug).toBe(false);
+      expect(r.bridgeTopic, slug).toBeNull();
+      expect(r.faqs.some((f) => /\bdoctor\b/i.test(f.answer)), slug).toBe(true);
     }
   });
 });
