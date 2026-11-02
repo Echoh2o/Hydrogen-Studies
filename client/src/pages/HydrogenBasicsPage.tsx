@@ -38,54 +38,54 @@ export default function HydrogenBasicsPage() {
       icon: <Droplets className="h-6 w-6 text-teal-600" />,
       description: "Drinking water infused with dissolved molecular hydrogen",
       benefits: ["Easy to consume", "Convenient for daily use", "Portable"],
-      studies: 450,
-      typical_dose: "1-2 liters daily",
+      evidence: "Most human trials; mostly small and short",
+      typical_dose: "About 0.5–1.5 liters daily in trials",
     },
     {
-      method: "Inhalation Therapy",
+      method: "Inhalation",
       icon: <Wind className="h-6 w-6 text-green-600" />,
       description: "Breathing hydrogen gas through specialized equipment",
       benefits: [
-        "Direct lung absorption",
-        "Fast-acting",
-        "High bioavailability",
+        "Absorbed through the lungs",
+        "Reaches the blood within minutes",
+        "Used mainly in hospital research settings",
       ],
-      studies: 320,
-      typical_dose: "2-4% concentration",
+      evidence: "Mostly animal and hospital studies",
+      typical_dose: "Up to ~4% H₂ in air in studies",
     },
     {
       method: "Hydrogen Baths",
       icon: <Bath className="h-6 w-6 text-purple-600" />,
       description: "Bathing in water infused with hydrogen gas",
       benefits: [
-        "Skin absorption",
+        "Some hydrogen passes through skin",
         "Relaxing experience",
         "Full-body exposure",
       ],
-      studies: 85,
-      typical_dose: "15-30 minute sessions",
+      evidence: "Few studies, mostly small",
+      typical_dose: "15–30 minute sessions",
     },
   ];
 
   const keyMechanisms = [
     {
-      title: "Selective Antioxidant",
+      title: "Mild Antioxidant",
       description:
-        "Hydrogen targets only harmful free radicals while preserving beneficial ones",
+        "Acts as a mild antioxidant in lab and animal studies",
       detail:
-        "Unlike other antioxidants, hydrogen specifically neutralizes hydroxyl radicals and peroxynitrite without affecting important signaling molecules.",
+        "Early cell studies suggested hydrogen reacts mainly with the most reactive radicals (\"selective\"), but that idea comes mostly from cell and animal work, and later chemistry research questioned it. Results in people are inconsistent.",
     },
     {
-      title: "Anti-Inflammatory",
-      description: "Reduces inflammation by modulating inflammatory pathways",
+      title: "Inflammation Signals",
+      description: "Studied for effects on inflammatory pathways",
       detail:
-        "Studies show hydrogen can suppress pro-inflammatory cytokines and activate anti-inflammatory responses throughout the body.",
+        "Many animal studies report lower inflammatory markers. Human trials are small, and their results are mixed.",
     },
     {
-      title: "Cellular Protection",
-      description: "Protects cells from oxidative stress and damage",
+      title: "Cell Signaling",
+      description: "Being studied for effects on how cells handle oxidative stress",
       detail:
-        "Hydrogen can penetrate cell membranes and reach mitochondria, protecting cellular energy production and DNA.",
+        "Because it is so small, hydrogen diffuses through cell membranes, including into mitochondria. Whether that protects cells in people hasn't been shown.",
     },
   ];
 
@@ -93,10 +93,10 @@ export default function HydrogenBasicsPage() {
     <>
       <SiteHeader />
       <Helmet>
-        <title>Hydrogen Basics - Understanding Molecular Hydrogen Therapy</title>
-        <meta name="description" content="Learn the fundamentals of molecular hydrogen therapy. Understand how H2 works, delivery methods, and the science behind hydrogen health benefits." />
-        <meta property="og:title" content="Hydrogen Basics - Understanding Molecular Hydrogen Therapy" />
-        <meta property="og:description" content="Learn the fundamentals of molecular hydrogen therapy. Understand how H2 works, delivery methods, and the science behind hydrogen health benefits." />
+        <title>Hydrogen Basics - Understanding Molecular Hydrogen</title>
+        <meta name="description" content="The basics of molecular hydrogen (H2): what it is, how it's taken, what research does and doesn't show, and what's known about safety." />
+        <meta property="og:title" content="Hydrogen Basics - Understanding Molecular Hydrogen" />
+        <meta property="og:description" content="The basics of molecular hydrogen (H2): what it is, how it's taken, what research does and doesn't show, and what's known about safety." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://hydrogenstudies.com/learn/basics" />
         <meta name="twitter:card" content="summary" />
@@ -121,18 +121,18 @@ export default function HydrogenBasicsPage() {
           <div className="max-w-4xl mx-auto text-center">
             <Atom className="h-16 w-16 text-teal-600 mx-auto mb-6" />
             <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">
-              Hydrogen Therapy
+              Molecular Hydrogen
               <span className="bg-gradient-to-r from-teal-600 to-purple-600 bg-clip-text text-transparent">
                 {" "}
                 Basics
               </span>
             </h1>
             <p className="text-xl text-gray-600 mb-8">
-              Everything you need to know about molecular hydrogen and its
-              potential health benefits
+              What molecular hydrogen is, how it's taken, and what research
+              does — and doesn't — show
             </p>
             <Badge className="bg-teal-100 text-teal-800 px-4 py-2">
-              Based on {siteStats?.totalStudies ? `${siteStats.totalStudies.toLocaleString()}+` : "1,300+"} peer-reviewed studies
+              From a database of {siteStats?.totalStudies ? `${siteStats.totalStudies.toLocaleString("en-US")}+` : "2,000+"} studies — most in animals or cells
             </Badge>
           </div>
         </section>
@@ -161,7 +161,7 @@ export default function HydrogenBasicsPage() {
                   <ul className="space-y-2">
                     <li className="flex items-center">
                       <Shield className="h-4 w-4 text-green-600 mr-2" />
-                      Non-toxic and safe
+                      Well tolerated in short trials
                     </li>
                     <li className="flex items-center">
                       <Atom className="h-4 w-4 text-teal-600 mr-2" />
@@ -169,7 +169,7 @@ export default function HydrogenBasicsPage() {
                     </li>
                     <li className="flex items-center">
                       <Heart className="h-4 w-4 text-red-600 mr-2" />
-                      Crosses biological barriers easily
+                      Diffuses easily through tissues
                     </li>
                   </ul>
                 </div>
@@ -178,9 +178,10 @@ export default function HydrogenBasicsPage() {
                     How It Works
                   </h3>
                   <p className="text-gray-600">
-                    Due to its tiny size, hydrogen can penetrate cell membranes
-                    and reach areas other antioxidants cannot, including the
-                    brain, mitochondria, and nucleus.
+                    Because it is so small, hydrogen diffuses through cell
+                    membranes, including into mitochondria and across the
+                    blood-brain barrier. Much of what's known about its effects
+                    comes from animal and cell studies.
                   </p>
                 </div>
               </div>
@@ -192,7 +193,7 @@ export default function HydrogenBasicsPage() {
         <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-3xl font-bold text-gray-900 mb-12 text-center">
-              How Hydrogen Works in Your Body
+              What Researchers Are Studying
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -215,7 +216,7 @@ export default function HydrogenBasicsPage() {
         <section className="py-16 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <h2 className="text-3xl font-bold text-gray-900 mb-12 text-center">
-              Ways to Use Hydrogen Therapy
+              Ways Hydrogen Is Taken
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -231,7 +232,7 @@ export default function HydrogenBasicsPage() {
                   <CardContent className="space-y-4">
                     <div>
                       <p className="font-medium text-gray-700 mb-2">
-                        Benefits:
+                        Key points:
                       </p>
                       <ul className="space-y-1">
                         {method.benefits.map((benefit) => (
@@ -248,9 +249,9 @@ export default function HydrogenBasicsPage() {
                     <div className="pt-4 border-t space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-500">
-                          Supporting studies:
+                          Evidence:
                         </span>
-                        <Badge variant="outline">{method.studies}</Badge>
+                        <Badge variant="outline">{method.evidence}</Badge>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-500">Typical usage:</span>
@@ -277,8 +278,9 @@ export default function HydrogenBasicsPage() {
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
                 <strong>Important:</strong> Always consult with a healthcare
-                professional before starting any hydrogen therapy, especially if
-                you have existing medical conditions or take medications.
+                professional before trying hydrogen, especially if you are
+                pregnant, have a medical condition or take medications.
+                Hydrogen is not a treatment for any disease.
               </AlertDescription>
             </Alert>
 
@@ -286,18 +288,15 @@ export default function HydrogenBasicsPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-green-700">
-                    Generally Safe
+                    What's Known
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <p className="text-sm text-gray-600">
-                    ✓ No known serious side effects
+                    ✓ Well tolerated in short human trials
                   </p>
                   <p className="text-sm text-gray-600">
-                    ✓ Well-tolerated by most people
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    ✓ Decades of safe use in medical settings
+                    ✓ Side effects reported were mild, such as loose stools or bloating, mostly with magnesium tablets
                   </p>
                   <p className="text-sm text-gray-600">
                     ✓ Natural molecule produced by gut bacteria
@@ -313,13 +312,13 @@ export default function HydrogenBasicsPage() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <p className="text-sm text-gray-600">
-                    • Start with lower doses
+                    • Safety beyond a few months hasn't been studied
                   </p>
                   <p className="text-sm text-gray-600">
-                    • Monitor your body's response
+                    • Most trials are small; many found little or no effect
                   </p>
                   <p className="text-sm text-gray-600">
-                    • Quality matters - use reputable sources
+                    • Product concentrations vary — look for third-party testing
                   </p>
                   <p className="text-sm text-gray-600">
                     • Individual results may vary
@@ -346,7 +345,7 @@ export default function HydrogenBasicsPage() {
                       Health Benefits
                     </CardTitle>
                     <CardDescription className="text-center">
-                      Explore specific health conditions hydrogen may support
+                      What research has looked at, topic by topic
                     </CardDescription>
                   </CardHeader>
                 </Card>
@@ -358,7 +357,7 @@ export default function HydrogenBasicsPage() {
                     <Shield className="h-8 w-8 text-teal-600 mx-auto mb-2" />
                     <CardTitle className="text-center">View Research</CardTitle>
                     <CardDescription className="text-center">
-                      Browse our database of peer-reviewed studies
+                      Browse our database of published studies
                     </CardDescription>
                   </CardHeader>
                 </Card>

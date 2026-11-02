@@ -130,7 +130,7 @@ export function AdvancedSearchFilters({
       "Meta-analysis",
     ],
     mechanisms: [
-      "Selective Antioxidant",
+      "Antioxidant",
       "Gene Expression",
       "Signal Modulation",
       "Enzymatic Activity",

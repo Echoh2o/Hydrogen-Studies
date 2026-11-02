@@ -25,7 +25,6 @@ import {
 } from "lucide-react";
 import JsonLd, {
   generateFaqSchema,
-  generateCourseSchema,
 } from "@/components/seo/JsonLd";
 
 // FAQ data for structured data and content
@@ -33,27 +32,32 @@ const hydrogenFaqs = [
   {
     question: "What is molecular hydrogen therapy?",
     answer:
-      "Molecular hydrogen (H₂) therapy involves the administration of hydrogen gas, typically through hydrogen-rich water, hydrogen gas inhalation, or hydrogen baths. Hydrogen acts as a selective antioxidant that can penetrate cell membranes and neutralize harmful free radicals while preserving beneficial ones.",
+      "\"Molecular hydrogen therapy\" is the term researchers use for giving hydrogen gas (H₂) — usually as hydrogen-rich water, by inhalation, or in baths — to study its effects. In lab and animal studies hydrogen acts as a mild antioxidant. It is not an approved treatment for any disease.",
   },
   {
-    question: "How does hydrogen therapy work in the body?",
+    question: "How does hydrogen work in the body?",
     answer:
-      "Hydrogen therapy works through several mechanisms: 1) It selectively neutralizes harmful free radicals like hydroxyl radicals while preserving beneficial ones, 2) It activates the Nrf2 pathway that regulates antioxidant proteins, 3) It reduces inflammatory responses and cytokine production, and 4) It influences cell signaling pathways and gene expression related to metabolism and cell survival.",
+      "That isn't settled. Proposed mechanisms, mostly from cell and animal studies, include mild antioxidant activity, activation of the Nrf2 antioxidant pathway, lower inflammatory signaling, and effects on cell signaling and gene expression. The early idea that hydrogen selectively neutralizes only the most harmful free radicals comes mainly from cell and animal work, and later chemistry research questioned it.",
   },
   {
-    question: "What health conditions may benefit from hydrogen therapy?",
+    question: "What health conditions has hydrogen been studied for?",
     answer:
-      "Research suggests hydrogen therapy may benefit various conditions including metabolic disorders (diabetes, obesity), inflammatory conditions (arthritis, IBD), neurodegenerative diseases (Alzheimer's, Parkinson's), cardiovascular issues (hypertension, heart disease), respiratory conditions, liver and kidney function, athletic performance, and overall longevity.",
+      "Researchers have studied hydrogen in metabolic, inflammatory, neurological, cardiovascular, respiratory, liver and kidney conditions, and in exercise recovery. Most of this research is in animals or cells. Human trials are mostly small and short, results are mixed, and several found no difference from placebo. Hydrogen is not proven to treat or prevent any disease.",
   },
   {
-    question: "What are the different ways to administer hydrogen therapy?",
+    question: "What are the different ways hydrogen is given?",
     answer:
-      "Hydrogen can be administered through multiple methods: 1) Drinking hydrogen-rich water, 2) Inhaling hydrogen gas, 3) Hydrogen baths or topical application, 4) Hydrogen sauna therapy, and 5) Hydrogen-generating supplements. Each delivery method has different bioavailability characteristics and potential applications.",
+      "The main methods are: 1) drinking hydrogen-rich water (made by a machine, bottle, tablet or powder), 2) inhaling hydrogen gas mixed with air, 3) hydrogen baths, and 4) topical products. Each delivers a different amount of hydrogen, and few studies compare methods directly.",
+  },
+  {
+    question: "Is hydrogen therapy safe?",
+    answer:
+      "In the human trials so far it has been well tolerated: most found no serious side effects, and those reported were mild, such as loose stools or bloating, mostly with magnesium-based tablets. But the trials are small and short — safety beyond a few months hasn't been studied. Hydrogen gas is flammable in air from about 4%, so inhalation devices should only be used as directed. If you're pregnant, take medication or have a medical condition, talk to your doctor first.",
   },
   {
     question: "Is hydrogen therapy supported by scientific research?",
     answer:
-      "Yes, hydrogen therapy has been studied in hundreds of peer-reviewed scientific papers including cell studies, animal research, and human clinical trials. Research began gaining significant momentum after a landmark paper published in Nature Medicine in 2007, and the field has grown substantially since then with clinical trials investigating various applications of molecular hydrogen.",
+      "It has been studied, but the evidence is early. Our database lists 2,000+ published studies since a 2007 Nature Medicine paper drew attention to hydrogen — most of them cell or animal studies. Human trials are mostly small and short, and their results are mixed.",
   },
 ];
 
@@ -62,35 +66,35 @@ const HydrogenTherapyGuide = () => {
     <>
       <Helmet>
         <title>
-          Molecular Hydrogen Therapy: The Ultimate Guide | Benefits & Scientific
-          Evidence
+          Molecular Hydrogen Therapy: What the Research Shows | Hydrogen
+          Studies
         </title>
         <meta
           name="description"
-          content="Learn everything about molecular hydrogen therapy and its health benefits. Comprehensive guide covering the science, applications, and research evidence behind H2 therapy."
+          content="What researchers call molecular hydrogen therapy, how hydrogen is given (water, inhalation, baths), and what the evidence does — and doesn't — show."
         />
         <meta
           name="keywords"
-          content="molecular hydrogen therapy, h2 health benefits, hydrogen water guide, hydrogen gas inhalation, hydrogen medicine, hydrogen therapy research"
+          content="molecular hydrogen therapy, hydrogen water research, hydrogen gas inhalation, hydrogen therapy research"
         />
         <link
           rel="canonical"
-          href="https://hydrogenstudies.com/educational/hydrogen-therapy-guide"
+          href="https://hydrogenstudies.com/learn/therapy-guide"
         />
 
         {/* Open Graph Tags */}
         <meta
           property="og:title"
-          content="Complete Guide to Molecular Hydrogen Therapy | Science & Benefits"
+          content="Molecular Hydrogen Therapy: What the Research Shows"
         />
         <meta
           property="og:description"
-          content="Discover how molecular hydrogen therapy works, its potential health benefits, and the science behind this innovative therapeutic approach."
+          content="How hydrogen is studied, how it's given, and what the evidence does — and doesn't — show."
         />
         <meta property="og:type" content="article" />
         <meta
           property="og:url"
-          content="https://hydrogenstudies.com/educational/hydrogen-therapy-guide"
+          content="https://hydrogenstudies.com/learn/therapy-guide"
         />
         <meta property="og:image" content="/og-hydrogen-therapy-guide.jpg" />
 
@@ -98,11 +102,11 @@ const HydrogenTherapyGuide = () => {
         <meta name="twitter:card" content="summary_large_image" />
         <meta
           name="twitter:title"
-          content="Molecular Hydrogen Therapy Guide: Science-Based Benefits"
+          content="Molecular Hydrogen Therapy: What the Research Shows"
         />
         <meta
           name="twitter:description"
-          content="Comprehensive guide to molecular hydrogen therapy explaining the science, methods of administration, and potential health benefits based on research."
+          content="How hydrogen is studied, how it's given, and what the evidence does — and doesn't — show."
         />
       </Helmet>
 
@@ -112,12 +116,12 @@ const HydrogenTherapyGuide = () => {
       <JsonLd
         type="Article"
         data={{
-          headline: "The Complete Guide to Molecular Hydrogen Therapy",
+          headline: "Molecular Hydrogen Therapy: What the Research Shows",
           description:
-            "Comprehensive overview of molecular hydrogen therapy, including its mechanisms, benefits, and application methods",
+            "How hydrogen is studied, how it's given, and what the evidence does and doesn't show",
           image: "/og-hydrogen-therapy-guide.jpg",
           datePublished: "2025-05-21T00:00:00.000Z",
-          dateModified: new Date().toISOString(),
+          dateModified: "2026-11-02T00:00:00.000Z",
           author: {
             "@type": "Organization",
             name: "Hydrogen Studies Research Team",
@@ -135,56 +139,7 @@ const HydrogenTherapyGuide = () => {
               "@type": "Thing",
               name: "Molecular Hydrogen",
             },
-            {
-              "@type": "Thing",
-              name: "Medical Therapy",
-            },
           ],
-        }}
-      />
-
-      {/* Course Schema for educational content */}
-      <JsonLd
-        type="Course"
-        data={{
-          name: "Comprehensive Molecular Hydrogen Therapy Guide",
-          description:
-            "Learn about molecular hydrogen therapy, its mechanisms of action, health benefits, and different administration methods.",
-          provider: {
-            "@type": "Organization",
-            name: "Hydrogen Studies",
-            sameAs: "https://hydrogenstudies.com",
-          },
-          hasCourseInstance: {
-            "@type": "CourseInstance",
-            courseMode: "ONLINE",
-            courseWorkload: "PT1H",
-            educationalLevel: "BEGINNER",
-            offers: {
-              "@type": "Offer",
-              availability: "http://schema.org/InStock",
-              price: "0",
-              priceCurrency: "USD",
-            },
-          },
-          teaches: [
-            "Molecular hydrogen therapy principles",
-            "Selective antioxidant properties",
-            "Anti-inflammatory effects",
-            "Administration methods",
-            "Research evidence for health benefits",
-          ],
-          educationalCredentialAwarded: "Certificate of Completion",
-          learningResource: {
-            "@type": "LearningResource",
-            educationalUse: "SELF_ASSESSMENT",
-            educationalAlignment: {
-              "@type": "AlignmentObject",
-              alignmentType: "teaches",
-              educationalFramework: "Health Sciences",
-              targetName: "Complementary and Alternative Medicine",
-            },
-          },
         }}
       />
 
@@ -196,20 +151,19 @@ const HydrogenTherapyGuide = () => {
               <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight mb-4">
                 Molecular Hydrogen Therapy:{" "}
                 <span className="text-primary bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-indigo-600">
-                  The Complete Guide
+                  What the Research Shows
                 </span>
               </h1>
               <p className="text-xl text-gray-700 mb-6">
-                Discover the science, benefits, and applications of one of the
-                most promising therapeutic approaches in health research.
+                A plain-English guide to how hydrogen is studied, how it&apos;s
+                given, and what the evidence does — and doesn&apos;t — show.
               </p>
               <div className="flex flex-wrap gap-4">
-                <Button size="lg" className="shadow-lg">
-                  Browse Research Studies
-                </Button>
-                <Button size="lg" variant="outline">
-                  Watch Video Guide
-                </Button>
+                <Link href="/studies">
+                  <Button size="lg" className="shadow-lg">
+                    Browse Research Studies
+                  </Button>
+                </Link>
               </div>
             </div>
             <div className="flex-1 flex justify-center">
@@ -234,12 +188,13 @@ const HydrogenTherapyGuide = () => {
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              What is Molecular Hydrogen Therapy?
+              What Researchers Call Hydrogen Therapy
             </h2>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Molecular hydrogen (H₂) therapy is a novel therapeutic approach
-              that involves the administration of hydrogen gas to combat
-              oxidative stress and inflammation in the body.
+              &quot;Hydrogen therapy&quot; is the research term for giving people
+              or animals molecular hydrogen (H₂) — by drinking, breathing or
+              bathing — to study its effects on oxidative stress and
+              inflammation. It is not an approved treatment for any condition.
             </p>
           </div>
 
@@ -247,13 +202,13 @@ const HydrogenTherapyGuide = () => {
             <div>
               <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
                 <ShieldCheck className="h-6 w-6 mr-2 text-primary" />
-                Selective Antioxidant Properties
+                Antioxidant Activity
               </h3>
               <p className="text-gray-600">
-                Unlike conventional antioxidants, molecular hydrogen selectively
-                neutralizes only the most harmful free radicals, such as
-                hydroxyl radicals, while preserving beneficial reactive oxygen
-                species that are important for cell signaling.
+                In lab and animal studies, hydrogen acts as a mild antioxidant.
+                The idea that it selectively neutralizes only the most harmful
+                free radicals, such as hydroxyl radicals, comes mainly from cell
+                and animal work, and later chemistry research questioned it.
               </p>
             </div>
 
@@ -263,22 +218,20 @@ const HydrogenTherapyGuide = () => {
                 Cell Membrane Penetration
               </h3>
               <p className="text-gray-600">
-                As the smallest molecule in the universe, hydrogen can rapidly
-                diffuse through cell membranes and reach cellular compartments
-                that many other substances cannot, including mitochondria and
-                the nucleus.
+                As the smallest molecule there is, hydrogen diffuses easily
+                through cell membranes without needing a transporter, including
+                into mitochondria and the nucleus.
               </p>
             </div>
 
             <div>
               <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
                 <Activity className="h-6 w-6 mr-2 text-primary" />
-                Anti-Inflammatory Effects
+                Inflammation Research
               </h3>
               <p className="text-gray-600">
-                Research indicates that hydrogen therapy can reduce inflammatory
-                markers and cytokine production, helping to modulate the immune
-                response and potentially benefit inflammatory conditions.
+                Many animal studies report lower inflammatory markers after
+                hydrogen. Human trials are small, and their results are mixed.
               </p>
             </div>
 
@@ -288,10 +241,10 @@ const HydrogenTherapyGuide = () => {
                 Cell Signaling Modulation
               </h3>
               <p className="text-gray-600">
-                Hydrogen may influence cell signaling pathways and gene
-                expression related to metabolism, inflammation, and cell
-                survival, potentially explaining its wide range of therapeutic
-                effects.
+                Researchers have proposed that hydrogen affects cell signaling
+                and gene expression (for example, the Nrf2 antioxidant pathway).
+                These mechanisms come from lab and animal studies and are still
+                debated.
               </p>
             </div>
           </div>
@@ -303,11 +256,11 @@ const HydrogenTherapyGuide = () => {
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Hydrogen Therapy Delivery Methods
+              How Hydrogen Is Given
             </h2>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Molecular hydrogen can be administered through various methods,
-              each with different characteristics and potential applications.
+              Studies have given hydrogen in several ways. Each delivers a
+              different amount, and few studies compare methods directly.
             </p>
           </div>
 
@@ -320,7 +273,7 @@ const HydrogenTherapyGuide = () => {
                 Gas Inhalation
               </TabsTrigger>
               <TabsTrigger value="bath" className="flex-1">
-                Bath Therapy
+                Baths
               </TabsTrigger>
               <TabsTrigger value="topical" className="flex-1">
                 Topical
@@ -335,8 +288,7 @@ const HydrogenTherapyGuide = () => {
                     Hydrogen-Rich Water
                   </CardTitle>
                   <CardDescription>
-                    The most common and convenient method of hydrogen
-                    administration
+                    The most common way people take hydrogen at home
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -357,10 +309,11 @@ const HydrogenTherapyGuide = () => {
                     <li>Premade hydrogen water in special packaging</li>
                   </ul>
                   <p className="text-gray-700">
-                    Typical concentration ranges from 0.5 to 1.6 parts per
-                    million (ppm), with research suggesting therapeutic benefits
-                    at these levels. Hydrogen-rich water is particularly
-                    suitable for metabolic, digestive, and systemic conditions.
+                    Most human drinking trials used roughly 0.5 to 1.6 parts per
+                    million (ppm); no trial has shown that a higher
+                    concentration works better. Dissolved hydrogen escapes
+                    quickly, so water made right before drinking keeps more of
+                    it.
                   </p>
                   <div className="mt-6">
                     <Link href="/explore-by-mechanism/hydrogen-water">
@@ -382,8 +335,7 @@ const HydrogenTherapyGuide = () => {
                     Hydrogen Gas Inhalation
                   </CardTitle>
                   <CardDescription>
-                    Direct inhalation of hydrogen gas for rapid delivery to the
-                    bloodstream and tissues
+                    Breathing hydrogen gas mixed with air
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -393,24 +345,24 @@ const HydrogenTherapyGuide = () => {
                   </p>
                   <ul className="list-disc list-inside space-y-2 text-gray-700">
                     <li>
-                      Typically uses a 1-4% hydrogen gas concentration (well
-                      below the 4.6% flammability threshold)
+                      Studies have mostly used 1–4% hydrogen in air; hydrogen
+                      is flammable in air from about 4%, so devices should only
+                      be used as directed
                     </li>
                     <li>
                       Administered through specialized hydrogen inhalation
                       machines
                     </li>
-                    <li>Sessions typically range from 30 minutes to 1 hour</li>
+                    <li>Session length varies widely between studies</li>
                     <li>
-                      Provides higher bioavailability than water-dissolved
-                      hydrogen
+                      Can deliver more hydrogen in total than drinking water,
+                      depending on concentration and duration
                     </li>
                   </ul>
                   <p className="text-gray-700">
-                    Hydrogen gas inhalation may be particularly effective for
-                    neurological, respiratory, and acute conditions due to its
-                    rapid delivery. Clinical settings often prefer this method
-                    for therapeutic applications.
+                    Most inhalation research is in animals or in small hospital
+                    studies. It has not been shown to treat any condition, and
+                    home use has been studied far less.
                   </p>
                   <div className="mt-6">
                     <Link href="/explore-by-mechanism/hydrogen-inhalation">
@@ -429,11 +381,10 @@ const HydrogenTherapyGuide = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center">
                     <Droplet className="h-6 w-6 mr-2 text-cyan-500" />
-                    Hydrogen Bath Therapy
+                    Hydrogen Baths
                   </CardTitle>
                   <CardDescription>
-                    Immersion in hydrogen-rich water for topical absorption and
-                    relaxation
+                    Bathing in hydrogen-rich water
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -448,24 +399,22 @@ const HydrogenTherapyGuide = () => {
                     </li>
                     <li>Typical bath sessions last 20-30 minutes</li>
                     <li>
-                      Hydrogen can be absorbed through the skin and mucous
-                      membranes
+                      Hydrogen can pass through skin, but how much reaches the
+                      body from a bath hasn&apos;t been well measured
                     </li>
                     <li>
-                      Often combined with magnesium or other minerals for
-                      enhanced effects
+                      Some bath products use magnesium to generate the hydrogen
                     </li>
                   </ul>
                   <p className="text-gray-700">
-                    Hydrogen baths may be particularly beneficial for skin
-                    conditions, muscle recovery, and stress reduction. The
-                    warmth of the bath may enhance circulation and hydrogen
-                    absorption.
+                    Research on hydrogen baths is limited to a few small
+                    studies. Benefits for skin, muscle recovery or stress are
+                    not established.
                   </p>
                   <div className="mt-6">
                     <Link href="/explore-by-mechanism/hydrogen-bath">
                       <Button variant="outline" className="flex items-center">
-                        View Bath Therapy Studies
+                        View Hydrogen Bath Studies
                         <MoveRight className="ml-2 h-4 w-4" />
                       </Button>
                     </Link>
@@ -482,7 +431,7 @@ const HydrogenTherapyGuide = () => {
                     Topical Hydrogen Applications
                   </CardTitle>
                   <CardDescription>
-                    Direct application to skin for localized effects
+                    Products applied directly to the skin
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -500,10 +449,9 @@ const HydrogenTherapyGuide = () => {
                     <li>Hydrogen-rich water used in compresses</li>
                   </ul>
                   <p className="text-gray-700">
-                    Topical applications may benefit skin conditions, localized
-                    inflammation, and wound healing. Research suggests hydrogen
-                    can penetrate the skin barrier to provide antioxidant
-                    effects in underlying tissues.
+                    Evidence for topical hydrogen comes mostly from lab and
+                    animal studies, with few human trials. Effects on skin
+                    conditions or wound healing are not established.
                   </p>
                   <div className="mt-6">
                     <Link href="/explore-by-mechanism/topical-hydrogen">
@@ -525,11 +473,11 @@ const HydrogenTherapyGuide = () => {
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Potential Health Benefits
+              What Researchers Are Studying
             </h2>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Research suggests molecular hydrogen may offer benefits across
-              various health conditions and systems.
+              These are the areas studied most. Much of the work is in animals
+              or cells, and none of it shows that hydrogen treats a disease.
             </p>
           </div>
 
@@ -547,25 +495,25 @@ const HydrogenTherapyGuide = () => {
                     <div className="h-5 w-5 rounded-full bg-teal-100 flex items-center justify-center mr-2 mt-0.5">
                       <div className="h-2 w-2 rounded-full bg-teal-500"></div>
                     </div>
-                    <span>Reduction in oxidative stress markers</span>
+                    <span>Oxidative stress markers — some small human trials</span>
                   </li>
                   <li className="flex items-start">
                     <div className="h-5 w-5 rounded-full bg-teal-100 flex items-center justify-center mr-2 mt-0.5">
                       <div className="h-2 w-2 rounded-full bg-teal-500"></div>
                     </div>
-                    <span>Improved endothelial function</span>
+                    <span>Blood vessel (endothelial) function — a few small human trials</span>
                   </li>
                   <li className="flex items-start">
                     <div className="h-5 w-5 rounded-full bg-teal-100 flex items-center justify-center mr-2 mt-0.5">
                       <div className="h-2 w-2 rounded-full bg-teal-500"></div>
                     </div>
-                    <span>Potential blood pressure regulation</span>
+                    <span>Blood pressure — mixed results</span>
                   </li>
                   <li className="flex items-start">
                     <div className="h-5 w-5 rounded-full bg-teal-100 flex items-center justify-center mr-2 mt-0.5">
                       <div className="h-2 w-2 rounded-full bg-teal-500"></div>
                     </div>
-                    <span>Protection against ischemia-reperfusion injury</span>
+                    <span>Heart and vessel injury — mostly animal studies</span>
                   </li>
                 </ul>
                 <div className="mt-6">
@@ -596,7 +544,8 @@ const HydrogenTherapyGuide = () => {
                       <div className="h-2 w-2 rounded-full bg-purple-500"></div>
                     </div>
                     <span>
-                      Neuroprotective effects against oxidative damage
+                      Brain protection from oxidative damage — mostly animal
+                      studies
                     </span>
                   </li>
                   <li className="flex items-start">
@@ -604,21 +553,23 @@ const HydrogenTherapyGuide = () => {
                       <div className="h-2 w-2 rounded-full bg-purple-500"></div>
                     </div>
                     <span>
-                      Potential benefits in neurodegenerative conditions
+                      Neurodegenerative disease — mostly animal studies; small
+                      human trials with mixed results
                     </span>
                   </li>
                   <li className="flex items-start">
                     <div className="h-5 w-5 rounded-full bg-purple-100 flex items-center justify-center mr-2 mt-0.5">
                       <div className="h-2 w-2 rounded-full bg-purple-500"></div>
                     </div>
-                    <span>Reduction in neuroinflammation</span>
+                    <span>Brain inflammation — animal studies</span>
                   </li>
                   <li className="flex items-start">
                     <div className="h-5 w-5 rounded-full bg-purple-100 flex items-center justify-center mr-2 mt-0.5">
                       <div className="h-2 w-2 rounded-full bg-purple-500"></div>
                     </div>
                     <span>
-                      Improvement in cognitive function in some studies
+                      Cognitive function — a few small human trials, mixed
+                      results
                     </span>
                   </li>
                 </ul>
@@ -649,25 +600,25 @@ const HydrogenTherapyGuide = () => {
                     <div className="h-5 w-5 rounded-full bg-green-100 flex items-center justify-center mr-2 mt-0.5">
                       <div className="h-2 w-2 rounded-full bg-green-500"></div>
                     </div>
-                    <span>Improved insulin sensitivity in some studies</span>
+                    <span>Insulin resistance — the main double-blind trial in type 2 diabetes found no change</span>
                   </li>
                   <li className="flex items-start">
                     <div className="h-5 w-5 rounded-full bg-green-100 flex items-center justify-center mr-2 mt-0.5">
                       <div className="h-2 w-2 rounded-full bg-green-500"></div>
                     </div>
-                    <span>Potential regulation of blood glucose levels</span>
+                    <span>Blood glucose — small trials, mixed results</span>
                   </li>
                   <li className="flex items-start">
                     <div className="h-5 w-5 rounded-full bg-green-100 flex items-center justify-center mr-2 mt-0.5">
                       <div className="h-2 w-2 rounded-full bg-green-500"></div>
                     </div>
-                    <span>Anti-obesity effects in preliminary research</span>
+                    <span>Body weight — preliminary, mostly animal research</span>
                   </li>
                   <li className="flex items-start">
                     <div className="h-5 w-5 rounded-full bg-green-100 flex items-center justify-center mr-2 mt-0.5">
                       <div className="h-2 w-2 rounded-full bg-green-500"></div>
                     </div>
-                    <span>Lipid profile improvements</span>
+                    <span>Blood lipids — modest changes in some small trials</span>
                   </li>
                 </ul>
                 <div className="mt-6">
@@ -687,7 +638,7 @@ const HydrogenTherapyGuide = () => {
 
           <div className="mt-12 text-center">
             <Link href="/explore-by-benefit">
-              <Button className="shadow-md">Explore All Health Benefits</Button>
+              <Button className="shadow-md">Explore Research by Topic</Button>
             </Link>
           </div>
         </div>
@@ -701,8 +652,8 @@ const HydrogenTherapyGuide = () => {
               The Scientific Evidence
             </h2>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Molecular hydrogen research has expanded significantly since 2007,
-              with numerous studies published in peer-reviewed journals.
+              Molecular hydrogen research has grown since 2007, but most of it
+              is early-stage.
             </p>
           </div>
 
@@ -713,10 +664,9 @@ const HydrogenTherapyGuide = () => {
                 Research Background
               </h3>
               <p className="text-gray-600 mb-4">
-                The therapeutic potential of hydrogen gained attention after a
-                2007 study published in Nature Medicine demonstrated its
-                selective antioxidant properties. Since then, research has
-                expanded to include:
+                Interest in hydrogen grew after a 2007 study in Nature Medicine
+                reported antioxidant effects in cells and rats. Since then,
+                research has included:
               </p>
               <ul className="space-y-2 text-gray-600">
                 <li className="flex items-start">
@@ -735,7 +685,7 @@ const HydrogenTherapyGuide = () => {
                   <div className="w-5 h-5 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center mr-2 mt-0.5">
                     ✓
                   </div>
-                  Human clinical trials exploring therapeutic applications
+                  Human trials, mostly small and short
                 </li>
                 <li className="flex items-start">
                   <div className="w-5 h-5 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center mr-2 mt-0.5">
@@ -745,41 +695,41 @@ const HydrogenTherapyGuide = () => {
                 </li>
               </ul>
               <p className="text-gray-600 mt-4">
-                While research is promising, many studies are preliminary or
-                limited in size. Larger clinical trials are ongoing to establish
-                definitive evidence.
+                Most studies are preliminary or small, and several human trials
+                found no clear effect. Larger, well-controlled trials are
+                needed before firm conclusions can be drawn.
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-100">
                 <div className="text-3xl font-bold text-teal-600 mb-2">
-                  600+
+                  2,000+
                 </div>
                 <div className="text-gray-700">
-                  Published peer-reviewed studies
+                  Published studies in our database
                 </div>
               </div>
 
               <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-100">
                 <div className="text-3xl font-bold text-indigo-600 mb-2">
-                  60+
+                  Most
                 </div>
                 <div className="text-gray-700">
-                  Human clinical trials completed
+                  Are cell or animal studies
                 </div>
               </div>
 
               <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-100">
                 <div className="text-3xl font-bold text-purple-600 mb-2">
-                  30+
+                  170+
                 </div>
                 <div className="text-gray-700">Health conditions studied</div>
               </div>
 
               <div className="bg-white rounded-lg p-5 shadow-sm border border-gray-100">
-                <div className="text-3xl font-bold text-teal-600 mb-2">15+</div>
-                <div className="text-gray-700">Years of active research</div>
+                <div className="text-3xl font-bold text-teal-600 mb-2">2007</div>
+                <div className="text-gray-700">Research took off</div>
               </div>
             </div>
           </div>
@@ -800,7 +750,7 @@ const HydrogenTherapyGuide = () => {
               Frequently Asked Questions
             </h2>
             <p className="text-lg text-gray-600">
-              Common questions about molecular hydrogen therapy
+              Common questions about hydrogen research
             </p>
           </div>
 

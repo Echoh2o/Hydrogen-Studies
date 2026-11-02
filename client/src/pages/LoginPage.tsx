@@ -55,7 +55,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 const getValueFeatures = (studyCount?: string) => [
   {
     icon: BookOpen,
-    title: `${studyCount || "1,300+"} Research Studies`,
+    title: `${studyCount || "2,000+"} Research Studies`,
     description: "Access peer-reviewed hydrogen therapy research, summarized in plain language",
   },
   {

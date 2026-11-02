@@ -692,7 +692,7 @@ router.get("/life-stages", async (req, res) => {
       { name: "Children & Adolescents", keywords: ["child", "children", "adolescent", "pediatric"], description: "Research on pediatric and adolescent health" },
       { name: "Adults", keywords: ["adult"], description: "Studies focused on working-age adults" },
       { name: "Older Adults", keywords: ["elderly", "aging", "geriatric", "older adult"], description: "Research on elderly populations and aging" },
-      { name: "Athletes & Fitness", keywords: ["athlete", "exercise", "fitness", "sport", "training"], description: "Studies on performance enhancement and recovery" },
+      { name: "Athletes & Fitness", keywords: ["athlete", "exercise", "fitness", "sport", "training"], description: "Studies on exercise performance and recovery" },
     ];
 
     const results = await Promise.all(
@@ -723,39 +723,39 @@ router.get("/life-stages", async (req, res) => {
 const ANCHOR_CONTENT: Record<string, Record<string, { title: string; summary: string; content: string }>> = {
   condition: {
     "Heart Disease & Hypertension": {
-      title: "Hydrogen Water and Cardiovascular Health",
-      summary: "Research shows molecular hydrogen may support cardiovascular health through its selective antioxidant and anti-inflammatory properties.",
-      content: "Cardiovascular disease remains the leading cause of death worldwide. A growing body of peer-reviewed research has investigated molecular hydrogen (H2) as a potential supportive therapy for heart health. Studies suggest that H2 may help reduce oxidative stress in blood vessels, support healthy blood pressure levels, and protect cardiac tissue during ischemia-reperfusion events. While more large-scale clinical trials are needed, the existing evidence from both animal models and human studies is promising.",
+      title: "Hydrogen and Cardiovascular Research",
+      summary: "Most studies of hydrogen and the heart are in animals; the few human trials are small and none has shown fewer heart attacks or strokes.",
+      content: "Researchers have studied molecular hydrogen (H2) in the heart and blood vessels, looking at oxidative stress, blood pressure and damage to heart tissue after blood flow is restored (ischemia-reperfusion). Most of this work is in animals. The human trials are few, small and short, mostly measured markers rather than outcomes such as heart attacks, and their results are mixed. Hydrogen is not a treatment for heart disease or high blood pressure.",
     },
     "Brain & Neurological Disorders": {
-      title: "Hydrogen Therapy and Brain Health",
-      summary: "Molecular hydrogen shows neuroprotective potential in research on Alzheimer's, Parkinson's, and stroke recovery.",
-      content: "The brain is particularly vulnerable to oxidative stress due to its high oxygen consumption. Research into molecular hydrogen's neuroprotective properties has expanded significantly since the landmark 2007 Nature Medicine study. H2's ability to cross the blood-brain barrier and selectively neutralize harmful hydroxyl radicals makes it a unique candidate for neurological research. Studies have explored its effects on neurodegenerative conditions, traumatic brain injury, and cognitive function in aging populations.",
+      title: "Hydrogen and Brain Research",
+      summary: "Hydrogen has been studied in models of Alzheimer's, Parkinson's and stroke, mostly in animals; human trials are few and small.",
+      content: "The brain uses a lot of oxygen, which makes oxidative stress a focus of brain research. Interest in hydrogen grew after a 2007 Nature Medicine study in rats reported less brain damage after stroke. H2 diffuses across the blood-brain barrier, and in lab and animal studies it acts as a mild antioxidant. Studies have looked at neurodegenerative disease, brain injury and cognitive function in older adults, but most are in animals and the human trials are small with mixed results. Hydrogen is not a treatment for any brain disease.",
     },
     "Diabetes & Metabolic Health": {
-      title: "Hydrogen Water and Metabolic Syndrome",
-      summary: "Clinical studies have examined hydrogen-rich water's effects on glucose metabolism, insulin sensitivity, and lipid profiles.",
-      content: "Metabolic syndrome affects a significant portion of the global population. Multiple clinical trials have investigated hydrogen-rich water's potential to improve markers of metabolic health, including fasting blood glucose, HbA1c, cholesterol levels, and body composition. The anti-inflammatory and antioxidant mechanisms of molecular hydrogen may help address the underlying oxidative stress that contributes to metabolic dysfunction.",
+      title: "Hydrogen and Metabolic Health Research",
+      summary: "Small trials have examined hydrogen-rich water's effects on blood sugar, insulin sensitivity and lipids, with mixed results.",
+      content: "Several small trials have tested hydrogen-rich water on markers of metabolic health such as fasting blood glucose, HbA1c, cholesterol and body composition. Results are mixed: some report modest changes in lipid or metabolic markers, while the main double-blind trial in people with type 2 diabetes found no change in insulin resistance. Hydrogen is not a treatment for diabetes or metabolic syndrome.",
     },
     "Arthritis & Inflammation": {
       title: "Hydrogen and Inflammatory Conditions",
-      summary: "Research explores molecular hydrogen's anti-inflammatory effects on arthritis, joint pain, and systemic inflammation.",
-      content: "Chronic inflammation is at the root of many health conditions, including rheumatoid arthritis and osteoarthritis. Molecular hydrogen has been studied for its ability to modulate inflammatory pathways, including NF-kB signaling and pro-inflammatory cytokine production. Clinical studies using hydrogen-rich water and hydrogen bathing have reported improvements in joint pain, morning stiffness, and inflammatory markers in patients with rheumatoid arthritis.",
+      summary: "Hydrogen has been studied in arthritis and inflammation; anti-inflammatory effects are common in animals, and human trials are few and small.",
+      content: "Inflammation plays a part in conditions such as rheumatoid arthritis and osteoarthritis. In animal and cell studies, molecular hydrogen has changed inflammatory signals such as NF-kB and pro-inflammatory cytokines. A few small human studies in rheumatoid arthritis, using hydrogen-rich water or infusions, reported improvements in disease-activity scores; they need confirming in larger trials. Hydrogen is not a treatment for arthritis.",
     },
     "Lung & Respiratory Conditions": {
-      title: "Hydrogen Therapy for Respiratory Health",
-      summary: "Hydrogen inhalation and hydrogen-rich water are being studied for lung protection and respiratory support.",
-      content: "The lungs are directly exposed to environmental oxidative stressors. Research into hydrogen therapy for respiratory conditions has gained momentum, particularly with hydrogen gas inhalation studies. Investigations have covered acute lung injury, COPD, asthma, and post-surgical lung recovery. The selective antioxidant properties of molecular hydrogen may help protect lung tissue without interfering with necessary reactive oxygen species signaling.",
+      title: "Hydrogen and Respiratory Research",
+      summary: "Hydrogen inhalation has been studied in lung injury and lung disease, mostly in animals.",
+      content: "Research on hydrogen and the lungs mostly uses hydrogen gas inhalation. Studies have covered acute lung injury, COPD, asthma and recovery after surgery; most are in animals, and the human trials are few and small. Hydrogen acts as a mild antioxidant in lab and animal studies, but it is not a treatment for any lung disease.",
     },
     "Digestive Health (Gut/Liver)": {
-      title: "Hydrogen Water and Gut Health",
+      title: "Hydrogen and Gut Health Research",
       summary: "Studies examine hydrogen's effects on the gut microbiome, liver function, and gastrointestinal disorders.",
-      content: "The gastrointestinal tract is where hydrogen-rich water first makes contact with the body. Research suggests that molecular hydrogen may positively influence gut microbiome composition, reduce intestinal inflammation, and support liver health. Studies have investigated its role in conditions ranging from non-alcoholic fatty liver disease to inflammatory bowel disease, with encouraging preliminary results.",
+      content: "Gut bacteria make hydrogen gas every day, and the gut is where hydrogen-rich water is absorbed. Studies have looked at hydrogen and the gut microbiome, intestinal inflammation and liver health, in conditions from fatty liver disease to inflammatory bowel disease. Most of this work is in animals; the human trials are small and early, and they don't show that hydrogen treats any digestive or liver disease.",
     },
     "Cancer Supportive Care": {
       title: "Hydrogen Research in Cancer Support",
-      summary: "Molecular hydrogen is being studied as a supportive therapy to reduce side effects of cancer treatment.",
-      content: "While molecular hydrogen is not a cancer treatment, research has explored its potential as a supportive therapy during conventional cancer care. Studies have investigated whether H2 can help reduce the side effects of chemotherapy and radiation therapy, improve quality of life for cancer patients, and protect healthy tissue during treatment. This is an active area of research with ongoing clinical trials.",
+      summary: "A few small studies have looked at hydrogen and the side effects of cancer treatment; most cancer research on hydrogen is in cells and animals.",
+      content: "Molecular hydrogen is not a cancer treatment. A few small human studies have asked whether it reduces side effects of chemotherapy or radiation or improves quality of life, with mixed results; most other cancer research on hydrogen is in cells and animals. Anyone in cancer treatment should talk to their oncology team before adding anything.",
     },
   },
 };
