@@ -121,3 +121,32 @@ describe("study JSON-LD shape", () => {
     ]);
   });
 });
+
+describe("studyDetails", () => {
+  it("renders only real values, with readable durations", async () => {
+    const { studyDetails, formatDuration } = await import("../../shared/study-page");
+    expect(
+      studyDetails({
+        sampleSize: 24,
+        h2DeliveryMethod: "Water (Mg-Chemico)",
+        dosageProtocol: "1.5 L of HRW per day for 14 days",
+        h2Concentration: "8 ppm",
+        duration: 14,
+        fundingSources: "No external funding declared",
+        conflictOfInterest: "__no_content__",
+      }),
+    ).toEqual([
+      { label: "Participants", value: "24" },
+      { label: "Delivery", value: "Water (Mg-Chemico)" },
+      { label: "Dose", value: "1.5 L of HRW per day for 14 days" },
+      { label: "H₂ concentration", value: "8 ppm" },
+      { label: "Duration", value: "2 weeks" },
+      { label: "Funding", value: "No external funding declared" },
+    ]);
+    expect(formatDuration(1)).toBe("1 day or less");
+    expect(formatDuration(3)).toBe("3 days");
+    expect(formatDuration(84)).toBe("12 weeks");
+    expect(formatDuration(180)).toBe("6 months");
+    expect(studyDetails({})).toEqual([]);
+  });
+});

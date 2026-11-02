@@ -19,6 +19,7 @@ import {
   HiCheck,
 } from "react-icons/hi";
 import { type studies } from "@shared/schema";
+import { studyDetails } from "@shared/study-page";
 
 type Study = typeof studies.$inferSelect;
 
@@ -282,6 +283,13 @@ export function StudyInfoPanel({
                   </p>
                 </div>
               </div>
+
+              {studyDetails(study as any).map((d) => (
+                <div key={d.label}>
+                  <span className="text-xs text-neutral-500">{d.label}:</span>
+                  <p className="text-xs text-neutral-700">{d.value}</p>
+                </div>
+              ))}
 
               {study.doi && (
                 <div>

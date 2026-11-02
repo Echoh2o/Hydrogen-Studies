@@ -123,3 +123,45 @@ export function studyEvidence(study: {
         : null;
   return { label, note };
 }
+
+/** Human-readable study duration from the stored day count. */
+export function formatDuration(days: number | null | undefined): string {
+  if (!days || days < 1) return "";
+  if (days === 1) return "1 day or less";
+  if (days >= 90) return `${Math.round(days / 30)} months`;
+  if (days % 7 === 0) return `${days / 7} weeks`;
+  return `${days} days`;
+}
+
+const PLACEHOLDER = /^(__no_content__|n\/a|na|none|null|unknown|not reported|-)$/i;
+
+function text(v: unknown): string {
+  const s = typeof v === "string" ? v.trim() : v == null ? "" : String(v).trim();
+  return s && !PLACEHOLDER.test(s) ? s : "";
+}
+
+/**
+ * "Study details" rows (PLAN 4.3/4.4) from the extracted structured fields —
+ * participants, delivery, dose, concentration, duration, funding, conflicts.
+ * Empty fields never render. Shared by the Next study page and the SPA panel.
+ */
+export function studyDetails(study: {
+  sampleSize?: number | null;
+  h2DeliveryMethod?: string | null;
+  dosageProtocol?: string | null;
+  h2Concentration?: string | null;
+  duration?: number | null;
+  fundingSources?: string | null;
+  conflictOfInterest?: string | null;
+}): { label: string; value: string }[] {
+  const rows: { label: string; value: string }[] = [];
+  const add = (label: string, value: string) => value && rows.push({ label, value });
+  add("Participants", study.sampleSize && study.sampleSize > 0 ? String(study.sampleSize) : "");
+  add("Delivery", text(study.h2DeliveryMethod));
+  add("Dose", text(study.dosageProtocol));
+  add("H₂ concentration", text(study.h2Concentration));
+  add("Duration", formatDuration(study.duration));
+  add("Funding", text(study.fundingSources));
+  add("Conflicts of interest", text(study.conflictOfInterest));
+  return rows;
+}
