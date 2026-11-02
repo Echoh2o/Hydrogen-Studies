@@ -13,7 +13,7 @@
  *     aren't in the static-meta map don't get de-indexed.
  *  4. The injected viewport does not disable pinch-zoom (no maximum-scale).
  */
-import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from "vitest";
+import { afterEach, describe, it, expect, vi, beforeAll, afterAll, beforeEach } from "vitest";
 import express from "express";
 import request from "supertest";
 import fs from "fs";
@@ -59,6 +59,7 @@ import {
   seoBotMiddleware,
   isBot,
   invalidateBotCache,
+  notifyWebRevalidate,
 } from "../middleware/seo-bot-middleware";
 
 const GOOGLEBOT =
@@ -299,5 +300,38 @@ describe("human pass-through", () => {
   it("normal browsers fall through to the SPA", async () => {
     const res = await request(app).get("/study/whatever").set("User-Agent", CHROME);
     expect(res.text).toBe("SPA");
+  });
+});
+
+describe("notifyWebRevalidate (admin edits reach Next at once)", () => {
+  const fetchMock = vi.fn(async (_url: string, _init: RequestInit & { headers: Record<string, string> }) => new Response("{}"));
+  beforeEach(() => {
+    vi.stubGlobal("fetch", fetchMock);
+    fetchMock.mockClear();
+    process.env.WEB_ORIGIN = "http://web.railway.internal:3000";
+    process.env.PAGE_DATA_KEY = "k";
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete process.env.WEB_ORIGIN;
+    delete process.env.PAGE_DATA_KEY;
+  });
+
+  it("fans a blog post out to /blog and the homepage; studies to the homepage; nothing = all", async () => {
+    const sent = () => JSON.parse(String(fetchMock.mock.calls.at(-1)![1].body)).paths;
+    notifyWebRevalidate("/blog/x");
+    expect(sent()).toEqual(["/blog/x", "/blog", "/"]);
+    notifyWebRevalidate("/study/y");
+    expect(sent()).toEqual(["/study/y", "/"]);
+    notifyWebRevalidate();
+    expect(sent()).toEqual([]);
+    expect(fetchMock.mock.calls[0][0]).toBe("http://web.railway.internal:3000/web_revalidate");
+    expect(fetchMock.mock.calls[0][1].headers["x-page-data-key"]).toBe("k");
+  });
+
+  it("does nothing without WEB_ORIGIN", async () => {
+    delete process.env.WEB_ORIGIN;
+    notifyWebRevalidate("/blog/x");
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

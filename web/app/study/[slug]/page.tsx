@@ -39,7 +39,7 @@ interface StudyPageData {
 
 async function load(slug: string): Promise<StudyPageData> {
   try {
-    return await pageData<StudyPageData>(`/study/${encodeURIComponent(slug)}`, revalidate);
+    return await pageData<StudyPageData>(`/study/${encodeURIComponent(slug)}`, revalidate, [`/study/${slug}`]);
   } catch (err) {
     // 410s are answered by middleware before rendering; 404 here.
     if (err instanceof PageDataError && (err.status === 404 || err.status === 410)) notFound();

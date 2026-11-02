@@ -15,6 +15,8 @@ import { isExcludedStudyPath } from "../services/excluded-studies";
 import { studyService } from "../services/study-service";
 import {
   getConditionHubs,
+  getRecentBlogs,
+  getRecentStudies,
   getRelatedBlogs,
   getRelatedStudies,
   getTopConditions,
@@ -133,6 +135,19 @@ router.get("/meta", async (req: Request, res: Response) => {
   const meta = (await resolvePageMeta(path)) ?? resolveStaticPageMeta(path);
   if (!meta) return res.status(404).json({ error: "not found" });
   res.json({ meta, footerConditions: await getTopConditions() });
+});
+
+/**
+ * The homepage's crawl paths the SPA design lacks: popular condition hubs,
+ * recent studies, latest articles (same lists the crawler homepage had).
+ */
+router.get("/home", async (_req: Request, res: Response) => {
+  const [conditions, recentStudies, recentBlogs] = await Promise.all([
+    getTopConditions(),
+    getRecentStudies(15),
+    getRecentBlogs(10),
+  ]);
+  res.json({ conditions, recentStudies, recentBlogs });
 });
 
 /** Footer data every Next page needs. */
