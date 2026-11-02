@@ -1338,7 +1338,7 @@ function renderStaticPage(pathname: string): string | null {
   const pages: Record<string, { title: string; desc: string }> = {
     "/about": { title: "About Hydrogen Studies", desc: "Hydrogen Studies is the most comprehensive database of molecular hydrogen research, dedicated to making scientific research accessible to everyone." },
     "/contact": { title: "Contact Us", desc: "Get in touch with the Hydrogen Studies team. Questions about hydrogen research, partnership inquiries, or feedback welcome." },
-    "/products": { title: "Hydrogen Products", desc: "Explore hydrogen water generators, inhalation devices, and other hydrogen therapy products backed by research." },
+    "/products": { title: "Hydrogen Products", desc: "Hydrogen water bottles, machines, inhalation and bath devices from Echo Water, the company that funds Hydrogen Studies." },
     "/recommendations": { title: "Research Recommendations", desc: "Personalized hydrogen therapy research recommendations based on your interests and health conditions." },
     "/privacy": { title: "Privacy Policy", desc: "How we collect, use, and protect your personal information." },
     "/terms": { title: "Terms of Service", desc: "Terms of service for using the Hydrogen Studies research database and website." },

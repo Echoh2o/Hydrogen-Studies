@@ -55,101 +55,101 @@ const TOPIC_CONFIG: Record<
     title: "Hydrogen & Heart Health",
     searchQuery: "cardiovascular heart",
     description:
-      "Explore how molecular hydrogen research is advancing cardiovascular health, including studies on heart disease, blood pressure, and vascular function.",
+      "Studies of molecular hydrogen and the heart and blood vessels — blood pressure, vascular function and oxidative stress markers — most of them in animals.",
     icon: <Heart className="h-8 w-8" />,
     color: "text-red-600",
     intro:
-      "Cardiovascular disease remains the leading cause of death globally. Molecular hydrogen has emerged as a promising research area for heart health, with studies exploring its effects on oxidative stress in cardiac tissue, blood pressure regulation, and vascular endothelial function. Explore the latest peer-reviewed research below.",
+      "Researchers have studied molecular hydrogen in the heart and blood vessels, looking at oxidative stress in cardiac tissue, blood pressure and blood vessel function. Most of this work is in animals; the human trials are few and small, and none has shown fewer heart attacks or strokes. Hydrogen is not a treatment for heart disease. The studies are listed below.",
   },
   "brain-health": {
     title: "Hydrogen & Brain Health",
     searchQuery: "brain cognitive neurological",
     description:
-      "Discover research on molecular hydrogen's potential neuroprotective effects, including studies on cognitive function, neurodegeneration, and brain health.",
+      "Studies of molecular hydrogen and the brain — cognitive function, brain injury and neurodegeneration — mostly in animals.",
     icon: <Brain className="h-8 w-8" />,
     color: "text-purple-600",
     intro:
-      "The brain is particularly vulnerable to oxidative stress due to its high oxygen consumption. Researchers are investigating how molecular hydrogen may support neuroprotection, cognitive function, and neurological health. Browse the growing body of peer-reviewed studies on hydrogen and brain health.",
+      "The brain uses a lot of oxygen, which makes oxidative stress a focus of brain research. Most studies of hydrogen and the brain are in animals or cells; human trials are few, small and short, with mixed results. Browse the studies below.",
   },
   "athletic-performance": {
     title: "Hydrogen & Athletic Performance",
     searchQuery: "exercise athlete",
     description:
-      "Research on molecular hydrogen for exercise performance, recovery, muscle fatigue, and sports science applications.",
+      "Studies of molecular hydrogen and exercise — performance, recovery, muscle fatigue and blood lactate.",
     icon: <Zap className="h-8 w-8" />,
     color: "text-yellow-600",
     intro:
-      "Athletes and fitness enthusiasts are increasingly interested in molecular hydrogen for its potential to reduce exercise-induced oxidative stress, support faster recovery, and improve athletic performance. Explore studies examining hydrogen's effects on muscle fatigue, lactate levels, and endurance.",
+      "Exercise is one of the most studied uses of molecular hydrogen in people. Some small trials report lower blood lactate or less perceived fatigue after hard exercise; others found no difference from placebo. Explore the studies on muscle fatigue, lactate and endurance below.",
   },
   "anti-aging": {
     title: "Hydrogen & Anti-Aging",
     searchQuery: "aging longevity",
     description:
-      "Studies on molecular hydrogen's role in longevity, cellular aging, telomere health, and age-related disease prevention.",
+      "Studies of molecular hydrogen and aging — cellular aging, telomeres and age-related biomarkers — almost all in cells and animals.",
     icon: <Clock className="h-8 w-8" />,
     color: "text-amber-600",
     intro:
-      "Aging is closely linked to accumulated oxidative damage at the cellular level. Molecular hydrogen research in longevity science examines how this selective antioxidant may influence cellular senescence, mitochondrial function, and age-related biomarkers. Review the latest findings below.",
+      "Oxidative damage is one of several processes linked to aging. Researchers have studied whether molecular hydrogen, a mild antioxidant in lab and animal studies, affects cellular senescence, mitochondrial function and age-related biomarkers. There is no evidence that it slows aging or extends life in people. Review the studies below.",
   },
   "gut-health": {
     title: "Hydrogen & Gut Health",
     searchQuery: "digestive gut gastrointestinal",
     description:
-      "Research exploring molecular hydrogen's effects on digestive health, gut microbiome, intestinal inflammation, and gastrointestinal conditions.",
+      "Studies of molecular hydrogen and the gut — the microbiome, intestinal inflammation and digestive conditions — mostly in animals.",
     icon: <Droplets className="h-8 w-8" />,
     color: "text-green-600",
     intro:
-      "The gut plays a central role in overall health, from nutrient absorption to immune function. Studies are investigating how molecular hydrogen may support gastrointestinal health, influence the gut microbiome, and address intestinal inflammation. Explore the research connecting hydrogen to digestive wellness.",
+      "Gut bacteria make hydrogen gas every day, which is one reason researchers study hydrogen in the gut. Most studies of hydrogen, the microbiome and intestinal inflammation are in animals; human trials are small and early. Explore the studies below.",
   },
   diabetes: {
     title: "Hydrogen & Diabetes",
     searchQuery: "diabetes metabolic",
     description:
-      "Peer-reviewed studies on molecular hydrogen and metabolic health, including diabetes management, insulin sensitivity, and blood sugar regulation.",
+      "Studies of molecular hydrogen and metabolic health — insulin sensitivity, blood sugar and lipids. Human evidence is limited and mixed.",
     icon: <Flame className="h-8 w-8" />,
     color: "text-orange-600",
     intro:
-      "Metabolic syndrome and diabetes affect hundreds of millions worldwide. Researchers are exploring how molecular hydrogen may influence insulin sensitivity, glucose metabolism, and oxidative stress markers associated with diabetes. Discover the latest studies in this critical health area.",
+      "Researchers have studied whether molecular hydrogen affects insulin sensitivity, glucose metabolism and oxidative stress markers in diabetes. Much of this work is in animals. The main double-blind trial in people with type 2 diabetes found no change in insulin resistance. Hydrogen is not a treatment for diabetes. The studies are listed below.",
   },
   inflammation: {
     title: "Hydrogen & Inflammation",
     searchQuery: "inflammation anti-inflammatory",
     description:
-      "Research on molecular hydrogen's anti-inflammatory properties, including studies on chronic inflammation, inflammatory biomarkers, and immune response.",
+      "Studies of molecular hydrogen and inflammation — inflammatory biomarkers and immune response — mostly in animals.",
     icon: <Shield className="h-8 w-8" />,
     color: "text-blue-600",
     intro:
-      "Chronic inflammation underlies many modern diseases, from arthritis to cardiovascular disease. Molecular hydrogen has shown promise as a selective modulator of inflammatory pathways. Explore peer-reviewed research examining hydrogen's effects on inflammatory biomarkers and immune response.",
+      "Anti-inflammatory effects of molecular hydrogen are common in animal studies. Human trials are small and their results on inflammatory markers are mixed. Explore the studies on inflammatory biomarkers and immune response below.",
   },
   "cancer-research": {
     title: "Hydrogen & Cancer Research",
     searchQuery: "cancer tumor",
     description:
-      "Scientific studies exploring molecular hydrogen in cancer research, including tumor biology, treatment side effects, and supportive care.",
+      "Studies of molecular hydrogen in cancer research — tumor biology in the lab and treatment side effects in small trials.",
     icon: <Ribbon className="h-8 w-8" />,
     color: "text-pink-600",
     intro:
-      "Cancer research is exploring molecular hydrogen from multiple angles, including its potential to mitigate treatment side effects, modulate oxidative stress in tumor microenvironments, and support quality of life during therapy. Browse the peer-reviewed studies in this developing field.",
+      "Most studies of hydrogen and cancer are in cells or animals. A few small human studies looked at side effects of cancer treatment or quality of life, with mixed results. Hydrogen does not treat cancer — talk to your oncology team before adding anything to treatment. The studies are listed below.",
   },
   "skin-health": {
     title: "Hydrogen & Skin Health",
     searchQuery: "skin dermatological",
     description:
-      "Studies on molecular hydrogen for skin health, including UV protection, wound healing, dermatological conditions, and skin aging.",
+      "Studies of molecular hydrogen and the skin — UV damage, wound healing and skin aging — mostly in cells and animals.",
     icon: <Sparkles className="h-8 w-8" />,
     color: "text-rose-500",
     intro:
-      "The skin is the body's largest organ and a frontline defense against environmental stressors. Research is investigating how molecular hydrogen may support skin health through UV protection, wound healing acceleration, and reduction of dermatological inflammation. Review the studies below.",
+      "Researchers have studied molecular hydrogen and the skin, including UV damage, wound healing and skin inflammation. Most of this work is in cells and animals; human studies are few and small. Review the studies below.",
   },
   respiratory: {
     title: "Hydrogen & Respiratory Health",
     searchQuery: "respiratory lung",
     description:
-      "Research on molecular hydrogen for respiratory health, including lung function, airway inflammation, and pulmonary conditions.",
+      "Studies of molecular hydrogen and the lungs — lung function, airway inflammation and lung conditions — mostly in animals.",
     icon: <Wind className="h-8 w-8" />,
     color: "text-cyan-600",
     intro:
-      "Respiratory health is essential for overall wellbeing, and molecular hydrogen is being studied for its potential to support lung function and modulate airway inflammation. Explore the growing collection of studies on hydrogen and respiratory health conditions.",
+      "Molecular hydrogen, often inhaled, has been studied in lung injury and airway inflammation, mostly in animals. Human trials are few and small. Hydrogen is not a treatment for lung disease. Explore the studies below.",
   },
 };
 
@@ -534,7 +534,7 @@ export default function ContentHubPage() {
                   <CardTitle className="text-base">Search Studies</CardTitle>
                 </div>
                 <CardDescription>
-                  Search our database of peer-reviewed hydrogen studies.
+                  Search our database of hydrogen research.
                 </CardDescription>
               </CardHeader>
               <CardContent>

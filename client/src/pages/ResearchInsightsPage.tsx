@@ -69,7 +69,7 @@ export default function ResearchInsightsPage() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12">
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
                   <Database className="w-6 h-6 mx-auto mb-2" />
-                  <div className="text-2xl font-bold">{statsData?.totalStudies?.toLocaleString() || "1,300+"}</div>
+                  <div className="text-2xl font-bold">{statsData?.totalStudies?.toLocaleString() || "2,000+"}</div>
                   <div className="text-sm text-teal-100">Total Studies</div>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">

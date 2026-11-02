@@ -307,7 +307,7 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
   const pages: Record<string, { title: string; description: string }> = {
     "/": {
       title: `Hydrogen Studies | ${SITE_NAME} Research Database`,
-      description: "Explore 1,300+ peer-reviewed hydrogen therapy research studies. Evidence-based insights on molecular hydrogen for health conditions, organized by body system, condition, and mechanism."
+      description: "Search 2,000+ published studies on molecular hydrogen, with plain-English summaries and evidence grades, organized by condition, body system and mechanism."
     },
     "/studies": {
       title: `Research Studies Directory | ${SITE_NAME}`,
@@ -371,7 +371,7 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
     },
     "/products": {
       title: `Hydrogen Products | ${SITE_NAME}`,
-      description: "Explore hydrogen water generators, inhalation devices, and other hydrogen therapy products backed by research."
+      description: "Hydrogen water bottles, machines, inhalation and bath devices from Echo Water, the company that funds Hydrogen Studies."
     },
     "/contact": {
       title: `Contact Us | ${SITE_NAME}`,

@@ -34,34 +34,34 @@ function getCategoryDescription(name: string): string {
   const lower = name.toLowerCase();
   const descriptions: Record<string, string> = {
     cardiovascular:
-      "Explore research articles on how molecular hydrogen may support heart health, blood pressure regulation, and cardiovascular function.",
+      "Articles on what research has (and hasn't) found about molecular hydrogen, blood pressure and blood vessel function — mostly animal studies and small human trials.",
     neurological:
-      "Discover blog articles covering hydrogen therapy research related to brain health, neuroprotection, and neurological conditions.",
+      "Articles on molecular hydrogen research and the brain. Most of the evidence comes from animal studies; human trials are few and small.",
     "anti-inflammatory":
-      "Read about the anti-inflammatory properties of molecular hydrogen and its potential applications in reducing chronic inflammation.",
+      "Articles on molecular hydrogen and inflammation. Anti-inflammatory effects are common in animal studies; results in people are mixed.",
     antioxidant:
-      "Learn about hydrogen's role as a selective antioxidant, targeting harmful free radicals while preserving beneficial reactive oxygen species.",
+      "Articles on molecular hydrogen as an antioxidant. It acts as a mild antioxidant in lab and animal studies; the idea that it is \"selective\" comes from that early work and has been questioned.",
     metabolic:
-      "Articles on hydrogen therapy research related to metabolic health, diabetes, obesity, and energy metabolism.",
+      "Articles on molecular hydrogen research and metabolic health — blood sugar, lipids and body weight. Human evidence is limited and mixed.",
     respiratory:
-      "Research insights on molecular hydrogen's effects on respiratory health and lung function.",
+      "Articles on molecular hydrogen research and the lungs, mostly from animal studies and small human trials.",
     gastrointestinal:
-      "Explore studies on how hydrogen water and hydrogen therapy may benefit digestive health and gut function.",
+      "Articles on molecular hydrogen research and the gut. Most studies are in animals; human trials are small and early.",
     musculoskeletal:
-      "Articles covering hydrogen research related to bone health, joint function, and muscle recovery.",
+      "Articles on molecular hydrogen research and bones, joints and muscle recovery, where results are mixed.",
     dermatological:
-      "Blog articles on hydrogen therapy research for skin health, wound healing, and dermatological conditions.",
+      "Articles on molecular hydrogen research and the skin, mostly from cell and animal studies.",
     renal:
-      "Research articles exploring molecular hydrogen's potential benefits for kidney health and renal function.",
+      "Articles on molecular hydrogen research and the kidneys. Most of the evidence is from animals; human studies are few.",
     oncological:
-      "Articles on hydrogen therapy research in the context of cancer treatment support and cell protection.",
+      "Articles on molecular hydrogen in cancer research, mostly cell and animal studies. Hydrogen is not a cancer treatment.",
     immunological:
-      "Explore how molecular hydrogen may modulate immune function and support immune health.",
+      "Articles on molecular hydrogen research and the immune system, mostly from animal studies.",
   };
 
   return (
     descriptions[lower] ||
-    `Browse our collection of research-backed blog articles about molecular hydrogen and ${name.toLowerCase()} health. Each article is based on peer-reviewed scientific studies.`
+    `Articles about molecular hydrogen research and ${name.toLowerCase()} health.`
   );
 }
 
@@ -285,7 +285,7 @@ export default function BlogCategoryPage() {
                             }
                             alt={
                               article.imageAlt ||
-                              `${article.title} - Hydrogen therapy research`
+                              `${article.title} - hydrogen research`
                             }
                             className="w-full h-full object-cover rounded-t-lg"
                             loading="lazy"

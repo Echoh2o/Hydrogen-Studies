@@ -19,7 +19,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
 import { Helmet } from "react-helmet";
@@ -52,16 +51,16 @@ export default function HealthBenefitsPage() {
       icon: <Heart className="h-8 w-8 text-red-600" />,
       description: "Heart health, circulation, and vascular function",
       studyCount: getStudyCount("Heart Disease & Hypertension"),
-      evidenceLevel: 85,
+      evidence: "low",
       benefits: [
-        "May reduce inflammation in blood vessels",
-        "Could improve heart function markers",
-        "Potential to lower oxidative stress",
-        "May support healthy blood pressure",
+        "Blood vessel function (small trials)",
+        "Blood lipid markers (small trials, mixed)",
+        "Oxidative stress markers",
+        "Blood pressure (few, small studies)",
       ],
       keyFindings:
-        "Studies suggest hydrogen therapy may help protect the cardiovascular system through its anti-inflammatory and antioxidant properties.",
-      population: "Adults with cardiovascular risk factors",
+        "A few small human trials report changes in blood vessel function and blood markers. Outcomes like heart attacks and strokes haven't been studied.",
+      population: "Mostly small, short human trials",
     },
     {
       category: "Neurological Health",
@@ -69,16 +68,16 @@ export default function HealthBenefitsPage() {
       icon: <Brain className="h-8 w-8 text-purple-600" />,
       description: "Brain function, cognitive health, and neuroprotection",
       studyCount: getStudyCount("Brain & Neurological Disorders"),
-      evidenceLevel: 78,
+      evidence: "very-low",
       benefits: [
-        "May protect brain cells from oxidative damage",
-        "Could support cognitive function",
-        "Potential neuroprotective effects",
-        "May help with neuroinflammation",
+        "Oxidative damage to brain cells (animal studies)",
+        "Cognitive tests (few, small human trials)",
+        "Brain injury models (animal studies)",
+        "Inflammation in the brain (animal studies)",
       ],
       keyFindings:
-        "Research indicates hydrogen can cross the blood-brain barrier and may offer neuroprotective benefits.",
-      population: "Individuals concerned with brain health",
+        "Hydrogen crosses the blood-brain barrier, and animal studies report protective effects. Human trials are few and small, so benefits in people haven't been shown.",
+      population: "Mostly animal research",
     },
     {
       category: "Athletic Performance",
@@ -86,90 +85,86 @@ export default function HealthBenefitsPage() {
       icon: <Zap className="h-8 w-8 text-green-600" />,
       description: "Exercise performance, recovery, and fatigue reduction",
       studyCount: getStudyCount("Musculoskeletal System"),
-      evidenceLevel: 82,
+      evidence: "low",
       benefits: [
-        "May reduce exercise-induced fatigue",
-        "Could improve recovery times",
-        "Potential to reduce muscle soreness",
-        "May enhance endurance capacity",
+        "Perceived fatigue after exercise",
+        "Blood lactate after hard exercise",
+        "Muscle soreness",
+        "Endurance and power output",
       ],
       keyFindings:
-        "Athletes using hydrogen water showed reduced fatigue and improved recovery in multiple studies.",
-      population: "Athletes and active individuals",
+        "Some small exercise trials report lower blood lactate or perceived fatigue; others found no difference.",
+      population: "Small trials in athletes and active adults",
     },
     {
-      category: "Anti-Inflammatory",
+      category: "Inflammation",
       searchCategory: "inflammation",
       icon: <Shield className="h-8 w-8 text-orange-600" />,
-      description: "Inflammation reduction and immune system support",
+      description: "Inflammatory and immune markers",
       studyCount: getStudyCount("Arthritis & Inflammation"),
-      evidenceLevel: 88,
+      evidence: "very-low",
       benefits: [
-        "May reduce inflammatory markers",
-        "Could modulate immune responses",
-        "Potential to decrease chronic inflammation",
-        "May support tissue healing",
+        "Inflammatory markers in blood",
+        "Immune cell signaling",
+        "Tissue injury models (animal studies)",
+        "Recovery after injury (animal studies)",
       ],
       keyFindings:
-        "Hydrogen therapy demonstrates consistent anti-inflammatory effects across various conditions.",
-      population: "Individuals with inflammatory conditions",
+        "Anti-inflammatory effects are common in animal studies. Human trials are small and their results are mixed.",
+      population: "Mostly animal research",
     },
     {
       category: "Metabolic Health",
       searchCategory: "metabolic",
       icon: <TrendingUp className="h-8 w-8 text-teal-600" />,
-      description: "Metabolism, energy production, and cellular health",
+      description: "Blood sugar, blood lipids and body weight",
       studyCount: getStudyCount("Diabetes & Metabolic Health"),
-      evidenceLevel: 75,
+      evidence: "very-low",
       benefits: [
-        "May improve cellular energy production",
-        "Could support healthy metabolism",
-        "Potential to reduce oxidative stress",
-        "May enhance mitochondrial function",
+        "Blood sugar and insulin markers",
+        "Blood lipids",
+        "Body weight and liver fat",
+        "Mitochondrial function (lab studies)",
       ],
       keyFindings:
-        "Research suggests hydrogen may support metabolic processes at the cellular level.",
-      population: "Adults interested in metabolic health",
+        "The main double-blind trial in type 2 diabetes found no change in insulin resistance. Small trials report modest changes in some blood lipid and metabolic markers.",
+      population: "Small human trials; much is animal research",
     },
     {
       category: "Skin Health",
       searchCategory: "dermatology",
       icon: <Droplet className="h-8 w-8 text-cyan-600" />,
-      description: "Skin protection, healing, and aesthetic benefits",
+      description: "Skin appearance and UV exposure",
       studyCount: getStudyCount("Integumentary System"),
-      evidenceLevel: 70,
+      evidence: "very-low",
       benefits: [
-        "May protect skin from UV damage",
-        "Could improve skin hydration",
-        "Potential anti-aging effects",
-        "May support wound healing",
+        "UV-related skin damage (lab and animal studies)",
+        "Skin hydration",
+        "Wrinkles and skin aging",
+        "Wound healing (animal studies)",
       ],
       keyFindings:
-        "Studies show hydrogen water and baths may benefit skin health through antioxidant effects.",
-      population: "Individuals focused on skin wellness",
+        "A few small studies have tested hydrogen water or baths on skin. There's no placebo-controlled trial showing a clear benefit.",
+      population: "Few, small studies",
     },
   ];
 
-  const getEvidenceLevelColor = (level: number) => {
-    if (level >= 80) return "text-green-600";
-    if (level >= 70) return "text-yellow-600";
-    return "text-orange-600";
-  };
+  // Evidence grades follow the topic hubs: no area has more than low-certainty
+  // human evidence yet.
+  const getEvidenceLevelColor = (level: string) =>
+    level === "low" ? "text-yellow-600" : "text-orange-600";
 
-  const getEvidenceLevelText = (level: number) => {
-    if (level >= 80) return "Strong";
-    if (level >= 70) return "Moderate";
-    return "Emerging";
-  };
+  const getEvidenceLevelText = (level: string) =>
+    level === "low" ? "Low" : "Very low";
 
   return (
     <>
       <SiteHeader />
       <Helmet>
-        <title>Hydrogen Health Benefits - Scientific Evidence &amp; Research</title>
-        <meta name="description" content="Explore the scientifically-studied health benefits of molecular hydrogen. Evidence-based information on how H2 supports various body systems." />
-        <meta property="og:title" content="Hydrogen Health Benefits - Scientific Evidence & Research" />
-        <meta property="og:description" content="Explore the scientifically-studied health benefits of molecular hydrogen. Evidence-based information on how H2 supports various body systems." />
+        <title>Molecular Hydrogen Research by Health Area - What the Evidence Shows</title>
+        <meta name="description" content="What research on molecular hydrogen has looked at — heart, brain, exercise, inflammation, metabolism and skin — and how strong the evidence is in people." />
+        <meta property="og:title" content="Molecular Hydrogen Research by Health Area - What the Evidence Shows" />
+        <meta property="og:description" content="What research on molecular hydrogen has looked at — heart, brain, exercise, inflammation, metabolism and skin — and how strong the evidence is in people." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://hydrogenstudies.com/learn/health-benefits" />
         <meta name="twitter:card" content="summary" />
@@ -194,18 +189,20 @@ export default function HealthBenefitsPage() {
           <div className="max-w-4xl mx-auto text-center">
             <Heart className="h-16 w-16 text-red-600 mx-auto mb-6" />
             <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">
-              Health Benefits &
+              Research by
               <span className="bg-gradient-to-r from-red-600 to-purple-600 bg-clip-text text-transparent">
                 {" "}
-                Applications
+                Health Area
               </span>
             </h1>
             <p className="text-xl text-gray-600 mb-8">
-              Discover how hydrogen therapy may support various aspects of
-              health and wellness based on scientific research
+              What researchers have studied, and how strong the evidence is in
+              people. Most of it is early-stage.
             </p>
             <Badge className="bg-red-100 text-red-800 px-4 py-2">
-              Based on {healthCategories.reduce((sum, c) => sum + c.studyCount, 0) || "450"}+ health-focused studies
+              {healthCategories.reduce((sum, c) => sum + c.studyCount, 0) > 0
+                ? `${healthCategories.reduce((sum, c) => sum + c.studyCount, 0).toLocaleString("en-US")} studies in these areas`
+                : "Studies grouped by health area"}
             </Badge>
           </div>
         </section>
@@ -215,11 +212,10 @@ export default function HealthBenefitsPage() {
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Health Applications
+                Health Areas
               </h2>
               <p className="text-lg text-gray-600">
-                Explore the potential benefits of hydrogen therapy for different
-                health areas
+                What has been measured in each area — not proven benefits
               </p>
             </div>
 
@@ -247,30 +243,20 @@ export default function HealthBenefitsPage() {
                           {category.studyCount} studies
                         </Badge>
                         <p
-                          className={`text-sm font-medium ${getEvidenceLevelColor(category.evidenceLevel)}`}
+                          className={`text-sm font-medium ${getEvidenceLevelColor(category.evidence)}`}
                         >
-                          {getEvidenceLevelText(category.evidenceLevel)}{" "}
-                          Evidence
+                          {getEvidenceLevelText(category.evidence)}-certainty
+                          evidence
                         </p>
                       </div>
                     </div>
 
-                    <div className="mb-4">
-                      <div className="flex justify-between text-sm mb-2">
-                        <span>Evidence Quality</span>
-                        <span>{category.evidenceLevel}%</span>
-                      </div>
-                      <Progress
-                        value={category.evidenceLevel}
-                        className="h-2"
-                      />
-                    </div>
                   </CardHeader>
 
                   <CardContent className="space-y-4">
                     <div>
                       <p className="font-medium text-gray-700 mb-2">
-                        Potential Benefits:
+                        What's been studied:
                       </p>
                       <ul className="space-y-1">
                         {category.benefits.map((benefit) => (
@@ -326,22 +312,21 @@ export default function HealthBenefitsPage() {
               </h3>
               <div className="space-y-4 text-gray-700">
                 <p>
-                  <strong>Individual Results May Vary:</strong> The benefits
-                  described are based on research studies and may not apply to
-                  everyone. Individual responses can differ based on health
-                  status, dosage, and other factors.
+                  <strong>Not a Treatment:</strong> Molecular hydrogen is not
+                  approved to treat, cure or prevent any disease. The areas above
+                  are what researchers have measured, not established benefits.
                 </p>
                 <p>
                   <strong>Not Medical Advice:</strong> This information is for
                   educational purposes only and should not be considered medical
                   advice. Always consult with qualified healthcare professionals
-                  before starting any new health regimen.
+                  before starting any new health regimen, especially if you are
+                  pregnant, have a medical condition or take medications.
                 </p>
                 <p>
-                  <strong>Research is Ongoing:</strong> While promising,
-                  hydrogen therapy research is still evolving. Many studies are
-                  preliminary and more research is needed to fully understand
-                  all potential benefits and applications.
+                  <strong>Research is Early:</strong> Most studies are in
+                  animals or cells. Human trials are mostly small and short,
+                  and several found little or no difference from placebo.
                 </p>
               </div>
             </div>
@@ -361,10 +346,10 @@ export default function HealthBenefitsPage() {
                   <CardHeader>
                     <Shield className="h-8 w-8 text-teal-600 mx-auto mb-2" />
                     <CardTitle className="text-center">
-                      Scientific Mechanisms
+                      Hydrogen Basics
                     </CardTitle>
                     <CardDescription className="text-center">
-                      Learn how hydrogen works at the cellular level
+                      What hydrogen is and what researchers are studying
                     </CardDescription>
                   </CardHeader>
                 </Card>

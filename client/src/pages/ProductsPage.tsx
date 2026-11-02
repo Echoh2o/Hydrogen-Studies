@@ -94,8 +94,8 @@ function BuyersGuideModal({ open, onClose }: { open: boolean; onClose: () => voi
                 Free: Hydrogen Delivery Methods Guide
               </DialogTitle>
               <DialogDescription className="text-gray-600 text-sm text-center">
-                Compare drinking, inhalation, and bathing methods side-by-side.
-                Learn which delivery method is best for your health goals.
+                Compare drinking, inhalation, and bathing methods side-by-side,
+                and see how much research exists for each.
               </DialogDescription>
             </DialogHeader>
             <ul className="space-y-2 mb-6 text-sm text-gray-700">
@@ -105,11 +105,11 @@ function BuyersGuideModal({ open, onClose }: { open: boolean; onClose: () => voi
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-teal-500 flex-shrink-0" />
-                Research-backed pros and cons for each
+                Pros and cons, with study citations
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-teal-500 flex-shrink-0" />
-                Personalized recommendation by health goal
+                What to check before you buy
               </li>
             </ul>
             <form onSubmit={handleSubmit} className="space-y-3">
@@ -196,18 +196,18 @@ export default function ProductsPage() {
       price: "Visit Store",
       originalPrice: null,
       description:
-        "The Echo Flask: Smart hydrogen water bottle with up to 8 ppm hydrogen concentration. Track hydration, customize settings & fuel your cells. Safe & effective.",
+        "A portable hydrogen water bottle with app-based hydration tracking and adjustable settings. Echo states up to 8 ppm dissolved hydrogen.",
       features: [
-        "Up to 8 PPM H2 concentration",
-        "Smart tracking technology",
+        "Up to 8 ppm H\u2082 (manufacturer-stated)",
+        "Hydration tracking",
         "Customizable settings",
-        "Safe & effective design",
+        "Portable",
       ],
       image: "/images/products/echo-flask.webp",
       badge: "Hydrogen Water Bottle",
       url: echoProductUrl(ECHO_PRODUCTS.flask, PRODUCTS_CTX),
       deliveryMethod: "drinking-water",
-      h2Concentration: "Up to 8 PPM",
+      h2Concentration: "Up to 8 ppm*",
       bestFor: "Daily hydration, portability",
     },
     {
@@ -216,19 +216,19 @@ export default function ProductsPage() {
       price: "Visit Store",
       originalPrice: null,
       description:
-        "Boost energy, clarity, and gut health with Echo Hydrogen Prebiotic Stick Packs — instant hydration + prebiotics in one convenient packet.",
+        "A powdered drink mix that releases hydrogen when added to water, combined with a prebiotic fiber. Single-serve packets.",
       features: [
-        "Instant hydrogen hydration",
-        "Prebiotic formula",
-        "Energy & clarity boost",
-        "Gut health support",
+        "Releases hydrogen in water",
+        "Contains prebiotic fiber",
+        "Single-serve packets",
+        "No device needed",
       ],
       image: "/images/products/echo-drink-mix.webp",
       badge: "Powdered Drink Mix",
       url: echoProductUrl(ECHO_PRODUCTS.prebiotic, PRODUCTS_CTX),
       deliveryMethod: "drinking-water",
-      h2Concentration: "Up to 16 PPM",
-      bestFor: "Gut health, maximum concentration",
+      h2Concentration: "Up to 16 ppm*",
+      bestFor: "Travel, no device",
     },
     {
       id: 3,
@@ -247,8 +247,8 @@ export default function ProductsPage() {
       badge: "Hydrogen Water Machine",
       url: echoProductUrl(ECHO_PRODUCTS.h2Machine, PRODUCTS_CTX),
       deliveryMethod: "drinking-water",
-      h2Concentration: "Up to 1.5 PPM",
-      bestFor: "Daily home use, consistent intake",
+      h2Concentration: "Up to 1.5 ppm*",
+      bestFor: "Daily home use",
     },
     {
       id: 4,
@@ -261,13 +261,13 @@ export default function ProductsPage() {
         "40 oz capacity",
         "Smart touchscreen display",
         "Portable electrolysis",
-        "High H2 concentration",
+        "Up to 4.5 ppm H\u2082 (manufacturer-stated)",
       ],
       image: "/images/products/echo-forty.webp",
       badge: "Hydrogen Water Bottle",
       url: echoProductUrl(ECHO_PRODUCTS.forty, PRODUCTS_CTX),
       deliveryMethod: "drinking-water",
-      h2Concentration: "Up to 4.5 PPM",
+      h2Concentration: "Up to 4.5 ppm*",
       bestFor: "On-the-go, large capacity",
     },
     {
@@ -276,18 +276,18 @@ export default function ProductsPage() {
       price: "Visit Store",
       originalPrice: null,
       description:
-        "The Echo One is a premium under-counter hydrogen water machine with sleek design and RGB lighting. Delivers high-concentration hydrogen water on demand.",
+        "An under-counter hydrogen water machine with RGB lighting that makes hydrogen water on demand.",
       features: [
         "Under-counter installation",
         "Premium design with RGB lighting",
-        "High H2 concentration",
-        "Whole-household solution",
+        "On-demand hydrogen water",
+        "Whole-household use",
       ],
       image: "/images/products/echo-one.webp",
       badge: "Hydrogen Water Machine",
       url: echoProductUrl(ECHO_PRODUCTS.one, PRODUCTS_CTX),
       deliveryMethod: "drinking-water",
-      h2Concentration: "Up to 1.5 PPM",
+      h2Concentration: "Up to 1.5 ppm*",
       bestFor: "Premium home installation",
     },
     {
@@ -296,19 +296,19 @@ export default function ProductsPage() {
       price: "Visit Store",
       originalPrice: null,
       description:
-        "The Echo Refresh enables you to inhale hydrogen gas directly. It goes from your lungs into your bloodstream in a matter of seconds for rapid systemic delivery.",
+        "A machine that produces hydrogen gas for inhalation through a nasal cannula. Inhalation is how hydrogen was given in many clinical studies.",
       features: [
-        "Direct hydrogen inhalation",
-        "Rapid bloodstream absorption",
+        "Hydrogen gas inhalation",
+        "Nasal cannula delivery",
         "Touchscreen display with timer",
-        "Professional grade",
+        "Home use",
       ],
       image: "/images/products/echo-refresh.webp",
       badge: "Inhalation",
       url: echoProductUrl(ECHO_PRODUCTS.refresh, PRODUCTS_CTX),
       deliveryMethod: "inhalation",
-      h2Concentration: "2% H2 gas",
-      bestFor: "Respiratory support, rapid absorption",
+      h2Concentration: "2% H\u2082 gas*",
+      bestFor: "Inhalation at home",
     },
     {
       id: 7,
@@ -316,19 +316,19 @@ export default function ProductsPage() {
       price: "Visit Store",
       originalPrice: null,
       description:
-        "Upgrade your bath routine with the Echo Revive. Enjoy the benefits of hydrogen-rich bath water through skin absorption.",
+        "A machine that adds hydrogen to bath water. Hydrogen baths are much less studied than drinking or inhalation.",
       features: [
         "Hydrogen-rich bath water",
-        "Skin absorption delivery",
-        "Improved skin health",
-        "Muscle soreness relief",
+        "Works in a standard tub",
+        "Bath-time use",
+        "Least-studied delivery method",
       ],
       image: "/images/products/echo-revive.webp",
       badge: "Bathing",
       url: echoProductUrl(ECHO_PRODUCTS.revive, PRODUCTS_CTX),
       deliveryMethod: "bathing",
-      h2Concentration: "Up to 1.5 PPM",
-      bestFor: "Skin health, muscle recovery, relaxation",
+      h2Concentration: "Up to 1.5 ppm*",
+      bestFor: "Bathing",
     },
   ];
 
@@ -338,46 +338,46 @@ export default function ProductsPage() {
 
   const benefits = [
     {
-      icon: <Heart className="h-6 w-6 text-red-500" />,
-      title: "Heart Health Support",
-      description: "Studies show potential cardiovascular benefits",
-    },
-    {
       icon: <Zap className="h-6 w-6 text-yellow-500" />,
-      title: "Energy & Recovery",
-      description: "May improve athletic performance and recovery",
+      title: "Exercise & Fatigue",
+      description: "Some small trials report lower blood lactate or perceived fatigue after exercise; others found no difference.",
     },
     {
       icon: <Award className="h-6 w-6 text-teal-500" />,
-      title: "Antioxidant Properties",
-      description: "Selective antioxidant targeting harmful free radicals",
+      title: "Antioxidant Markers",
+      description: "A mild antioxidant in lab and animal studies; results in people are inconsistent.",
+    },
+    {
+      icon: <Heart className="h-6 w-6 text-red-500" />,
+      title: "Safety",
+      description: "Well tolerated in short trials. Long-term safety hasn't been studied.",
     },
   ];
 
   const faqs = [
     {
-      question: "What is hydrogen water and how does it work?",
-      answer: "Hydrogen water is regular water infused with dissolved molecular hydrogen (H2) gas. Research suggests H2 acts as a selective antioxidant, targeting harmful hydroxyl radicals without disrupting beneficial reactive oxygen species. Hundreds of peer-reviewed studies have explored its potential health benefits.",
+      question: "What is hydrogen water?",
+      answer: "Water with dissolved molecular hydrogen (H\u2082) gas. In lab and animal studies hydrogen acts as a mild antioxidant. Human trials so far are mostly small and short, with mixed results \u2014 our topic pages grade the evidence for each outcome.",
     },
     {
       question: "Which product is right for me?",
-      answer: "It depends on your lifestyle and goals. The Echo Flask is perfect for portable daily hydration. The Echo Ultimate is ideal for families wanting unlimited hydrogen water at home. The Prebiotic Stick Packs are great for travel. The Echo Refresh is for those interested in hydrogen inhalation therapy, and the Echo Revive is for full-body hydrogen bath benefits.",
+      answer: "Most human drinking trials used hydrogen water (machines, bottles, tablets or powders), so that is the best-studied way to take it. Inhalation was used in many hospital studies. Hydrogen baths have very little research. Choose on convenience and on independently tested concentration at the time you drink.",
     },
     {
-      question: "How does Echo Water compare to other hydrogen water brands?",
-      answer: "Echo Water products consistently deliver higher H2 concentrations (up to 8 PPM with the Echo Flask) compared to most competitors. They use proprietary SPE/PEM electrolysis technology, and every product is backed by third-party testing. Echo Water also sponsors hydrogen research and is the only brand powering a dedicated research library.",
+      question: "How does Echo Water compare to other brands?",
+      answer: "We can't give you an independent comparison: Echo Water's parent company funds this site. The concentrations listed here are Echo's own figures. When comparing any brand, look for third-party testing of dissolved hydrogen at the time you drink, not just the maximum on the label.",
     },
     {
       question: "Is hydrogen water safe to drink?",
-      answer: "Yes. Molecular hydrogen has an excellent safety profile with no known toxic effects at therapeutic concentrations. The FDA has recognized hydrogen gas as Generally Recognized as Safe (GRAS) for use in food. Hundreds of clinical studies have confirmed its safety in humans.",
+      answer: "In human trials so far it has been well tolerated; reported side effects were mild, such as loose stools or bloating, mostly with magnesium-based tablets. The trials are small and short, so long-term safety hasn't been studied. If you're pregnant, take medication or have a medical condition, talk to your doctor first.",
     },
     {
-      question: "How quickly will I notice benefits?",
-      answer: "Individual experiences vary. Some users report increased energy and mental clarity within the first week. Athletic performance and recovery improvements are often noticed within 2-4 weeks. For chronic conditions studied in research, most clinical trials run 4-12 weeks. Consistent daily use is recommended.",
+      question: "Will I notice a difference?",
+      answer: "There's no reliable answer. Some exercise trials measured changes after a single session; trials of blood markers ran 4 to 24 weeks, and many found little or no difference from placebo. Hydrogen water is not a treatment for any disease.",
     },
     {
-      question: "Do you offer a warranty or guarantee?",
-      answer: "Echo Water offers industry-leading warranties: the Echo Ultimate comes with a 10-year warranty, and all products include a satisfaction guarantee. Visit echowater.com for full warranty details and their customer support team.",
+      question: "Do the products have a warranty?",
+      answer: "Warranty and return terms vary by product and are set by Echo Water. See echowater.com for current details.",
     },
   ];
 
@@ -386,9 +386,9 @@ export default function ProductsPage() {
       <SiteHeader />
       <Helmet>
         <title>Molecular Hydrogen Products - Hydrogen Studies</title>
-        <meta name="description" content="Carefully selected hydrogen water products backed by scientific research. Explore Echo Water hydrogen generators, bottles, and inhalation machines." />
+        <meta name="description" content="Hydrogen water bottles, machines, inhalation and bath devices from Echo Water, the company that funds Hydrogen Studies." />
         <meta property="og:title" content="Molecular Hydrogen Products - Hydrogen Studies" />
-        <meta property="og:description" content="Carefully selected hydrogen water products backed by scientific research. Explore Echo Water hydrogen generators, bottles, and inhalation machines." />
+        <meta property="og:description" content="Hydrogen water bottles, machines, inhalation and bath devices from Echo Water, the company that funds Hydrogen Studies." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://hydrogenstudies.com/products" />
         <link rel="canonical" href="https://hydrogenstudies.com/products" />
@@ -424,6 +424,12 @@ export default function ProductsPage() {
                 Explore products for hydrogen-rich water, hydrogen bathing,
                 hydrogen gas inhalation, skin absorption, and powdered drink mix supplements.
               </p>
+              <p className="mt-4 text-sm text-gray-500 max-w-3xl mx-auto">
+                <strong>From our sponsor:</strong> these products are made by Echo
+                Water, whose parent company, Echo Technologies LLC, funds Hydrogen
+                Studies. We don't rank them against other brands. Concentrations
+                marked * are manufacturer-stated.
+              </p>
             </div>
           </div>
         </div>
@@ -432,7 +438,7 @@ export default function ProductsPage() {
           {/* Benefits Section */}
           <div className="mb-16">
             <h2 className="text-2xl font-bold text-center text-gray-900 mb-8">
-              Why Choose Hydrogen Water?
+              What Research Shows So Far
             </h2>
             <div className="grid md:grid-cols-3 gap-8">
               {benefits.map((benefit) => (
@@ -519,7 +525,7 @@ export default function ProductsPage() {
                   <a
                     href={product.url}
                     target="_blank"
-                    rel="noopener"
+                    rel="sponsored noopener"
                     onClick={() => trackOutboundClick(product.url, "products-page")}
                   >
                     <Button className="w-full mb-2">
@@ -527,9 +533,9 @@ export default function ProductsPage() {
                       View Product Details
                     </Button>
                   </a>
-                  <Link href={`/search?q=${encodeURIComponent(product.name.split(" ").slice(0, 2).join(" "))}`}>
+                  <Link href={`/explore-by-delivery-method/${product.deliveryMethod}`}>
                     <Button variant="outline" className="w-full text-sm">
-                      Read Scientific Studies
+                      Research on {product.deliveryMethod.replace("-", " ")}
                     </Button>
                   </Link>
                 </CardContent>
@@ -590,8 +596,9 @@ export default function ProductsPage() {
                   Not Sure Which Delivery Method Is Right for You?
                 </h2>
                 <p className="text-gray-600 mb-4">
-                  Get our free Hydrogen Delivery Methods Comparison Guide — a research-backed
-                  breakdown of drinking, inhalation, and bathing methods to help you choose.
+                  Get our free Hydrogen Delivery Methods Comparison Guide — how drinking,
+                  inhalation and bathing were used in studies, and how much research
+                  exists for each.
                 </p>
                 <ul className="space-y-2 mb-6 text-sm text-gray-700">
                   <li className="flex items-center gap-2">
@@ -600,11 +607,11 @@ export default function ProductsPage() {
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-teal-500 flex-shrink-0" />
-                    Which method is best for your specific health goals
+                    What is and isn&apos;t known for each method
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-teal-500 flex-shrink-0" />
-                    Product recommendations based on the latest studies
+                    What to check before you buy any device
                   </li>
                 </ul>
                 <Button
@@ -631,18 +638,18 @@ export default function ProductsPage() {
             <CardContent className="p-12 text-center">
               <h2 className="text-3xl font-bold mb-4">Need Help Choosing?</h2>
               <p className="text-xl mb-8 opacity-90">
-                Our experts can help you find the perfect hydrogen water
-                solution based on your needs and budget.
+                Echo Water's team can answer product questions and help you
+                choose a device for your needs and budget.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <a
                   href={echoContactUrl}
                   target="_blank"
-                  rel="noopener"
+                  rel="sponsored noopener"
                   onClick={() => trackOutboundClick(echoContactUrl, "products-page")}
                 >
                   <Button variant="secondary" size="lg">
-                    Free Consultation
+                    Contact Echo Water
                   </Button>
                 </a>
                 <Button

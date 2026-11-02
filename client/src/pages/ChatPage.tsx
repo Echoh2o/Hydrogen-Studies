@@ -23,7 +23,7 @@ const ChatPage: React.FC = () => {
           />
           <meta
             property="og:description"
-            content="Get answers about hydrogen water, inhalation therapy, and baths for your health and wellness, backed by scientific research."
+            content="Ask questions about hydrogen water, inhalation and baths and get answers with citations to published studies."
           />
           <meta property="og:type" content="website" />
         </Helmet>
@@ -49,14 +49,14 @@ const ChatPage: React.FC = () => {
             <div className="space-y-4 text-sm">
               <p>
                 This hydrogen health assistant uses a specialized knowledge base
-                to provide answers backed by peer-reviewed scientific studies on
-                hydrogen's health and wellness applications.
+                to answer questions about hydrogen research, with citations to
+                published studies. It is not medical advice.
               </p>
               <p>
                 Unlike general health chatbots, our assistant focuses
-                exclusively on the therapeutic benefits of hydrogen-rich water,
-                hydrogen inhalation therapy, and hydrogen baths - with proper
-                citations to scientific studies.
+                exclusively on research into hydrogen-rich water, hydrogen
+                inhalation and hydrogen baths - with citations to the studies,
+                including the ones that found no effect.
               </p>
               <p>
                 This makes it an ideal resource for health-conscious

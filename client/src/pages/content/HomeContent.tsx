@@ -92,7 +92,7 @@ export function HomeContent({
   ];
 
   const stats = [
-    { number: siteStats ? siteStats.totalStudies.toLocaleString("en-US") : "1,300+", label: "Scientific Studies" },
+    { number: siteStats ? siteStats.totalStudies.toLocaleString("en-US") : "2,000+", label: "Scientific Studies" },
     { number: siteStats ? `${siteStats.countries}+` : "25+", label: "Countries Researching" },
     { number: siteStats ? siteStats.humanTrials.toLocaleString("en-US") : "300+", label: "Human Clinical Trials" },
     { number: siteStats ? `${siteStats.yearsOfResearch}+` : "15+", label: "Years of Research" },
