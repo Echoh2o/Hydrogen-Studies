@@ -1,0 +1,396 @@
+"use client";
+// Body of the homepage, shared by the SPA (HomePage.tsx) and the Next.js front
+// door (web/). Data comes in as props (each renderer fetches it); links use
+// the renderer's own Link (wouter in the SPA, plain anchors in Next).
+import type { ComponentType, ReactNode } from "react";
+import {
+  Search,
+  Droplets,
+  Heart,
+  Brain,
+  Shield,
+  Zap,
+  ChevronRight,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+
+export interface SiteStats {
+  totalStudies: number;
+  countries: number;
+  humanTrials: number;
+  yearsOfResearch: number;
+  peerReviewedPct: number;
+}
+
+type LinkLike = ComponentType<{ href: string; className?: string; children?: ReactNode }>;
+
+const Anchor: LinkLike = ({ href, className, children }) => (
+  <a href={href} className={className}>
+    {children}
+  </a>
+);
+
+export function HomeContent({
+  siteStats,
+  categoryStats,
+  Link = Anchor,
+  onSearch,
+}: {
+  siteStats?: SiteStats;
+  categoryStats?: Record<string, any>;
+  Link?: LinkLike;
+  /** SPA: client-side navigation. Omitted → the form submits a normal GET to /search. */
+  onSearch?: (query: string) => void;
+}) {
+  const L = Link;
+  // Derive dynamic study counts from API data
+  const getStudyCount = (systemName: string, fallback: string) => {
+    const count = Number(categoryStats?.data?.body_system?.find(
+      (s: any) => s.name === systemName
+    )?.count || 0);
+    return count > 0 ? `${count} studies` : fallback;
+  };
+
+  const benefits = [
+    {
+      icon: <Heart className="h-8 w-8 text-red-500" />,
+      title: "Heart Health",
+      description:
+        "Research suggests molecular hydrogen may support vascular function and overall cardiometabolic health.",
+      studyCount: getStudyCount("Cardiovascular System", "47 studies"),
+    },
+    {
+      icon: <Brain className="h-8 w-8 text-teal-500" />,
+      title: "Brain Function",
+      description:
+        "Molecular hydrogen is being studied for its role in supporting brain health and cognitive function.",
+      studyCount: getStudyCount("Nervous System", "32 studies"),
+    },
+    {
+      icon: <Shield className="h-8 w-8 text-green-500" />,
+      title: "Oxidative Stress & Inflammation",
+      description:
+        "Molecular hydrogen plays a role in maintaining oxidative balance and supporting the body's response to inflammation.",
+      studyCount: getStudyCount("Immune System", "89 studies"),
+    },
+    {
+      icon: <Zap className="h-8 w-8 text-yellow-500" />,
+      title: "Athletic Performance",
+      description:
+        "Molecular hydrogen is studied for its effects on physical performance and recovery.",
+      studyCount: getStudyCount("Musculoskeletal System", "23 studies"),
+    },
+  ];
+
+  const stats = [
+    { number: siteStats ? siteStats.totalStudies.toLocaleString() : "1,300+", label: "Scientific Studies" },
+    { number: siteStats ? `${siteStats.countries}+` : "25+", label: "Countries Researching" },
+    { number: siteStats ? siteStats.humanTrials.toLocaleString() : "300+", label: "Human Clinical Trials" },
+    { number: siteStats ? `${siteStats.yearsOfResearch}+` : "15+", label: "Years of Research" },
+  ];
+
+  return (
+    <>
+      {/* Hero Section */}
+      <section className="relative py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+              Discover the Science Behind
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-cyan-600 block">
+                Molecular Hydrogen
+              </span>
+            </h1>
+            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+              Molecular Hydrogen is being studied for the health benefits it provides.
+              Delivered through Hydrogen Water, Hydrogen Inhalation, Hydrogen Bathing,
+              and Hydrogen Drink Mix Supplements. There are currently{" "}
+              {siteStats ? siteStats.totalStudies.toLocaleString() : "..."} peer-reviewed
+              studies across more than {siteStats ? siteStats.countries : "..."} countries.
+              Explore what the research shows by searching below.
+            </p>
+
+            {/* Search Bar */}
+            <form
+              action="/search"
+              method="get"
+              onSubmit={
+                onSearch
+                  ? (e) => {
+                      e.preventDefault();
+                      const q = String(new FormData(e.currentTarget).get("search") ?? "").trim();
+                      if (q) onSearch(q);
+                    }
+                  : undefined
+              }
+              className="max-w-2xl mx-auto mb-8"
+            >
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <Input
+                  type="text"
+                  placeholder="Search studies by condition, benefit, or keyword..."
+                  name="search"
+                  aria-label="Search studies"
+                  className="pl-12 pr-4 py-4 text-lg rounded-full border-2 border-gray-200 focus:border-teal-500 shadow-lg"
+                />
+                <button
+                  type="submit"
+                  className="btn-primary btn-rounded-full absolute right-2 top-1/2 transform -translate-y-1/2"
+                >
+                  Search
+                </button>
+              </div>
+            </form>
+
+            <div className="flex flex-wrap justify-center gap-4 mb-12">
+              <Badge variant="outline" className="px-4 py-2">
+                100% Peer-Reviewed
+              </Badge>
+              <Badge variant="outline" className="px-4 py-2">
+                Updated Weekly
+              </Badge>
+              <Badge variant="outline" className="px-4 py-2">
+                Free Access
+              </Badge>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-20">
+            {stats.map((stat, index) => (
+              <Card
+                key={index}
+                className="text-center border-none shadow-lg bg-white/70 backdrop-blur-sm"
+              >
+                <CardContent className="p-6">
+                  <div className="text-3xl font-bold text-teal-600 mb-2">
+                    {stat.number}
+                  </div>
+                  <div className="text-sm text-gray-600">{stat.label}</div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Benefits Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Science-Backed Health Benefits
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Discover what thousands of peer-reviewed studies reveal about
+              molecular hydrogen and its biological effects.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+            {benefits.map((benefit, index) => {
+              type BenefitTitle =
+                | "Heart Health"
+                | "Brain Function"
+                | "Oxidative Stress & Inflammation"
+                | "Athletic Performance";
+
+              const categoryLinks: Record<BenefitTitle, string> = {
+                "Heart Health": "/explore-by-body-system/cardiovascular",
+                "Brain Function": "/explore-by-body-system/brain-nervous-system",
+                "Oxidative Stress & Inflammation": "/explore-by-body-system/immune-system",
+                "Athletic Performance": "/explore-by-body-system/musculoskeletal",
+              };
+
+              const detailedBenefits: Record<BenefitTitle, string[]> = {
+                "Heart Health": [
+                  "Supports healthy blood vessel function",
+                  "Helps maintain balanced glucose and lipid levels",
+                  "Reduces markers associated with inflammation",
+                  "Supports healthy blood pressure regulation",
+                ],
+                "Brain Function": [
+                  "Supports cognitive performance",
+                  "Helps protect brain cells from oxidative stress",
+                  "Supports healthy inflammatory balance in the brain",
+                  "Contributes to overall neurological resilience",
+                ],
+                "Oxidative Stress & Inflammation": [
+                  "Helps reduce oxidative stress",
+                  "Supports the body's natural antioxidant defenses",
+                  "Promotes balanced inflammatory signaling",
+                  "Supports cellular protection under stress",
+                ],
+                "Athletic Performance": [
+                  "Helps reduce exercise-related fatigue",
+                  "Supports recovery after physical activity",
+                  "Reduces markers of muscle stress",
+                  "Supports endurance and performance capacity",
+                ],
+              };
+
+              const benefitTitle = benefit.title as BenefitTitle;
+              return (
+                <L
+                  key={index}
+                  href={categoryLinks[benefitTitle]}
+                  className="block h-full"
+                >
+                  <Card className="group hover:shadow-xl transition-all duration-300 border-none bg-gradient-to-br from-white to-gray-50 h-full cursor-pointer hover:scale-105">
+                    <CardHeader className="text-center pb-4">
+                      <div className="mx-auto mb-4 p-3 rounded-full bg-gray-50 group-hover:bg-white transition-colors">
+                        {benefit.icon}
+                      </div>
+                      <CardTitle className="text-xl mb-2 group-hover:text-teal-600 transition-colors">
+                        {benefit.title}
+                      </CardTitle>
+                      <Badge
+                        variant="secondary"
+                        className="mx-auto group-hover:bg-teal-100 group-hover:text-teal-700"
+                      >
+                        {benefit.studyCount}
+                      </Badge>
+                    </CardHeader>
+                    <CardContent>
+                      <CardDescription className="text-center text-gray-600 leading-relaxed mb-4">
+                        {benefit.description}
+                      </CardDescription>
+
+                      {/* Detailed Benefits List */}
+                      <div className="mb-4">
+                        <h4 className="text-sm font-semibold text-gray-700 mb-3 text-center">
+                          Potential Benefits
+                        </h4>
+                        <ul className="space-y-2">
+                          {(detailedBenefits[benefitTitle] || []).map(
+                            (benefitItem: string, benefitIndex: number) => (
+                              <li
+                                key={benefitIndex}
+                                className="flex items-start gap-2 text-sm text-gray-600"
+                              >
+                                <div className="w-1.5 h-1.5 bg-teal-500 rounded-full mt-2 flex-shrink-0"></div>
+                                <span>{benefitItem}</span>
+                              </li>
+                            ),
+                          )}
+                        </ul>
+                      </div>
+
+                      {/* Click to explore indicator */}
+                      <div className="text-center pt-2">
+                        <Badge
+                          variant="outline"
+                          className="group-hover:bg-teal-600 group-hover:text-white transition-colors"
+                        >
+                          Click to explore studies
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </L>
+              );
+            })}
+          </div>
+
+          <div className="text-center">
+            <L href="/learn">
+              <button className="btn-primary btn-lg btn-rounded-full btn-icon-right">
+                Explore All Benefits
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </button>
+            </L>
+          </div>
+        </div>
+      </section>
+
+      {/* Browse by Topic Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Browse Research by Topic
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Explore hydrogen therapy research organized by health condition, body system, or delivery method.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 mb-12">
+            <L href="/explore-by-condition" className="block">
+              <Card className="hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-105 h-full">
+                <CardContent className="p-8 text-center">
+                  <Heart className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                  <CardTitle className="text-xl mb-2">By Health Condition</CardTitle>
+                  <CardDescription>
+                    Heart disease, diabetes, neurological conditions, cancer support, and more
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            </L>
+            <L href="/explore-by-body-system" className="block">
+              <Card className="hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-105 h-full">
+                <CardContent className="p-8 text-center">
+                  <Brain className="h-12 w-12 text-teal-500 mx-auto mb-4" />
+                  <CardTitle className="text-xl mb-2">By Body System</CardTitle>
+                  <CardDescription>
+                    Cardiovascular, nervous, respiratory, digestive, immune, and more
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            </L>
+            <L href="/explore-by-delivery-method" className="block">
+              <Card className="hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-105 h-full">
+                <CardContent className="p-8 text-center">
+                  <Droplets className="h-12 w-12 text-cyan-500 mx-auto mb-4" />
+                  <CardTitle className="text-xl mb-2">By Delivery Method</CardTitle>
+                  <CardDescription>
+                    Hydrogen water, inhalation therapy, bathing, tablets, and more
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            </L>
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-4">
+            <L href="/explore-by-life-stage">
+              <Button variant="outline" className="rounded-full px-6">By Life Stage</Button>
+            </L>
+            <L href="/explore-by-benefit">
+              <Button variant="outline" className="rounded-full px-6">By Health Benefit</Button>
+            </L>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+            Explore the Research for Yourself
+          </h2>
+          <p className="text-xl text-gray-600 mb-8">
+            Browse our curated collection of peer-reviewed studies, read plain-language summaries, and explore what the science actually says about molecular hydrogen.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <L href="/studies">
+              <Button size="lg" className="rounded-full px-8">
+                Browse All Studies
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
+            </L>
+          </div>
+        </div>
+      </section>
+    </>
+  );
+}

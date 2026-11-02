@@ -19,15 +19,20 @@ export class PageDataError extends Error {
  * seconds (0 = always fresh). Errors (404/410) are never cached.
  */
 export async function pageData<T>(path: string, revalidate: number): Promise<T> {
+  return expressJson<T>(`/api/page-data${path}`, revalidate);
+}
+
+/** Any Express JSON endpoint (e.g. the public stats the homepage shows). */
+export async function expressJson<T>(path: string, revalidate: number): Promise<T> {
   const fetcher = async (): Promise<T> => {
-    const res = await fetch(`${EXPRESS_ORIGIN}/api/page-data${path}`, {
+    const res = await fetch(`${EXPRESS_ORIGIN}${path}`, {
       headers: { "x-page-data-key": process.env.PAGE_DATA_KEY ?? "" },
       cache: "no-store",
     });
     if (!res.ok) throw new PageDataError(res.status);
     return res.json() as Promise<T>;
   };
-  return revalidate > 0 ? unstable_cache(fetcher, ["page-data", path], { revalidate })() : fetcher();
+  return revalidate > 0 ? unstable_cache(fetcher, ["express", path], { revalidate })() : fetcher();
 }
 
 export interface FooterCondition {

@@ -23,6 +23,7 @@ export const SSR_FAMILIES: Record<string, RegExp> = {
   policy: /^\/(?:editorial-policy|methodology)$/,
   // Shared-component pages (client/src/pages/content/*).
   pages: /^\/(?:about|contact|privacy|terms|disclaimer)$/,
+  home: /^\/$/,
 };
 
 // content-security-policy: Next sets a per-request nonce CSP (web/middleware.ts)
