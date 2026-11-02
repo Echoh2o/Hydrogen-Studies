@@ -194,7 +194,7 @@ export function StudiesContent({ initial }: { initial?: { key: string; data: Stu
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-3xl font-bold">All Studies</h1>
               <span className="text-sm text-neutral-600">
-                {totalStudies.toLocaleString()} studies found
+                {totalStudies.toLocaleString("en-US")} studies found
               </span>
             </div>
 
@@ -425,7 +425,7 @@ export function StudiesContent({ initial }: { initial?: { key: string; data: Stu
                             </Button>
                           </div>
                           <p className="text-sm text-neutral-600">
-                            Page {currentPage} of {totalPages} ({totalStudies.toLocaleString()} total studies)
+                            Page {currentPage} of {totalPages} ({totalStudies.toLocaleString("en-US")} total studies)
                           </p>
                         </div>
                       )}

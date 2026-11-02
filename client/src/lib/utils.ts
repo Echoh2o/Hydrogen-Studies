@@ -9,11 +9,15 @@ export function formatDate(dateString: string): string {
   if (!dateString) return "";
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return "";
-  const year = date.getFullYear();
+  // Stored dates are calendar dates ("2026-06-01" = UTC midnight). Format in
+  // UTC so a US browser doesn't show the previous month, and so the server
+  // render matches the browser's (no hydration mismatch).
+  const year = date.getUTCFullYear();
   if (year < 1900 || year > 2100) return "";
   return date.toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
+    timeZone: "UTC",
   });
 }
 
