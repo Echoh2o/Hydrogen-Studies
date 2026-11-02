@@ -304,7 +304,7 @@ describe("human pass-through", () => {
 });
 
 describe("notifyWebRevalidate (admin edits reach Next at once)", () => {
-  const fetchMock = vi.fn(async () => new Response("{}"));
+  const fetchMock = vi.fn(async (_url: string, _init: RequestInit & { headers: Record<string, string> }) => new Response("{}"));
   beforeEach(() => {
     vi.stubGlobal("fetch", fetchMock);
     fetchMock.mockClear();
@@ -318,7 +318,7 @@ describe("notifyWebRevalidate (admin edits reach Next at once)", () => {
   });
 
   it("fans a blog post out to /blog and the homepage; studies to the homepage; nothing = all", async () => {
-    const sent = () => JSON.parse(fetchMock.mock.calls.at(-1)![1].body).paths;
+    const sent = () => JSON.parse(String(fetchMock.mock.calls.at(-1)![1].body)).paths;
     notifyWebRevalidate("/blog/x");
     expect(sent()).toEqual(["/blog/x", "/blog", "/"]);
     notifyWebRevalidate("/study/y");
