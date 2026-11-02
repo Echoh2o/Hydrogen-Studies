@@ -24,6 +24,7 @@ export const SSR_FAMILIES: Record<string, RegExp> = {
   // Shared-component pages (client/src/pages/content/*).
   pages: /^\/(?:about|contact|privacy|terms|disclaimer)$/,
   home: /^\/$/,
+  studies: /^\/studies$/,
 };
 
 // content-security-policy: Next sets a per-request nonce CSP (web/middleware.ts)
