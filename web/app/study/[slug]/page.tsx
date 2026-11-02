@@ -13,7 +13,7 @@ import {
   studyUpdatedAt,
   type StudyLike,
 } from "@shared/seo-markup";
-import { studyBreadcrumbs, studyEvidence, type HubLink } from "@shared/study-page";
+import { studyBreadcrumbs, studyDetails, studyEvidence, type HubLink } from "@shared/study-page";
 import { PageDataError, SITE_URL, pageData, type FooterCondition } from "@web/lib/page-data";
 import { SiteHeader } from "@web/components/SiteHeader";
 import { SiteFooter } from "@web/components/SiteFooter";
@@ -113,6 +113,7 @@ export default async function StudyPage({ params }: { params: { slug: string } }
   const pmid = String(study.pmid ?? "").match(/^\d{4,}$/)?.[0];
   if (pmid) details.push(["PMID", <a key="pmid" href={`https://pubmed.ncbi.nlm.nih.gov/${pmid}/`} rel="noopener" className="text-primary underline">{pmid}</a>]);
   if (study.studyType) details.push(["Study Type", study.studyType]);
+  for (const d of studyDetails(study as Parameters<typeof studyDetails>[0])) details.push([d.label, d.value]);
   if (study.outcome) details.push(["Outcome", study.outcome]);
   if (study.peerReviewed) details.push(["Peer Reviewed", "Yes"]);
   if (study.country) details.push(["Country", study.country]);
