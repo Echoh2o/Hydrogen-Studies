@@ -31,6 +31,8 @@ vi.mock("../middleware/seo-body-renderer", () => ({
   getConditionHubs: async () => [{ slug: "kidney-health", name: "Kidney Health" }],
   getRelatedStudies: async () => [{ slug: "r1", title: "Related", year: 2024 }],
   getRelatedBlogs: async () => [],
+  getRecentStudies: async () => [{ slug: "s1", title: "Recent" }],
+  getRecentBlogs: async () => [{ slug: "b1", title: "Post" }],
   getTopConditions: async () => [{ slug: "kidney-health", name: "Kidney Health" }],
 }));
 vi.mock("../utils/logger", () => ({ logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() } }));
@@ -134,5 +136,16 @@ describe("GET /api/page-data/page", () => {
     page.body = "<p>hub</p>";
     const res = await request(app).get("/api/page-data/page?path=/explore-by-benefit/energy");
     expect(res.body.meta.canonical).toBe("https://hydrogenstudies.com/explore-by-benefit/energy");
+  });
+});
+
+describe("GET /api/page-data/home", () => {
+  it("returns the homepage crawl-path lists", async () => {
+    const res = await request(app).get("/api/page-data/home");
+    expect(res.body).toEqual({
+      conditions: [{ slug: "kidney-health", name: "Kidney Health" }],
+      recentStudies: [{ slug: "s1", title: "Recent" }],
+      recentBlogs: [{ slug: "b1", title: "Post" }],
+    });
   });
 });

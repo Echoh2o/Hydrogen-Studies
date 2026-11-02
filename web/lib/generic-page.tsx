@@ -27,7 +27,7 @@ interface GenericPageData {
 
 async function load(path: string, revalidate: number): Promise<GenericPageData> {
   try {
-    return await pageData<GenericPageData>(`/page?path=${encodeURIComponent(path)}`, revalidate);
+    return await pageData<GenericPageData>(`/page?path=${encodeURIComponent(path)}`, revalidate, [path]);
   } catch (err) {
     if (err instanceof PageDataError && (err.status === 404 || err.status === 410)) notFound();
     throw err;

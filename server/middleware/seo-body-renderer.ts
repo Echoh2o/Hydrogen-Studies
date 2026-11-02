@@ -532,7 +532,7 @@ async function getRelatedBlogsForBlog(blogId: number, category: string | null, l
   } catch { return []; }
 }
 
-async function getRecentStudies(limit = 15): Promise<{ slug: string; title: string }[]> {
+export async function getRecentStudies(limit = 15): Promise<{ slug: string; title: string }[]> {
   try {
     const r = await db.execute(sql`
       SELECT slug, COALESCE(plain_language_title, title) as title
@@ -543,7 +543,7 @@ async function getRecentStudies(limit = 15): Promise<{ slug: string; title: stri
   } catch { return []; }
 }
 
-async function getRecentBlogs(limit = 10): Promise<{ slug: string; title: string }[]> {
+export async function getRecentBlogs(limit = 10): Promise<{ slug: string; title: string }[]> {
   try {
     const r = await db.execute(sql`
       SELECT slug, title FROM blog_articles

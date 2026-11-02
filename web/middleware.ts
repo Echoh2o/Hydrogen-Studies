@@ -85,5 +85,5 @@ export async function middleware(req: NextRequest) {
 
 // Page paths only — not Next internals, API, uploads or static files.
 export const config = {
-  matcher: ["/((?!_next/|api/|uploads/|assets/|proxy/|web_health|.*\\.[a-zA-Z0-9]+$).*)"],
+  matcher: ["/((?!_next/|api/|uploads/|assets/|proxy/|web_health|web_revalidate|.*\\.[a-zA-Z0-9]+$).*)"],
 };

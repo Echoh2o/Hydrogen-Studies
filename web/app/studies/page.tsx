@@ -38,7 +38,7 @@ export default async function Page({ searchParams }: { searchParams: Record<stri
   const key = studiesQueryString(search);
   let initial: { key: string; data: StudiesPageResponse } | undefined;
   try {
-    initial = { key, data: forCards(await expressJson<StudiesPageResponse>(`/api/studies?${key}`, 600)) };
+    initial = { key, data: forCards(await expressJson<StudiesPageResponse>(`/api/studies?${key}`, 600, ["/studies"])) };
   } catch {
     initial = undefined; // the client fetches it instead
   }

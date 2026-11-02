@@ -25,7 +25,7 @@ interface MetaData {
 
 async function load(path: string): Promise<MetaData> {
   try {
-    return await pageData<MetaData>(`/meta?path=${encodeURIComponent(path)}`, 3600);
+    return await pageData<MetaData>(`/meta?path=${encodeURIComponent(path)}`, 3600, [path]);
   } catch (err) {
     if (err instanceof PageDataError && err.status === 404) notFound();
     throw err;
