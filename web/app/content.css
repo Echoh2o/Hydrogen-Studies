@@ -12,3 +12,7 @@
 .page-body dt { @apply m-0 font-medium text-neutral-500; }
 .page-body dd { @apply m-0 p-0 text-neutral-800; }
 .page-body img { @apply rounded-lg; }
+
+/* index.css names "Montserrat" literally; in Next it's self-hosted under
+   next/font's generated family (exposed as --font-montserrat). */
+body, h1, h2, h3, h4, h5, h6, .font-sans, .font-heading { font-family: var(--font-montserrat), sans-serif; }
