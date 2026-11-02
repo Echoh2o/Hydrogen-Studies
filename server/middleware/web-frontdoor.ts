@@ -23,7 +23,19 @@ export const SSR_FAMILIES: Record<string, RegExp> = {
   policy: /^\/(?:editorial-policy|methodology)$/,
 };
 
-const PASS_HEADERS = ["content-type", "cache-control", "etag", "last-modified", "link", "x-nextjs-cache"];
+// content-security-policy: Next sets a per-request nonce CSP (web/middleware.ts)
+// that must replace helmet's, or Next's inline bootstrap scripts are blocked.
+const PASS_HEADERS = [
+  "content-type",
+  "cache-control",
+  "etag",
+  "last-modified",
+  "link",
+  "x-nextjs-cache",
+  "content-security-policy",
+];
+/** Next's JS/CSS chunks — needed by every migrated page. */
+const NEXT_ASSETS = /^\/_next\//;
 const TIMEOUT_MS = 15_000;
 
 export function enabledFamilies(env: string | undefined = process.env.SSR_FAMILIES): string[] {
@@ -59,7 +71,8 @@ export function webFrontDoor() {
     // Next's own fallback rewrite proxies unmigrated paths back here; never
     // bounce those to Next again.
     if (req.get("x-from-web")) return next();
-    const family = ssrFamilyFor(req.path, enabledFamilies());
+    const families = enabledFamilies();
+    const family = NEXT_ASSETS.test(req.path) && families.length ? "assets" : ssrFamilyFor(req.path, families);
     if (!family) return next();
 
     try {

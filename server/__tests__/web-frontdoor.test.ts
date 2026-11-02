@@ -70,6 +70,19 @@ describe("webFrontDoor proxy", () => {
     expect(init.headers["x-from-express"]).toBe("1");
   });
 
+  it("proxies Next's /_next assets whenever a family is on, and passes Next's CSP through", async () => {
+    fetchMock.mockResolvedValue(
+      new Response("js", {
+        status: 200,
+        headers: { "content-type": "application/javascript", "content-security-policy": "script-src 'nonce-x'" },
+      }),
+    );
+    const res = await request(app).get("/_next/static/chunks/main.js");
+    expect(res.text).toBe("js");
+    expect(res.headers["x-served-by"]).toBe("web:assets");
+    expect(res.headers["content-security-policy"]).toBe("script-src 'nonce-x'");
+  });
+
   it("passes 404s through (Next's not-found page)", async () => {
     fetchMock.mockResolvedValue(new Response("nf", { status: 404, headers: { "content-type": "text/html" } }));
     expect((await request(app).get("/blog/missing")).status).toBe(404);

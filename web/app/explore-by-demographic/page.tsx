@@ -1,8 +1,7 @@
 import { genericPage } from "@web/lib/generic-page";
 
-// /explore-by-demographic index. Rendered per request (not at build: Express isn't reachable from
-// the build container); the Express renderer caches its own queries.
-const page = genericPage<Record<string, never>>(() => "/explore-by-demographic", 0);
+// /explore-by-demographic index. Rendered per request (CSP nonce); page data cached 10 minutes.
+const page = genericPage<Record<string, never>>(() => "/explore-by-demographic", 600);
 
 export const dynamic = "force-dynamic";
 export const generateMetadata = page.generateMetadata;

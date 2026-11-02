@@ -737,7 +737,7 @@ export async function renderBlog(slugOrId: string): Promise<string | null> {
     h += `<article itemscope itemtype="https://schema.org/Article">\n`;
     h += `<h1 itemprop="headline">${esc(b.title)}</h1>\n`;
     h += renderBlogBylineHtml(b);
-    if (b.created_at) h += `<time itemprop="datePublished" datetime="${new Date(b.created_at).toISOString()}">${fmtDate(b.created_at)}</time>\n`;
+    if (b.created_at) h += `<p class="published">Published <time itemprop="datePublished" datetime="${new Date(b.created_at).toISOString()}">${fmtDate(b.created_at)}</time></p>\n`;
 
     // Blog content — DOM-aware allowlist sanitization (DOMPurify), keeps
     // structural HTML while stripping scripts/handlers/dangerous URIs.
