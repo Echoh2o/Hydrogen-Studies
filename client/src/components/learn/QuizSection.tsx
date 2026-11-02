@@ -16,7 +16,7 @@ const questions = [
     ],
     correct: 1,
     explanation:
-      "H\u2082 is 500\u00D7 smaller than Vitamin C molecules. This lets it pass through cell walls and reach places \u2014 like mitochondria and the brain \u2014 that larger antioxidants cannot.",
+      "H\u2082 is the smallest molecule there is \u2014 vitamin C is about 88 times heavier. Its size lets it diffuse through cell membranes without needing a transporter.",
   },
   {
     question: "What is oxidative stress?",
@@ -35,7 +35,7 @@ const questions = [
     options: ["The kidneys", "The stomach", "The liver", "The brain"],
     correct: 3,
     explanation:
-      "H\u2082 crosses the blood-brain barrier \u2014 a protective filter that blocks most molecules from entering the brain. This makes it uniquely useful for studying neuroprotection.",
+      "H\u2082 diffuses across the blood-brain barrier \u2014 a filter that keeps many molecules out of the brain. That's one reason researchers study it for brain protection (so far mostly in animals).",
   },
 ];
 

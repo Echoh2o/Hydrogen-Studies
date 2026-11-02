@@ -9,19 +9,19 @@ const tiers = [
     fill: 90,
     color: "#10B981",
     annotation:
-      "Extensive — consistent positive results across disease models",
+      "Extensive — mostly positive, but animal results often don't hold in people",
   },
   {
     label: "Small human trials (< 100 participants)",
     fill: 65,
     color: "#F59E0B",
-    annotation: "Promising — significant results in multiple conditions",
+    annotation: "Mixed — some positive results, many small or short",
   },
   {
     label: "Large randomized controlled trials",
     fill: 25,
     color: "#F97316",
-    annotation: "Emerging — more large trials needed to confirm",
+    annotation: "Few — and several found no clear effect",
   },
 ];
 
@@ -31,7 +31,7 @@ export default function EvidenceSection() {
     queryKey: ["/api/learn-stats"],
   });
 
-  const counter1 = useCountUp(stats?.totalStudies || 1335, 2000);
+  const counter1 = useCountUp(stats?.totalStudies || 2000, 2000);
   const counter2 = useCountUp(stats?.humanTrials || 200, 2000);
   const counter3 = useCountUp(stats?.healthConditions || 170, 2000);
 
@@ -197,10 +197,9 @@ export default function EvidenceSection() {
               margin: 0,
             }}
           >
-            For context: Omega-3 fatty acids had fewer published human trials at
-            this stage of research. Vitamin D's connection to immune health was
-            still emerging after 15+ years of study. H&#x2082; research is newer
-            — but it is moving exceptionally fast.
+            Most of the research so far is in animals and cells. Results there
+            often don't carry over to people, which is why the human trials
+            below matter most.
           </p>
         </div>
 
@@ -270,9 +269,9 @@ export default function EvidenceSection() {
             lineHeight: 1.7,
           }}
         >
-          Most human trials are small and short-term. The breadth of positive
-          results across so many different disease models is why the scientific
-          community is paying close attention. This is a field in motion.
+          Most human trials are small and short-term, and several of the
+          larger ones found little or no difference from placebo. Each topic
+          page grades the evidence and lists the null results too.
         </p>
       </div>
     </section>

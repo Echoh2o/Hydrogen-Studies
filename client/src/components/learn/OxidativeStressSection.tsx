@@ -80,8 +80,9 @@ export default function OxidativeStressSection() {
                 of serious diseases.
               </p>
               <p style={{ marginBottom: 0 }}>
-                The good news: your body has defenses. And molecular hydrogen is
-                one of the most powerful natural tools scientists have found.
+            The good news: your body has its own antioxidant defenses. Molecular
+            hydrogen is being studied as a mild antioxidant that may add to
+            them.
               </p>
             </div>
           </div>

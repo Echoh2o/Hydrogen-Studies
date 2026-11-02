@@ -15,74 +15,14 @@ import DeliveryMethodsSection from "@/components/learn/DeliveryMethodsSection";
 import FaqSection from "@/components/learn/FaqSection";
 import TldrSection from "@/components/learn/TldrSection";
 import DualCtaSection from "@/components/learn/DualCtaSection";
+import { LEARN_FAQS } from "@/components/learn/learn-faqs";
 
 const faqStructuredData = {
-  mainEntity: [
-    {
-      "@type": "Question",
-      name: "Is hydrogen water safe?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Yes. Hydrogen gas is produced naturally in your gut every day. Numerous human clinical trials have reported no adverse effects.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Does hydrogen water taste different from regular water?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "No noticeable difference for most people. Molecular hydrogen is colorless, odorless, and tasteless.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "How much hydrogen water should I drink?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Most clinical studies have used between 500ml and 1.5 liters per day. Consistency over time matters more than any single large serving.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "How long does it take to notice anything?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "It varies by individual. Some athletic recovery studies saw changes in 7–14 days. Inflammation markers typically appeared after 4–8 weeks.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Does hydrogen stay in the water once it is made?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "No — dissolved H₂ gas escapes relatively quickly. Hydrogen water should be consumed soon after it is produced.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Is this the same as alkaline water?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "No. Alkaline water changes pH. Hydrogen water adds dissolved H₂ gas. They are completely different chemistry.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Is the research on this site peer-reviewed?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Yes. Every study in the database comes from peer-reviewed academic journals.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Is this the same as hydrogen peroxide?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "No. Hydrogen peroxide (H₂O₂) is an oxidizing agent. Molecular hydrogen (H₂) is an antioxidant. They are chemically opposite.",
-      },
-    },
-  ],
+  mainEntity: LEARN_FAQS.map((f) => ({
+    "@type": "Question",
+    name: f.question,
+    acceptedAnswer: { "@type": "Answer", text: f.answer },
+  })),
 };
 
 export default function LearnPage() {
@@ -92,7 +32,7 @@ export default function LearnPage() {
         <title>Learn About Molecular Hydrogen | Hydrogen Studies</title>
         <meta
           name="description"
-          content="Everything you need to understand molecular hydrogen (H₂) — what it is, how it works, and what 1,335+ peer-reviewed studies have found. Plain English. No hype."
+          content="Everything you need to understand molecular hydrogen (H₂) — what it is, how it works, and what 2,000+ studies have (and haven't) found. Plain English. No hype."
         />
         <meta property="og:title" content="Learn About Molecular Hydrogen" />
         <meta

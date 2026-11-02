@@ -141,7 +141,7 @@ export default function DualCtaSection() {
                   marginBottom: 16,
                 }}
               >
-                {stats?.totalStudies?.toLocaleString() || "1,335"}+ peer-reviewed studies. Filter by health condition,
+                {stats?.totalStudies?.toLocaleString("en-US") || "2,000"}+ studies. Filter by health condition,
                 delivery method, or study type.
               </p>
 
@@ -247,14 +247,14 @@ export default function DualCtaSection() {
                   marginBottom: 24,
                 }}
               >
-                Echo Water makes hydrogen water devices designed to match the
-                concentrations used in clinical research.
+                From our sponsor: Echo Water, the company that funds this site,
+                makes hydrogen water devices.
               </p>
 
               <a
                 href={echoStoreUrl}
                 target="_blank"
-                rel="noopener"
+                rel="sponsored noopener"
                 onClick={() => trackOutboundClick(echoStoreUrl, "learn-dual-cta")}
                 className="block w-full"
                 style={{
@@ -288,10 +288,11 @@ export default function DualCtaSection() {
               lineHeight: 1.7,
             }}
           >
-            hydrogenstudies.com is maintained by Dr. Paul Barattiero as a
-            non-commercial scientific resource. All studies are third-party
-            peer-reviewed research. No curative claims are made. Site content is
-            for educational purposes only.
+            Hydrogen Studies is built and funded by Echo Technologies LLC, the
+            maker of Echo Water hydrogen products. Our research team selects and
+            summarizes studies independently. Molecular hydrogen is not approved
+            to treat, cure or prevent any disease. Educational content only —
+            not medical advice.
           </p>
         </FadeInOnScroll>
       </div>

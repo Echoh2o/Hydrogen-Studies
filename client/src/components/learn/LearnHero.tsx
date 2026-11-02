@@ -42,8 +42,8 @@ export default function LearnHero() {
               marginBottom: 20,
             }}
           >
-            Your cells are under attack every day. Scientists found the world's
-            smallest defender.
+            Molecular hydrogen is the smallest molecule there is. Here&apos;s
+            what research does — and doesn&apos;t — show about it.
           </h1>
 
           {/* Subhead */}
@@ -57,8 +57,8 @@ export default function LearnHero() {
               marginBottom: 32,
             }}
           >
-            Molecular hydrogen (H&#x2082;) is being studied in {stats?.totalStudies?.toLocaleString() || "1,335"}+ peer-reviewed trials across {stats?.healthConditions || "170"}+ health conditions. Here's what
-            scientists are finding — in plain English.
+            Molecular hydrogen (H&#x2082;) has been studied in {stats?.totalStudies?.toLocaleString("en-US") || "2,000"}+ papers across {stats?.healthConditions || "170"}+ health conditions — most in animals or cells. Here's what
+            the research shows — in plain English.
           </p>
 
           {/* CTA button */}
@@ -100,7 +100,7 @@ export default function LearnHero() {
                 (e.currentTarget.style.textDecoration = "none")
               }
             >
-              Browse all {stats?.totalStudies?.toLocaleString() || "1,335"}+ Studies →
+              Browse all {stats?.totalStudies?.toLocaleString("en-US") || "2,000"}+ Studies →
             </a>
           </div>
         </div>
