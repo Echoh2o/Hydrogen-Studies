@@ -65,10 +65,9 @@ export default function TldrSection() {
             </p>
 
             <p style={{ marginBottom: 24 }}>
-              Molecular hydrogen (H₂) is a tiny gas molecule that neutralizes
-              the most harmful of these particles. Unlike most antioxidants, H₂
-              is small enough to reach your mitochondria, your gut, your liver,
-              and even your brain.
+              Molecular hydrogen (H₂) is a tiny gas molecule that acts as a mild
+              antioxidant in lab and animal studies. Because it is so small, it
+              diffuses easily through cells and tissues, including the brain.
             </p>
 
             <p style={{ marginBottom: 24 }}>
@@ -78,23 +77,23 @@ export default function TldrSection() {
             </p>
 
             <p style={{ marginBottom: 24 }}>
-              Over {stats?.totalStudies?.toLocaleString() || "1,335"} peer-reviewed studies across {stats?.healthConditions || "170"}+ health conditions
-              have been published since the first major H₂ paper appeared in{" "}
-              <em>Nature Medicine</em> in 2007. The most studied benefits
-              include energy, brain health, heart health, inflammation,
-              metabolism, and athletic recovery.
+              More than {stats?.totalStudies?.toLocaleString("en-US") || "2,000"} studies have been published since the first major H₂
+              paper appeared in <em>Nature Medicine</em> in 2007 — most of them
+              in animals or cells. The most studied topics include fatigue,
+              brain health, heart health, inflammation, metabolism and exercise
+              recovery.
             </p>
 
             <p style={{ marginBottom: 24 }}>
-              You can get H₂ through hydrogen water machines (highest and most
-              consistent concentration), tablets or stick packs, or inhalation.
-              Concentration matters — most studies used 1.0 ppm or above.
+              H₂ can be taken as hydrogen water (made by a machine, bottle,
+              tablet or powder), by inhalation, or in baths. Most human drinking
+              trials used roughly 0.5 to 1.6 ppm.
             </p>
 
             <p style={{ marginBottom: 0 }}>
-              The science is still developing. What already exists is serious
-              enough that researchers around the world are paying very close
-              attention.
+              The science is still early: human trials are mostly small and
+              short, and results are mixed. Hydrogen is not a treatment for any
+              disease.
             </p>
           </div>
         </FadeInOnScroll>

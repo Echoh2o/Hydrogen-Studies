@@ -4,7 +4,7 @@ const benefitCards = [
   {
     title: "Energy & Fatigue",
     summary:
-      "H\u2082 may help cells produce energy more efficiently and reduce feelings of tiredness, including in healthy adults and cancer patients undergoing treatment.",
+      "Small trials have looked at fatigue in healthy adults and in people receiving cancer treatment, with mixed results.",
     count: "41 studies \u2192",
     icon: (
       <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
@@ -22,7 +22,7 @@ const benefitCards = [
   {
     title: "Brain & Mood",
     summary:
-      "Research suggests H\u2082 may protect brain cells from damage, support mental clarity, and reduce markers associated with neurodegenerative conditions.",
+      "Brain protection is mostly animal research; human trials are few and small.",
     count: "67 studies \u2192",
     icon: (
       <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
@@ -46,7 +46,7 @@ const benefitCards = [
   {
     title: "Heart Health",
     summary:
-      "Several human trials show H\u2082 may support healthy blood pressure, improve artery function, and reduce oxidative markers linked to cardiovascular disease.",
+      "A few small human trials report changes in blood vessel function and oxidative markers; outcomes like heart attacks haven't been studied.",
     count: "89 studies \u2192",
     icon: (
       <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
@@ -63,7 +63,7 @@ const benefitCards = [
   {
     title: "Inflammation",
     summary:
-      "H\u2082 has shown consistent anti-inflammatory effects in both animal models and human trials, including for conditions driven by chronic systemic inflammation.",
+      "Anti-inflammatory effects are common in animal studies; human trials are small and their results are mixed.",
     count: "122 studies \u2192",
     icon: (
       <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
@@ -87,7 +87,7 @@ const benefitCards = [
   {
     title: "Metabolism",
     summary:
-      "Studies link H\u2082 to improved blood sugar regulation, reduced triglycerides, and lower risk markers associated with metabolic syndrome and type 2 diabetes.",
+      "The main double-blind trial in type 2 diabetes found no change in insulin resistance; small trials report modest changes in some blood lipid and metabolic markers.",
     count: "58 studies \u2192",
     icon: (
       <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
@@ -131,7 +131,7 @@ const benefitCards = [
   {
     title: "Athletic Recovery",
     summary:
-      "Athletes using H\u2082 water show faster recovery, lower blood lactic acid levels, and reduced muscle fatigue following high-intensity exercise.",
+      "Some small exercise trials report lower blood lactate or perceived fatigue; others found no difference.",
     count: "33 studies \u2192",
     icon: (
       <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
@@ -188,7 +188,7 @@ const benefitCards = [
   {
     title: "Aging & Oxidative Stress",
     summary:
-      "H\u2082 reduces measurable oxidative stress markers \u2014 biological signals linked to cellular aging \u2014 across multiple human and animal trials.",
+      "Many animal studies and some small human trials report lower oxidative stress markers; results in people are inconsistent.",
     count: "94 studies \u2192",
     icon: (
       <svg width="32" height="32" viewBox="0 0 32 32" fill="none">

@@ -148,7 +148,7 @@ export default function BodyMapSection() {
             marginBottom: 12,
           }}
         >
-          H&#x2082; reaches every corner of your body
+          Where H&#x2082; is being studied
         </h2>
 
         <p
@@ -160,9 +160,10 @@ export default function BodyMapSection() {
             maxWidth: 600,
           }}
         >
-          Because it is so small, molecular hydrogen travels farther than any
-          other molecule. Here are the organs researchers are studying most.
-        </p>
+          Because it is so small, molecular hydrogen diffuses easily through
+          tissues. These are the organs researchers study most — much of it in
+          animals.
+          </p>
 
         {isMobile ? (
           /* Mobile: horizontal card rows */

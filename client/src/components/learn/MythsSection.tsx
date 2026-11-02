@@ -20,12 +20,12 @@ const mythItems = [
   {
     question: "Didn\u2019t I read this is just a wellness trend?",
     answer:
-      "The first major study was published in Nature Medicine in 2007 by researchers at Nippon Medical School. Since then, over 1,335 peer-reviewed studies have been published in respected academic journals worldwide. The research is early-stage \u2014 but it is serious science, not social media wellness content. This database exists to give you direct access to those studies.",
+      "The first major study was published in Nature Medicine in 2007 by researchers at Nippon Medical School. Since then, more than 2,000 studies have been published, most in peer-reviewed journals. The research is early-stage and much of it is in animals \u2014 but it is real science, not social media wellness content. This database exists to give you direct access to those studies.",
   },
   {
     question: "Is this the same as oxygenated water?",
     answer:
-      "No. Oxygenated water adds oxygen (O\u2082) to water. Hydrogen water adds hydrogen (H\u2082). They are completely different gases with completely different effects in the body. The published research on oxygenated water is minimal. The research on hydrogen water now exceeds 1,335 peer-reviewed studies.",
+      "No. Oxygenated water adds oxygen (O\u2082) to water. Hydrogen water adds hydrogen (H\u2082). They are completely different gases with completely different effects in the body. The published research on oxygenated water is minimal. Hydrogen has a much larger research base, though most of it is early-stage.",
   },
   {
     question: "Don\u2019t I already get hydrogen from regular water?",
