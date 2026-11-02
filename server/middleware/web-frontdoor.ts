@@ -21,6 +21,10 @@ export const SSR_FAMILIES: Record<string, RegExp> = {
   blog: /^\/blog(?:\/[^/]+)?$/,
   hubs: /^\/(?:explore-by-(?:condition|body-system|mechanism|delivery-method|life-stage|benefit|demographic)(?:\/[^/]+)?|hydrogen-for\/[^/]+)$/,
   policy: /^\/(?:editorial-policy|methodology)$/,
+  // Shared-component pages (client/src/pages/content/*).
+  pages: /^\/(?:about|contact|privacy|terms|disclaimer)$/,
+  home: /^\/$/,
+  studies: /^\/studies$/,
 };
 
 // content-security-policy: Next sets a per-request nonce CSP (web/middleware.ts)

@@ -123,6 +123,18 @@ router.get("/page", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * Meta + JSON-LD for a page whose BODY is a shared React component rendered
+ * by Next (about, legal, contact) — the same meta crawlers have been served.
+ */
+router.get("/meta", async (req: Request, res: Response) => {
+  const path = typeof req.query.path === "string" ? req.query.path : "";
+  if (!path.startsWith("/")) return res.status(400).json({ error: "path must start with /" });
+  const meta = (await resolvePageMeta(path)) ?? resolveStaticPageMeta(path);
+  if (!meta) return res.status(404).json({ error: "not found" });
+  res.json({ meta, footerConditions: await getTopConditions() });
+});
+
 /** Footer data every Next page needs. */
 router.get("/layout", async (_req: Request, res: Response) => {
   res.json({ footerConditions: await getTopConditions() });

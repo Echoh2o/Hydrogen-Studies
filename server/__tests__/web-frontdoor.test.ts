@@ -26,6 +26,12 @@ describe("family matching", () => {
     expect(ssrFamilyFor("/explore-by-mechanism", all)).toBe("hubs");
     expect(ssrFamilyFor("/hydrogen-for/diabetes", all)).toBe("hubs");
     expect(ssrFamilyFor("/methodology", all)).toBe("policy");
+    expect(ssrFamilyFor("/about", [...all, "pages"])).toBe("pages");
+    expect(ssrFamilyFor("/contact", [...all, "pages"])).toBe("pages");
+    expect(ssrFamilyFor("/", [...all, "home"])).toBe("home");
+    expect(ssrFamilyFor("/studies", [...all, "studies"])).toBe("studies");
+    expect(ssrFamilyFor("/studies/tags", [...all, "studies"])).toBeNull();
+    expect(ssrFamilyFor("/?ref=x".split("?")[0], [...all, "home"])).toBe("home");
     expect(ssrFamilyFor("/study/x", ["blog"])).toBeNull();
     for (const spa of ["/", "/studies", "/about", "/search", "/admin", "/api/blogs", "/login"]) {
       expect(ssrFamilyFor(spa, all)).toBeNull();
