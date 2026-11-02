@@ -17,6 +17,19 @@ export default {
     externalDir: true,
     outputFileTracingRoot: repoRoot,
   },
+  // The SPA's analytics/consent modules (client/src/lib) read Vite env vars;
+  // define them at build time so they run unchanged here.
+  webpack(config, { webpack }) {
+    config.plugins.push(
+      new webpack.DefinePlugin({
+        "import.meta.env.VITE_GA_MEASUREMENT_ID": JSON.stringify(process.env.VITE_GA_MEASUREMENT_ID ?? ""),
+        "import.meta.env.DEV": "false",
+        "import.meta.env.PROD": "true",
+        "import.meta.env.MODE": JSON.stringify("production"),
+      }),
+    );
+    return config;
+  },
   async rewrites() {
     return {
       // Runs only when no Next route or public file matched.

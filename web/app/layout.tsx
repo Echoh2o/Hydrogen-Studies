@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "../../client/src/index.css";
+import "./content.css";
+import { Analytics } from "@web/components/Analytics";
 
 const ORGANIZATION_LD = {
   "@context": "https://schema.org",
@@ -46,7 +48,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANIZATION_LD) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(WEBSITE_LD) }} />
       </head>
-      <body className="min-h-screen bg-white text-neutral-900 antialiased">{children}</body>
+      <body className="min-h-screen bg-white text-neutral-900 antialiased">
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
