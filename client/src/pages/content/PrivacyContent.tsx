@@ -1,0 +1,281 @@
+"use client";
+// Body of the PrivacyPolicyPage page, shared by the SPA (PrivacyPolicyPage.tsx) and the Next.js
+// front door (web/), so both serve the same text. No layout or data here.
+import { Card } from "@/components/ui/card";
+
+export function PrivacyContent() {
+  return (
+    <>
+      
+      <main className="max-w-4xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
+        <Card className="p-8 shadow-lg bg-white">
+          <h1 className="text-3xl font-bold text-gray-900 mb-8">Privacy Policy</h1>
+          
+          <div className="prose prose-gray max-w-none">
+            <p className="text-sm text-gray-600 mb-6">
+              Last Updated: September 23, 2026
+            </p>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">1. Introduction</h2>
+              <p className="text-gray-700 mb-4">
+                Welcome to Hydrogen Studies ("we," "our," or "us"). We are committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our services.
+              </p>
+              <p className="text-gray-700 mb-4">
+                Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, please do not access the site.
+              </p>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">2. Information We Collect</h2>
+              
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Personal Information You Provide</h3>
+              <p className="text-gray-700 mb-4">
+                We collect personal information that you voluntarily provide when you:
+              </p>
+              <ul className="list-disc pl-6 mb-4 text-gray-700">
+                <li>Register for an account</li>
+                <li>Subscribe to our newsletter</li>
+                <li>Contact us through our contact form</li>
+                <li>Participate in surveys or research</li>
+                <li>Comment on blog posts or studies</li>
+              </ul>
+              <p className="text-gray-700 mb-4">
+                This information may include:
+              </p>
+              <ul className="list-disc pl-6 mb-4 text-gray-700">
+                <li>Name (first and last)</li>
+                <li>Email address</li>
+                <li>Username and password</li>
+                <li>Professional information (for researchers)</li>
+                <li>Any other information you choose to provide</li>
+              </ul>
+
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Information Automatically Collected</h3>
+              <p className="text-gray-700 mb-4">
+                When you visit our website, we automatically collect certain information about your device and browsing activity:
+              </p>
+              <ul className="list-disc pl-6 mb-4 text-gray-700">
+                <li>IP address</li>
+                <li>Browser type and version</li>
+                <li>Operating system</li>
+                <li>Referring website</li>
+                <li>Pages visited on our site</li>
+                <li>Time and date of visit</li>
+                <li>Time spent on pages</li>
+                <li>Other diagnostic data</li>
+              </ul>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">3. Use of Cookies and Tracking Technologies</h2>
+              
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Cookies We Use</h3>
+              <p className="text-gray-700 mb-4">
+                We use cookies and similar tracking technologies to track activity on our website and hold certain information. Cookies are files with small amounts of data that are sent to your browser from a website and stored on your device.
+              </p>
+              
+              <h4 className="text-lg font-semibold text-gray-900 mb-2">Essential Cookies</h4>
+              <p className="text-gray-700 mb-4">
+                These cookies are necessary for the website to function properly and cannot be switched off. They include:
+              </p>
+              <ul className="list-disc pl-6 mb-4 text-gray-700">
+                <li>Session cookies for user authentication</li>
+                <li>Security cookies for fraud prevention</li>
+                <li>Preference cookies to remember your settings</li>
+              </ul>
+
+              <h4 className="text-lg font-semibold text-gray-900 mb-2">Analytics</h4>
+              <p className="text-gray-700 mb-4">
+                We use Google Analytics 4 (with Google Consent Mode) and the cookieless Ahrefs Web Analytics to understand, in aggregate, how visitors use the site, including:
+              </p>
+              <ul className="list-disc pl-6 mb-4 text-gray-700">
+                <li>Number of visitors</li>
+                <li>Pages visited</li>
+                <li>Traffic sources</li>
+                <li>User behavior patterns</li>
+              </ul>
+              <p className="text-gray-700 mb-4">
+                In the European Economic Area, the United Kingdom and Switzerland, analytics cookies are off unless you accept them in our banner. Elsewhere they are on by default and you can turn them off at any time with <em>Privacy choices</em> in the site footer. We honor Global Privacy Control. Details are in our <a href="/cookies" className="text-blue-600 underline">Cookie Policy</a>.
+              </p>
+
+              <h4 className="text-lg font-semibold text-gray-900 mb-2">Functional Cookies</h4>
+              <p className="text-gray-700 mb-4">
+                These cookies enable enhanced functionality and personalization, such as:
+              </p>
+              <ul className="list-disc pl-6 mb-4 text-gray-700">
+                <li>Remembering your preferences</li>
+                <li>Customizing content based on your interests</li>
+                <li>Providing personalized recommendations</li>
+              </ul>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">4. Third-Party Services</h2>
+              
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">AI Providers (Anthropic, OpenAI, xAI)</h3>
+              <p className="text-gray-700 mb-4">
+                We use third-party AI providers to power features such as:
+              </p>
+              <ul className="list-disc pl-6 mb-4 text-gray-700">
+                <li>AI chat assistant for research queries</li>
+                <li>Content generation and summarization</li>
+                <li>Study analysis and insights</li>
+              </ul>
+              <p className="text-gray-700 mb-4">
+                When you use these features, the text you enter (including any questions
+                you type into the chat assistant) is transmitted to and processed by our
+                AI providers: <strong>Anthropic</strong> (Claude) as the primary provider,{" "}
+                <strong>OpenAI</strong> as a fallback provider, and <strong>xAI</strong>{" "}
+                for image generation. Each processes data in accordance with its own
+                privacy policy (
+                <a href="https://www.anthropic.com/legal/privacy" className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">Anthropic</a>,{" "}
+                <a href="https://openai.com/policies/privacy-policy" className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">OpenAI</a>,{" "}
+                <a href="https://x.ai/legal/privacy-policy" className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">xAI</a>).
+                Please avoid entering sensitive personal or health information into the
+                chat assistant, as your queries leave our site to be processed by these
+                providers. We do not share your account identifiers with them beyond what
+                is necessary for the service to function.
+              </p>
+
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Google Analytics</h3>
+              <p className="text-gray-700 mb-4">
+                We use Google Analytics 4 to analyze website traffic and usage patterns. It runs with Google Consent Mode: it sets analytics cookies only when analytics storage is allowed (after you accept in the European Economic Area, the United Kingdom and Switzerland; by default elsewhere unless you opt out or send Global Privacy Control). When analytics storage is not allowed, Google Analytics sends cookieless measurement signals that Google uses for aggregated, modeled reports. Google Analytics 4 does not log or store IP addresses, and Google&apos;s advertising features are off. This information is transmitted to and stored by Google, including on servers in the United States.
+              </p>
+
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Other Third-Party Services</h3>
+              <p className="text-gray-700 mb-4">
+                We also rely on the following service providers (sub-processors) to
+                operate the site:
+              </p>
+              <ul className="list-disc pl-6 mb-4 text-gray-700">
+                <li><strong>Klaviyo</strong> — newsletter delivery and customer/marketing profiles</li>
+                <li><strong>SendGrid</strong> — transactional email (e.g. account and contact-form messages)</li>
+                <li><strong>Ahrefs Web Analytics</strong> — cookieless site analytics (not loaded if you opt out or send Global Privacy Control)</li>
+                <li><strong>Sentry</strong> — application error monitoring (client and server)</li>
+                <li><strong>Shopify</strong> — commerce and order fulfilment for product purchases</li>
+                <li><strong>Railway</strong> — application hosting and our PostgreSQL database</li>
+              </ul>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">5. How We Use Your Information</h2>
+              <p className="text-gray-700 mb-4">
+                We use the information we collect to:
+              </p>
+              <ul className="list-disc pl-6 mb-4 text-gray-700">
+                <li>Provide, operate, and maintain our website and services</li>
+                <li>Improve, personalize, and expand our website</li>
+                <li>Understand and analyze how you use our website</li>
+                <li>Develop new products, services, features, and functionality</li>
+                <li>Communicate with you, including for customer service and support</li>
+                <li>Send you newsletters and updates (with your consent)</li>
+                <li>Process your transactions and manage your account</li>
+                <li>Find and prevent fraud and respond to security issues</li>
+                <li>Comply with legal obligations</li>
+              </ul>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">6. Data Storage and Security</h2>
+              <p className="text-gray-700 mb-4">
+                We implement appropriate technical and organizational security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. These measures include:
+              </p>
+              <ul className="list-disc pl-6 mb-4 text-gray-700">
+                <li>Encryption of sensitive data in transit and at rest</li>
+                <li>Secure password hashing using bcrypt</li>
+                <li>Regular security audits and updates</li>
+                <li>Limited access to personal information on a need-to-know basis</li>
+                <li>Secure hosting infrastructure with regular backups</li>
+              </ul>
+              <p className="text-gray-700 mb-4">
+                However, no electronic transmission over the internet or information storage technology can be guaranteed to be 100% secure. While we strive to protect your personal information, we cannot guarantee its absolute security.
+              </p>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">7. Your Privacy Rights</h2>
+              <p className="text-gray-700 mb-4">
+                Depending on your location, you may have the following rights regarding your personal information:
+              </p>
+              
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Right to Access</h3>
+              <p className="text-gray-700 mb-4">
+                You have the right to request copies of your personal information we hold.
+              </p>
+
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Right to Rectification</h3>
+              <p className="text-gray-700 mb-4">
+                You have the right to request that we correct any information you believe is inaccurate or incomplete.
+              </p>
+
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Right to Erasure</h3>
+              <p className="text-gray-700 mb-4">
+                You have the right to request that we erase your personal data under certain conditions.
+              </p>
+
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Right to Restrict Processing</h3>
+              <p className="text-gray-700 mb-4">
+                You have the right to request that we restrict the processing of your personal data under certain conditions.
+              </p>
+
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Right to Data Portability</h3>
+              <p className="text-gray-700 mb-4">
+                You have the right to request that we transfer the data we have collected to another organization or directly to you under certain conditions.
+              </p>
+
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Right to Opt-Out</h3>
+              <p className="text-gray-700 mb-4">
+                You can opt-out of:
+              </p>
+              <ul className="list-disc pl-6 mb-4 text-gray-700">
+                <li>Marketing emails by clicking the unsubscribe link</li>
+                <li>Analytics cookies, using <em>Privacy choices</em> in the site footer or by enabling Global Privacy Control in your browser</li>
+                <li>Cookies generally, by adjusting your browser settings</li>
+                <li>Google Analytics entirely, with Google&apos;s <a href="https://tools.google.com/dlpage/gaoptout" className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">opt-out browser add-on</a></li>
+              </ul>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">8. Children's Privacy</h2>
+              <p className="text-gray-700 mb-4">
+                Our services are not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13. If you are a parent or guardian and believe your child has provided us with personal information, please contact us immediately.
+              </p>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">9. International Data Transfers</h2>
+              <p className="text-gray-700 mb-4">
+                Your information may be transferred to and maintained on computers located outside of your state, province, country, or other governmental jurisdiction where data protection laws may differ. If you are located outside the United States and choose to provide information to us, please note that we transfer the data to the United States and process it there.
+              </p>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">10. Changes to This Privacy Policy</h2>
+              <p className="text-gray-700 mb-4">
+                We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last Updated" date at the top of this Privacy Policy.
+              </p>
+              <p className="text-gray-700 mb-4">
+                You are advised to review this Privacy Policy periodically for any changes. Changes to this Privacy Policy are effective when they are posted on this page.
+              </p>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">11. Contact Us</h2>
+              <p className="text-gray-700 mb-4">
+                If you have any questions about this Privacy Policy, your rights, or our practices, please contact us at:
+              </p>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-gray-700">
+                  <strong>Hydrogen Studies</strong><br />
+                  Email: privacy@hydrogenstudies.com<br />
+                  Contact Form: <a href="/contact" className="text-teal-600 hover:underline">www.hydrogenstudies.com/contact</a>
+                </p>
+              </div>
+            </section>
+          </div>
+        </Card>
+      </main>
+    </>
+  );
+}

@@ -99,6 +99,16 @@ describe("GET /api/page-data/study/:slug", () => {
   });
 });
 
+describe("GET /api/page-data/meta", () => {
+  it("returns the crawler meta for shared-component pages", async () => {
+    page.meta = { title: "About", description: "D", canonical: "https://hydrogenstudies.com/about", ogType: "website", ogImage: "i" };
+    const res = await request(app).get("/api/page-data/meta?path=/about");
+    expect(res.status).toBe(200);
+    expect(res.body.meta.title).toBe("About");
+    expect(res.body.footerConditions).toHaveLength(1);
+  });
+});
+
 describe("GET /api/page-data/page", () => {
   it("returns meta + body without the renderer footer", async () => {
     page.meta = { title: "T", description: "D", canonical: "https://hydrogenstudies.com/blog/x", ogType: "article", ogImage: "i" };
