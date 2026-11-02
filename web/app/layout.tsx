@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import "../../client/src/index.css";
 import "./content.css";
 import { Analytics } from "@web/components/Analytics";
@@ -36,6 +37,10 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // Reading the request makes every page render per request, so each gets a
+  // fresh CSP nonce (web/middleware.ts). Page data stays cached (fetch
+  // revalidate), so this costs a React render, not a database round trip.
+  headers().get("x-nonce");
   return (
     <html lang="en">
       <head>

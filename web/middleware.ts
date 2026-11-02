@@ -20,6 +20,29 @@ const GONE_HTML =
   "<title>Gone | Hydrogen Studies</title></head><body><h1>This page has been removed</h1>" +
   '<p><a href="/studies">Browse all studies</a></p></body></html>';
 
+/**
+ * Same policy as Express's helmet CSP (server/app.ts) — no 'unsafe-inline'
+ * scripts — plus a per-request nonce that Next stamps on its own inline
+ * bootstrap scripts. Express passes this header through for proxied pages.
+ */
+function contentSecurityPolicy(nonce: string): string {
+  return [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}' https://*.googletagmanager.com https://www.google-analytics.com https://analytics.ahrefs.com https://static.cloudflareinsights.com`,
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "img-src 'self' data: https: blob:",
+    "connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://api.anthropic.com https://analytics.ahrefs.com https://*.ingest.us.sentry.io https://*.ingest.sentry.io https://cloudflareinsights.com",
+    "frame-src 'self' https://www.youtube-nocookie.com https://www.youtube.com",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'self'",
+    "script-src-attr 'none'",
+    "upgrade-insecure-requests",
+  ].join("; ");
+}
+
 async function decide(req: NextRequest): Promise<Decision> {
   const key = req.nextUrl.pathname + req.nextUrl.search;
   const hit = cache.get(key);
@@ -49,9 +72,15 @@ export async function middleware(req: NextRequest) {
       // Express unreachable: render normally rather than fail every page.
     }
   }
+  const nonce = btoa(crypto.randomUUID());
+  const csp = contentSecurityPolicy(nonce);
   const headers = new Headers(req.headers);
   headers.set("x-from-web", "1");
-  return NextResponse.next({ request: { headers } });
+  headers.set("x-nonce", nonce);
+  headers.set("content-security-policy", csp); // Next reads the nonce from here
+  const res = NextResponse.next({ request: { headers } });
+  res.headers.set("content-security-policy", csp);
+  return res;
 }
 
 // Page paths only — not Next internals, API, uploads or static files.

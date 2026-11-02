@@ -18,14 +18,10 @@ import { PageDataError, SITE_URL, pageData, type FooterCondition } from "@web/li
 import { SiteHeader } from "@web/components/SiteHeader";
 import { SiteFooter } from "@web/components/SiteFooter";
 
-/** Studies change rarely; Express-side edits are picked up within a day. */
-export const revalidate = 86400;
-// ISR on demand: no pages at build time; each study renders on first
-// request, then is served from cache and revalidated daily.
-export const dynamicParams = true;
-export function generateStaticParams() {
-  return [];
-}
+/** Studies change rarely: page data is cached for a day; the page itself
+ *  renders per request for a fresh CSP nonce. */
+const revalidate = 86400;
+export const dynamic = "force-dynamic";
 
 interface StudyPageData {
   study: StudyLike & Record<string, any> & {
