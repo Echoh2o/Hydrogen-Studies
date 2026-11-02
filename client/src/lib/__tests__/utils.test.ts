@@ -74,3 +74,12 @@ describe("imageSrc", () => {
     expect(imageSrc("data:image/png;base64,AAAA")).toBe("data:image/png;base64,AAAA");
   });
 });
+
+describe("formatDate (calendar dates, any timezone)", () => {
+  it("keeps the stored month — never the previous one west of UTC", () => {
+    // Midnight UTC; a US browser used to show "May 2026" (and the server
+    // "June 2026" → hydration mismatch on SSR pages).
+    expect(formatDate("2026-06-01")).toBe("June 2026");
+    expect(formatDate("2026-01-01T00:00:00.000Z")).toBe("January 2026");
+  });
+});

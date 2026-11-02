@@ -92,9 +92,9 @@ export function HomeContent({
   ];
 
   const stats = [
-    { number: siteStats ? siteStats.totalStudies.toLocaleString() : "1,300+", label: "Scientific Studies" },
+    { number: siteStats ? siteStats.totalStudies.toLocaleString("en-US") : "1,300+", label: "Scientific Studies" },
     { number: siteStats ? `${siteStats.countries}+` : "25+", label: "Countries Researching" },
-    { number: siteStats ? siteStats.humanTrials.toLocaleString() : "300+", label: "Human Clinical Trials" },
+    { number: siteStats ? siteStats.humanTrials.toLocaleString("en-US") : "300+", label: "Human Clinical Trials" },
     { number: siteStats ? `${siteStats.yearsOfResearch}+` : "15+", label: "Years of Research" },
   ];
 
@@ -114,7 +114,7 @@ export function HomeContent({
               Molecular Hydrogen is being studied for the health benefits it provides.
               Delivered through Hydrogen Water, Hydrogen Inhalation, Hydrogen Bathing,
               and Hydrogen Drink Mix Supplements. There are currently{" "}
-              {siteStats ? siteStats.totalStudies.toLocaleString() : "..."} peer-reviewed
+              {siteStats ? siteStats.totalStudies.toLocaleString("en-US") : "..."} peer-reviewed
               studies across more than {siteStats ? siteStats.countries : "..."} countries.
               Explore what the research shows by searching below.
             </p>
