@@ -20,9 +20,9 @@ import { log } from "./vite";
 import { pool } from "./db";
 import { jobScheduler } from "./services/job-scheduler";
 import { stopHealthMonitoring } from "./utils/health-monitoring";
-import { seoBotMiddleware, prewarmBotCache, isBot } from "./middleware/seo-bot-middleware";
+import { isBot } from "./middleware/seo-bot-middleware";
 import { webFrontDoor } from "./middleware/web-frontdoor";
-import { sendSpaShell } from "./middleware/explore-hub-404";
+import { isKnownSpaRoute, sendSpaShell } from "./middleware/spa-shell";
 import { generalApiRateLimiter } from "./utils/rate-limiting";
 import path from "path";
 import fs from "fs";
@@ -101,8 +101,9 @@ async function setupServer() {
     // crawlers and browsers get the same HTML. Off when SSR_FAMILIES is empty.
     app.use(webFrontDoor());
 
-    // SEO bot middleware — inject correct meta tags for crawlers BEFORE static files
-    app.use(seoBotMiddleware(staticPath));
+    // (PLAN 3.4) No bot-only prerender any more: every visitor gets the same
+    // HTML — Next for migrated pages (above), the SPA shell with server-set
+    // head tags for the rest (sendSpaShell below).
 
     // Hashed assets (JS/CSS) — immutable, cache for 1 year
     app.use(
@@ -129,10 +130,9 @@ async function setupServer() {
 
     // SPA fallback — serve index.html for all non-API GET requests
     // Log 404s only for paths that don't match known SPA routes
-    const knownSpaRoutes = /^\/(study|studies|blog|explore-by-|hydrogen-for|learn|admin|search|advanced-search|about|benefits|contact|products|recommendations|privacy|terms|disclaimer|editorial-policy|methodology|insights|research-analytics|login|register|my-dashboard|this-week|recent)\b/;
     app.get("*", async (req, res) => {
       // Log paths that aren't known SPA routes — these are likely real 404s
-      if (!knownSpaRoutes.test(req.path) && req.path !== "/") {
+      if (!isKnownSpaRoute(req.path)) {
         import("./services/redirect-service").then(({ log404 }) => {
           log404(req.path, req.get("referer")).catch(() => {});
         }).catch(() => {});
@@ -140,9 +140,8 @@ async function setupServer() {
 
       const indexPath = path.join(staticPath, "index.html");
       if (fs.existsSync(indexPath)) {
-        // An /explore-by-<type>/<slug> whose hub doesn't exist gets the same
-        // shell with HTTP 404 (the SPA renders NotFound + noindex) — the
-        // status crawlers get from the bot middleware for the same URL.
+        // Head tags + status for everyone: page meta, noindex for app pages,
+        // 404 for unknown paths and unknown explore hubs.
         await sendSpaShell(req, res, indexPath);
       } else {
         res.status(500).send("index.html not found. Build may have failed.");
@@ -159,10 +158,6 @@ async function setupServer() {
       console.log(`${formattedTime} [express] Server running on port ${PORT}`);
       console.log(`Health check: http://localhost:${PORT}/health`);
 
-      // Pre-warm bot cache after server is ready (non-blocking)
-      prewarmBotCache(staticPath).catch((err) =>
-        console.error("[SEO Bot] Pre-warm failed:", err)
-      );
     });
 
     // Graceful shutdown for container deployments (Railway, Docker, etc.)
