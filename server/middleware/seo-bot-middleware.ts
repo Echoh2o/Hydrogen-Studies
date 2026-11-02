@@ -123,7 +123,7 @@ const CONTENT_PATH_PATTERNS = [
   /^\/blog\/[^/]+$/,
 ];
 
-function isContentPath(pathname: string): boolean {
+export function isContentPath(pathname: string): boolean {
   return CONTENT_PATH_PATTERNS.some(pattern => pattern.test(pathname));
 }
 
@@ -136,7 +136,7 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#039;");
 }
 
-interface PageMeta {
+export interface PageMeta {
   title: string;
   description: string;
   canonical: string;
@@ -147,7 +147,7 @@ interface PageMeta {
 }
 
 /** Resolve meta tags for a given URL path */
-async function resolvePageMeta(pathname: string): Promise<PageMeta | null> {
+export async function resolvePageMeta(pathname: string): Promise<PageMeta | null> {
   try {
     // Study page: /study/:slug
     const studySlugMatch = pathname.match(/^\/study\/([^/]+)$/);

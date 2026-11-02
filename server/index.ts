@@ -21,6 +21,7 @@ import { pool } from "./db";
 import { jobScheduler } from "./services/job-scheduler";
 import { stopHealthMonitoring } from "./utils/health-monitoring";
 import { seoBotMiddleware, prewarmBotCache, isBot } from "./middleware/seo-bot-middleware";
+import { webFrontDoor } from "./middleware/web-frontdoor";
 import { sendSpaShell } from "./middleware/explore-hub-404";
 import { generalApiRateLimiter } from "./utils/rate-limiting";
 import path from "path";
@@ -94,6 +95,11 @@ async function setupServer() {
       }
       next();
     });
+
+    // Migrated route families are server-rendered by the Next.js `web`
+    // service for every visitor (SSR_FAMILIES); runs before bot-SSR so
+    // crawlers and browsers get the same HTML. Off when SSR_FAMILIES is empty.
+    app.use(webFrontDoor());
 
     // SEO bot middleware — inject correct meta tags for crawlers BEFORE static files
     app.use(seoBotMiddleware(staticPath));

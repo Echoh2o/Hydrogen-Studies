@@ -21,6 +21,8 @@ import {
 } from "../middleware/seo-body-renderer";
 import { abstractExcerpt, studySourceLink, withoutPlaceholders } from "../../shared/seo-markup";
 import { studyHubLinks } from "../../shared/study-page";
+import { isContentPath, resolvePageMeta, resolveStaticPageMeta } from "../middleware/seo-bot-middleware";
+import { renderPageBody } from "../middleware/seo-body-renderer";
 import { logger } from "../utils/logger";
 
 const router = Router();
@@ -84,6 +86,39 @@ router.get("/study/:slug", async (req: Request, res: Response) => {
     });
   } catch (error) {
     logger.error("study page-data failed", error, "PageData");
+    res.status(500).json({ error: "failed" });
+  }
+});
+
+const SITE_URL = "https://hydrogenstudies.com";
+
+/**
+ * Any page the crawler renderer knows (blog, hubs, /hydrogen-for, policy
+ * pages…): its meta + JSON-LD and body HTML — exactly what crawlers have been
+ * served (seo-bot-middleware), now rendered by Next for every visitor. Same
+ * 404 rules: a content path with no row, or a route with no real body.
+ * The renderer's footer is stripped (Next renders its own, same links).
+ */
+router.get("/page", async (req: Request, res: Response) => {
+  const path = typeof req.query.path === "string" ? req.query.path : "";
+  if (!path.startsWith("/")) return res.status(400).json({ error: "path must start with /" });
+  try {
+    const meta = await resolvePageMeta(path);
+    if (!meta && isContentPath(path)) return res.status(404).json({ error: "not found" });
+    const body = await renderPageBody(path);
+    if (!body) return res.status(404).json({ error: "not found" });
+    const fallback = resolveStaticPageMeta("/");
+    const effectiveMeta = meta ?? (fallback ? { ...fallback, canonical: `${SITE_URL}${path}` } : null);
+    if (!effectiveMeta) return res.status(404).json({ error: "not found" });
+    const footerAt = body.lastIndexOf("<footer>");
+    res.set("Cache-Control", "no-store");
+    res.json({
+      meta: effectiveMeta,
+      bodyHtml: footerAt >= 0 ? body.slice(0, footerAt) : body,
+      footerConditions: await getTopConditions(),
+    });
+  } catch (error) {
+    logger.error("page-data failed", error, "PageData", { path });
     res.status(500).json({ error: "failed" });
   }
 });

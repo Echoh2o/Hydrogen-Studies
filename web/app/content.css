@@ -1,0 +1,14 @@
+/* Styling for renderer-built page bodies (semantic HTML, no classes). */
+.page-body { @apply prose prose-neutral max-w-none prose-headings:text-neutral-900 prose-a:text-primary prose-h1:text-primary; }
+.page-body h1 { @apply text-3xl md:text-4xl; }
+.page-body a:hover { @apply underline; }
+.page-body nav[aria-label="Breadcrumb"] ol { @apply m-0 mb-6 flex list-none flex-wrap items-center gap-2 p-0 text-sm text-neutral-500; }
+.page-body nav[aria-label="Breadcrumb"] li { @apply m-0 p-0; }
+.page-body nav[aria-label="Breadcrumb"] li::marker { content: ""; }
+.page-body nav[aria-label="Breadcrumb"] li + li::before { content: "/"; @apply mr-2 text-neutral-400; }
+.page-body nav[aria-label="Breadcrumb"] a { @apply text-neutral-500 no-underline; }
+.page-body .byline { @apply text-sm text-neutral-600; }
+.page-body dl { @apply grid grid-cols-1 gap-x-6 gap-y-1 rounded-lg border border-neutral-200 p-4 text-sm sm:grid-cols-[max-content_1fr]; }
+.page-body dt { @apply m-0 font-medium text-neutral-500; }
+.page-body dd { @apply m-0 p-0 text-neutral-800; }
+.page-body img { @apply rounded-lg; }

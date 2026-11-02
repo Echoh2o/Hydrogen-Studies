@@ -20,7 +20,14 @@ vi.mock("../services/study-service", () => ({
     getStudyById: async () => state.study,
   },
 }));
+const page = vi.hoisted(() => ({ meta: null as any, body: null as string | null }));
+vi.mock("../middleware/seo-bot-middleware", () => ({
+  isContentPath: (p: string) => /^\/blog\/[^/]+$/.test(p),
+  resolvePageMeta: async () => page.meta,
+  resolveStaticPageMeta: () => ({ title: "Home", description: "d", canonical: "https://hydrogenstudies.com/", ogType: "website", ogImage: "x" }),
+}));
 vi.mock("../middleware/seo-body-renderer", () => ({
+  renderPageBody: async () => page.body,
   getConditionHubs: async () => [{ slug: "kidney-health", name: "Kidney Health" }],
   getRelatedStudies: async () => [{ slug: "r1", title: "Related", year: 2024 }],
   getRelatedBlogs: async () => [],
@@ -89,5 +96,33 @@ describe("GET /api/page-data/study/:slug", () => {
     expect(res.body.study.sourceLink.href).toBe("https://pubmed.ncbi.nlm.nih.gov/38000001/");
     expect(res.body.hubLinks).toEqual([{ label: "Kidney Health", href: "/explore-by-condition/kidney-health" }]);
     expect(res.body.related).toHaveLength(1);
+  });
+});
+
+describe("GET /api/page-data/page", () => {
+  it("returns meta + body without the renderer footer", async () => {
+    page.meta = { title: "T", description: "D", canonical: "https://hydrogenstudies.com/blog/x", ogType: "article", ogImage: "i" };
+    page.body = "<article><h1>T</h1></article>\n<footer><nav>links</nav></footer>";
+    const res = await request(app).get("/api/page-data/page?path=/blog/x");
+    expect(res.status).toBe(200);
+    expect(res.body.meta.title).toBe("T");
+    expect(res.body.bodyHtml).toBe("<article><h1>T</h1></article>\n");
+    expect(res.body.footerConditions).toHaveLength(1);
+  });
+
+  it("404s a content path with no row, and any route with no body", async () => {
+    page.meta = null;
+    page.body = "<p>x</p>";
+    expect((await request(app).get("/api/page-data/page?path=/blog/gone")).status).toBe(404);
+    page.meta = { title: "T", description: "D", canonical: "c", ogType: "website", ogImage: "i" };
+    page.body = null;
+    expect((await request(app).get("/api/page-data/page?path=/explore-by-condition/nope")).status).toBe(404);
+  });
+
+  it("falls back to homepage meta with a self canonical for unmapped routes", async () => {
+    page.meta = null;
+    page.body = "<p>hub</p>";
+    const res = await request(app).get("/api/page-data/page?path=/explore-by-benefit/energy");
+    expect(res.body.meta.canonical).toBe("https://hydrogenstudies.com/explore-by-benefit/energy");
   });
 });
