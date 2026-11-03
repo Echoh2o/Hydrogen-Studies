@@ -32,6 +32,7 @@ interface StudyPageData {
     sourceLink: { href: string; label: string } | null;
   };
   hubLinks: HubLink[];
+  authorLinks?: { name: string; href: string | null }[];
   related: { slug: string; title: string; year: number | null }[];
   relatedBlogs: { slug: string; title: string }[];
   footerConditions: FooterCondition[];
@@ -89,7 +90,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export default async function StudyPage({ params }: { params: { slug: string } }) {
-  const { study, hubLinks, related, relatedBlogs, footerConditions } = await load(params.slug);
+  const { study, hubLinks, authorLinks, related, relatedBlogs, footerConditions } = await load(params.slug);
   const input = helperInput(study);
   const plainTitle = realContent(study.plainLanguageTitle);
   const pageTitle = plainTitle || study.title;
@@ -112,7 +113,20 @@ export default async function StudyPage({ params }: { params: { slug: string } }
   const summary = study.plainSummary || study.summary100Words || study.summary50Words;
   const details: [string, React.ReactNode][] = [];
   if (evidence) details.push(["Evidence type", evidence.label]);
-  if (study.authors) details.push(["Authors", study.authors]);
+  if (authorLinks?.length) {
+    // PLAN 4.7: authors with a profile page link to it.
+    details.push([
+      "Authors",
+      <span key="authors">
+        {authorLinks.map((a, i) => (
+          <span key={`${a.name}-${i}`}>
+            {i > 0 && ", "}
+            {a.href ? <a href={a.href} className="text-primary underline">{a.name}</a> : a.name}
+          </span>
+        ))}
+      </span>,
+    ]);
+  } else if (study.authors) details.push(["Authors", study.authors]);
   if (study.journal) details.push(["Journal", study.journal]);
   if (study.publishYear) details.push(["Year", study.publishYear]);
   if (doi) details.push(["DOI", <a key="doi" href={`https://doi.org/${doi}`} rel="noopener" className="text-primary underline">{doi}</a>]);

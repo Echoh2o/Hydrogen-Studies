@@ -80,3 +80,15 @@ export function breadcrumbListJsonLd(crumbs: readonly Crumb[], siteUrl: string):
     })),
   };
 }
+
+export function profilesIndexBreadcrumbs(title: string): Crumb[] {
+  return [HOME, { label: title }];
+}
+
+export function researcherBreadcrumbs(name: string): Crumb[] {
+  return [HOME, { label: "Researchers", href: "/researchers" }, { label: name }];
+}
+
+export function journalBreadcrumbs(name: string): Crumb[] {
+  return [HOME, { label: "Journals", href: "/journals" }, { label: name }];
+}

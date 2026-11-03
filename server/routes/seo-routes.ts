@@ -237,6 +237,10 @@ router.get(["/sitemap.xml", "/sitemap-index.xml"], (req: Request, res: Response)
     <loc>${SITE_URL}/sitemap-explore.xml</loc>
     <lastmod>${today}</lastmod>
   </sitemap>
+  <sitemap>
+    <loc>${SITE_URL}/sitemap-profiles.xml</loc>
+    <lastmod>${today}</lastmod>
+  </sitemap>
 </sitemapindex>`;
 
   res.set("Content-Type", "application/xml");
@@ -458,6 +462,40 @@ ${urls}
     res.send(xml);
   } catch (err) {
     console.error("[Sitemap] Error generating categories sitemap:", err);
+    res.status(500).send("Error generating sitemap");
+  }
+});
+
+// ============================================================
+// Researcher + journal profiles (PLAN 4.7) — only pages the renderer serves
+// (authors ≥ RESEARCHER_MIN_STUDIES, journals ≥ JOURNAL_MIN_STUDIES).
+// ============================================================
+router.get("/sitemap-profiles.xml", async (req: Request, res: Response) => {
+  try {
+    const cached = getCached("profiles");
+    if (cached) {
+      res.set("Content-Type", "application/xml");
+      res.set("Cache-Control", "public, max-age=3600");
+      return res.send(cached);
+    }
+    const { getAuthorIndex, getJournalIndex } = await import("../services/profiles");
+    const [authors, journals] = await Promise.all([getAuthorIndex(), getJournalIndex()]);
+    const today = formatDate(new Date());
+    const entry = (path: string, priority: string) =>
+      `  <url>\n    <loc>${SITE_URL}${path}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>${priority}</priority>\n  </url>`;
+    const urls = [
+      entry("/researchers", "0.7"),
+      entry("/journals", "0.6"),
+      ...authors.list.map((p) => entry(`/researchers/${encodeURIComponent(p.slug)}`, "0.6")),
+      ...journals.list.map((j) => entry(`/journals/${encodeURIComponent(j.slug)}`, "0.5")),
+    ].join("\n");
+    const xml = xmlHeader() + `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`;
+    setCache("profiles", xml);
+    res.set("Content-Type", "application/xml");
+    res.set("Cache-Control", "public, max-age=3600");
+    res.send(xml);
+  } catch (err) {
+    console.error("[Sitemap] Error generating profiles sitemap:", err);
     res.status(500).send("Error generating sitemap");
   }
 });

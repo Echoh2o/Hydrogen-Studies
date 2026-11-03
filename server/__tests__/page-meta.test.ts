@@ -47,6 +47,8 @@ describe("resolveStaticPageMeta", () => {
     expect(resolveStaticPageMeta("/learn")!.jsonLd).toBeUndefined();
     expect(resolveStaticPageMeta("/search")!.robots).toBe("noindex, follow");
     expect(resolveStaticPageMeta("/explore-by-condition")!.robots).toBeUndefined();
+    expect(resolveStaticPageMeta("/researchers")!.robots).toBeUndefined();
+    expect(resolveStaticPageMeta("/researchers")!.title).toBe("Researchers Publishing on Molecular Hydrogen | Hydrogen Studies");
   });
 
   it("condition hubs are canonical on hydrogenstudies.com (no cross-domain canonical)", () => {

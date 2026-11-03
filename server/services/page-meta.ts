@@ -16,7 +16,9 @@ import { toAbsoluteUrl } from "../utils/absolute-url";
 import {
   blogArticleJsonLd,
   blogPageTitle,
+  buildPageTitle,
   collectionPageJsonLd,
+  profilePageJsonLd,
   excerptAtWord,
   faqPageJsonLd,
   faqPairsIfVisible,
@@ -50,11 +52,23 @@ import {
   exploreDetailBreadcrumbs,
   exploreIndexBreadcrumbs,
   hydrogenForBreadcrumbs,
+  journalBreadcrumbs,
   policyBreadcrumbs,
+  profilesIndexBreadcrumbs,
+  researcherBreadcrumbs,
   studiesListBreadcrumbs,
   type Crumb,
 } from "../../shared/breadcrumbs";
 import { getConditionHubs } from "../middleware/seo-body-renderer";
+import { getJournal, getResearcher } from "./profiles";
+import {
+  JOURNALS_H1,
+  RESEARCHERS_H1,
+  journalDescription,
+  journalTitle,
+  researcherDescription,
+  researcherTitle,
+} from "../../shared/profiles";
 import { marked } from "marked";
 
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
@@ -67,6 +81,8 @@ const CONTENT_PATH_PATTERNS = [
   /^\/study\/[^/]+$/,
   /^\/studies\/(?!tags$)[^/]+$/,
   /^\/blog\/[^/]+$/,
+  /^\/researchers\/[^/]+$/,
+  /^\/journals\/[^/]+$/,
 ];
 
 export function isContentPath(pathname: string): boolean {
@@ -136,6 +152,45 @@ export async function resolvePageMeta(pathname: string): Promise<PageMeta | null
       }
       if (blog) return buildBlogMeta(blog);
       return null;
+    }
+
+    // Researcher / journal profiles (PLAN 4.7): name, counts and the trail
+    // come from the same index the renderer uses; unknown slug → null → 404.
+    const researcherMatch = pathname.match(/^\/researchers\/([^/]+)$/);
+    if (researcherMatch) {
+      const p = await getResearcher(researcherMatch[1]);
+      if (!p) return null;
+      const canonical = `${SITE_URL}/researchers/${p.slug}`;
+      const description = excerptAtWord(researcherDescription(p), 160);
+      return {
+        title: buildPageTitle(researcherTitle(p)),
+        description,
+        canonical,
+        ogType: "profile",
+        ogImage: `${SITE_URL}/logo.png`,
+        jsonLd: [
+          profilePageJsonLd({ name: p.name, description, canonical, siteUrl: SITE_URL }),
+          breadcrumbListJsonLd(researcherBreadcrumbs(p.name), SITE_URL),
+        ],
+      };
+    }
+    const journalMatch = pathname.match(/^\/journals\/([^/]+)$/);
+    if (journalMatch) {
+      const j = await getJournal(journalMatch[1]);
+      if (!j) return null;
+      const canonical = `${SITE_URL}/journals/${j.slug}`;
+      const description = excerptAtWord(journalDescription(j), 160);
+      return {
+        title: buildPageTitle(journalTitle(j)),
+        description,
+        canonical,
+        ogType: "website",
+        ogImage: `${SITE_URL}/logo.png`,
+        jsonLd: [
+          collectionPageJsonLd({ name: j.name, description, canonical, siteUrl: SITE_URL, about: { "@type": "Periodical", name: j.name } }),
+          breadcrumbListJsonLd(journalBreadcrumbs(j.name), SITE_URL),
+        ],
+      };
     }
 
     // Condition hubs: the visible crumb is the health_conditions row's name
@@ -283,6 +338,12 @@ function staticPathJsonLd(pathname: string, description: string): Record<string,
     const h1 = exploreIndexH1(index[1]);
     return listingJsonLd({ name: h1, description, canonical, crumbs: exploreIndexBreadcrumbs(h1) });
   }
+  if (pathname === "/researchers") {
+    return listingJsonLd({ name: RESEARCHERS_H1, description, canonical, crumbs: profilesIndexBreadcrumbs(RESEARCHERS_H1) });
+  }
+  if (pathname === "/journals") {
+    return listingJsonLd({ name: JOURNALS_H1, description, canonical, crumbs: profilesIndexBreadcrumbs(JOURNALS_H1) });
+  }
   if (pathname === "/editorial-policy") return [breadcrumbListJsonLd(policyBreadcrumbs("Editorial Policy"), SITE_URL)];
   if (pathname === "/methodology") return [breadcrumbListJsonLd(policyBreadcrumbs("Methodology"), SITE_URL)];
   return undefined;
@@ -404,6 +465,14 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
     "/insights": {
       title: `Hydrogen Research Insights | ${SITE_NAME}`,
       description: "Trends across the hydrogen research database: publication volume by year, study types, conditions studied and where the evidence is strong or still thin."
+    },
+    "/researchers": {
+      title: `Researchers Publishing on Molecular Hydrogen | ${SITE_NAME}`,
+      description: "The most prolific authors of molecular hydrogen research, each with a page listing their studies, journals and topics, with links to every paper.",
+    },
+    "/journals": {
+      title: `Journals Publishing Hydrogen Research | ${SITE_NAME}`,
+      description: "Journals with ten or more molecular hydrogen studies in our database, each with a page listing those studies and linking to every paper.",
     },
     "/research-analytics": {
       title: `Hydrogen Research Analytics | ${SITE_NAME}`,

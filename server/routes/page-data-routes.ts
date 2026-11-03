@@ -13,6 +13,7 @@ import { Router, type Request, type Response } from "express";
 import { resolveRedirect } from "../services/redirect-service";
 import { isExcludedStudyPath } from "../services/excluded-studies";
 import { studyService } from "../services/study-service";
+import { authorLinksFor } from "../services/profiles";
 import {
   getConditionHubs,
   getRecentBlogs,
@@ -70,11 +71,12 @@ router.get("/study/:slug", async (req: Request, res: Response) => {
     const study: any = withoutPlaceholders(raw as any);
     const conditions: string[] = (study.healthConditions || []).filter((c: string) => c?.trim());
     const condition = conditions[0] || study.category || null;
-    const [hubs, related, relatedBlogs, footerConditions] = await Promise.all([
+    const [hubs, related, relatedBlogs, footerConditions, authorLinks] = await Promise.all([
       getConditionHubs(),
       getRelatedStudies(study.id, condition),
       getRelatedBlogs(condition || ""),
       getTopConditions(),
+      authorLinksFor(study.authors), // PLAN 4.7: link authors with a profile page
     ]);
 
     const { abstract, ...rest } = study;
@@ -82,6 +84,7 @@ router.get("/study/:slug", async (req: Request, res: Response) => {
     res.json({
       study: { ...rest, abstractExcerpt: abstractExcerpt(abstract), sourceLink: studySourceLink(study) },
       hubLinks: studyHubLinks({ healthConditions: conditions, bodySystems: study.bodySystems }, hubs),
+      authorLinks,
       related,
       relatedBlogs,
       footerConditions,
