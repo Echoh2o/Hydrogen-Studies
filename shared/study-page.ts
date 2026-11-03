@@ -145,6 +145,30 @@ function text(v: unknown): string {
  * participants, delivery, dose, concentration, duration, funding, conflicts.
  * Empty fields never render. Shared by the Next study page and the SPA panel.
  */
+/**
+ * "Cited by" line for a study page — only when the count has a known source
+ * (migration 029): legacy counts of unknown origin are not shown. The "as of"
+ * date is the refresh time, so a reader knows how stale the number is.
+ */
+export function citationLine(study: {
+  citationCount?: number | null;
+  citationSource?: string | null;
+  citationCountUpdatedAt?: string | Date | null;
+  openalexId?: string | null;
+}): { count: number; sourceLabel: string; asOf: string; href: string | null } | null {
+  if (study.citationSource !== "openalex" || typeof study.citationCount !== "number" || study.citationCount < 0) return null;
+  const updated = study.citationCountUpdatedAt ? new Date(study.citationCountUpdatedAt) : null;
+  if (!updated || isNaN(updated.getTime())) return null;
+  const asOf = updated.toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+  const id = String(study.openalexId ?? "").match(/^W\d+$/)?.[0];
+  return {
+    count: study.citationCount,
+    sourceLabel: "OpenAlex",
+    asOf,
+    href: id ? `https://openalex.org/${id}` : null,
+  };
+}
+
 export function studyDetails(study: {
   sampleSize?: number | null;
   h2DeliveryMethod?: string | null;
