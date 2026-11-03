@@ -4,7 +4,7 @@ Rules of engagement (from docs/PLAN.md §2 — Josh's standing decisions; do not
 
 - Generation stays off: `GENERATION_ENABLED=false` unless Josh flips it; if on, drafts only.
 - Content-destructive ops (merge, 301, 410, noindex, sitemap removal) run only after a report and Josh's approval of the exact URL list.
-- Every crawler gets the same HTML as a browser. No user-agent branching that changes content. (Interim bot-SSR allowlist exists until the Phase 3 SSR migration deletes it.)
+- Every crawler gets the same HTML as a browser. No user-agent branching that changes content. (The bot-SSR prerender and UA allowlist were deleted 2026-11-03; `isBot` only scopes the crawler rate limiter.)
 - Product/sponsor bridges render only on pages whose primary topic is in the PLAN.md Appendix E allowlist. Never on disease pages.
 - Abstracts: show ≤300-character excerpt + link to PubMed/DOI. Never republish full abstracts (publisher copyright). Our summary is ours.
 - Every link to echowater.com carries `utm_source=hydrogenstudies&utm_medium=referral&utm_campaign=<page_type>&utm_content=<slug>`.

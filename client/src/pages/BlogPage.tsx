@@ -216,7 +216,7 @@ function BlogPageContent() {
   }
 
   // Title / JSON-LD / byline all come from shared/seo-markup — the bot
-  // renderer (seo-bot-middleware buildBlogMeta, seo-body-renderer renderBlog)
+  // renderer (page-meta buildBlogMeta, seo-body-renderer renderBlog)
   // uses the same helpers, so crawlers and browsers see identical markup.
   const canonicalUrl = `${SITE_URL}/blog/${blog.slug || idOrSlug}`;
   const pageTitle = blogPageTitle(blog);

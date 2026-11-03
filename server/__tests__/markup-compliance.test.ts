@@ -68,7 +68,7 @@ import {
 import { HYDROGEN_FOR_TOPICS } from "../../shared/hydrogen-for-topics";
 import { CONDITION_HUB_INTROS, conditionHubJsonLd } from "../../shared/condition-hub-intros";
 import { renderConditionHubIntroHtml, renderHydrogenForPage } from "../middleware/seo-body-renderer";
-import { resolveStaticPageMeta } from "../middleware/seo-bot-middleware";
+import { resolveStaticPageMeta } from "../services/page-meta";
 
 const UTM_RE = (campaign: string, content: string) =>
   new RegExp(

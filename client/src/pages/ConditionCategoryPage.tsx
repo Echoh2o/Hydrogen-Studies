@@ -101,7 +101,7 @@ const ConditionCategoryPage = () => {
 
   // Evidence-graded hubs (keyword plan wave 3): title, meta, H1, byline,
   // intro, FAQ, sources and JSON-LD from the record the crawler renders too
-  // (seo-bot-middleware / seo-body-renderer). It replaces the generic copy
+  // (page-meta / seo-body-renderer). It replaces the generic copy
   // and the health_conditions description, which contradicted it. No
   // sponsor/product content (bridgeTopic null).
   const intro = getConditionHubIntro(hubSlug);

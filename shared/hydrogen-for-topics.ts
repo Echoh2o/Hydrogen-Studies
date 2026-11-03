@@ -1,7 +1,7 @@
 /**
  * /hydrogen-for/:slug topic records — the single source for the SPA page
  * (HydrogenForConditionPage.tsx) AND the bot renderer/meta
- * (seo-body-renderer.ts / seo-bot-middleware.ts), so crawlers and browsers get
+ * (seo-body-renderer.ts / page-meta.ts), so crawlers and browsers get
  * the same H1, meta, visible FAQ (and therefore the same FAQPage JSON-LD).
  *
  * `bridgeTopic` is the page's primary topic as an Appendix E key; product

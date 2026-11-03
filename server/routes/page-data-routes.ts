@@ -23,7 +23,7 @@ import {
 } from "../middleware/seo-body-renderer";
 import { abstractExcerpt, studySourceLink, withoutPlaceholders } from "../../shared/seo-markup";
 import { studyHubLinks } from "../../shared/study-page";
-import { isContentPath, resolvePageMeta, resolveStaticPageMeta } from "../middleware/seo-bot-middleware";
+import { isContentPath, resolvePageMeta, resolveStaticPageMeta } from "../services/page-meta";
 import { renderPageBody } from "../middleware/seo-body-renderer";
 import { logger } from "../utils/logger";
 
@@ -97,7 +97,7 @@ const SITE_URL = "https://hydrogenstudies.com";
 /**
  * Any page the crawler renderer knows (blog, hubs, /hydrogen-for, policy
  * pages…): its meta + JSON-LD and body HTML — exactly what crawlers have been
- * served (seo-bot-middleware), now rendered by Next for every visitor. Same
+ * served by the former bot prerender, now rendered by Next for every visitor. Same
  * 404 rules: a content path with no row, or a route with no real body.
  * The renderer's footer is stripped (Next renders its own, same links).
  */

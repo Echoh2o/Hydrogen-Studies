@@ -291,7 +291,7 @@ export function mechanismHubMeta(slug: string): { title: string; description: st
 
 /**
  * <title> + meta description + path of an /explore-by-{delivery-method,
- * benefit,demographic}/<slug> hub. The crawler meta (seo-bot-middleware) and
+ * benefit,demographic}/<slug> hub. The crawler meta (services/page-meta) and
  * the SPA hub pages both build from this, so browsers and bots get the same
  * title and canonical. The slug is lowercased: the studies API only accepts
  * lowercase slugs, so the SPA always renders the lowercase hub.

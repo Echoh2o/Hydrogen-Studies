@@ -1,5 +1,5 @@
 /**
- * Bot <head> meta — markup compliance (PR A, audit 2026-09-23):
+ * Page <head> meta — markup compliance (PR A, audit 2026-09-23):
  *   #1 no FAQPage on study pages; blog FAQPage only when the Q&As are visible
  *   #2 study JSON-LD carries no full abstract
  *   #7 per-route meta (no homepage FALLBACK) for /hydrogen-for/*, /insights,
@@ -7,24 +7,15 @@
  *   #11 titles ≤ 65 chars, no mid-word "…"
  *   #12 Article JSON-LD author/dateModified/reviewedBy mirror the byline
  */
-import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
-import express from "express";
-import request from "supertest";
-import fs from "fs";
-import os from "os";
-import path from "path";
+import { describe, it, expect, vi } from "vitest";
 
 vi.mock("../db", () => ({ db: {}, pool: { query: () => new Promise(() => {}) } }));
 vi.mock("../middleware/seo-body-renderer", () => ({
   renderPageBody: async () => "<h1>Rendered body</h1>",
+  getConditionHubs: async () => [],
 }));
 
-import {
-  buildBlogMeta,
-  buildStudyMeta,
-  resolveStaticPageMeta,
-  seoBotMiddleware,
-} from "../middleware/seo-bot-middleware";
+import { buildBlogMeta, buildStudyMeta, resolvePageMeta, resolveStaticPageMeta } from "../services/page-meta";
 
 const LONG_ABSTRACT =
   "Background: Molecular hydrogen has been proposed as a selective antioxidant. " +
@@ -160,30 +151,13 @@ describe("#7 per-route static meta", () => {
   });
 });
 
-describe("#7 middleware serves resolved meta, not FALLBACK", () => {
-  let staticDir: string;
-  let app: express.Express;
-  const GOOGLEBOT = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)";
-
-  beforeAll(() => {
-    staticDir = fs.mkdtempSync(path.join(os.tmpdir(), "seo-meta-test-"));
-    fs.writeFileSync(
-      path.join(staticDir, "index.html"),
-      `<!doctype html><html><head><title>x</title></head><body><div id="root"></div></body></html>`,
-    );
-    app = express();
-    app.use(seoBotMiddleware(staticDir));
-    app.get(/.*/, (_req, res) => res.send("SPA"));
-  });
-
-  afterAll(() => fs.rmSync(staticDir, { recursive: true, force: true }));
-
+describe("#7 per-route meta for pages the renderer serves (no homepage fallback)", () => {
+  // The bot prerender used to flag this as X-Bot-Cache: FALLBACK; now the Next
+  // front door reads the same meta from /api/page-data (services/page-meta).
   it.each(["/hydrogen-for/diabetes", "/insights", "/research-analytics"])("%s", async (p) => {
-    const res = await request(app).get(p).set("User-Agent", GOOGLEBOT);
-    expect(res.status).toBe(200);
-    expect(res.headers["x-bot-cache"]).not.toBe("FALLBACK");
-    expect(res.text).not.toContain("<title>Hydrogen Studies | Hydrogen Studies Research Database</title>");
-    expect(res.text).toContain(`<link rel="canonical" href="https://hydrogenstudies.com${p}" />`);
-    expect(res.text).toContain('<link rel="icon" href="/favicon.ico" sizes="48x48" />');
+    const meta = await resolvePageMeta(p);
+    expect(meta).not.toBeNull();
+    expect(meta!.title).not.toBe("Hydrogen Studies | Hydrogen Studies Research Database");
+    expect(meta!.canonical).toBe(`https://hydrogenstudies.com${p}`);
   });
 });

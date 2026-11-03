@@ -3,7 +3,7 @@
  * (/explore-by-condition/{kidney-health,chronic-fatigue,exercise-recovery,skin-aging}).
  *
  * One record per hub (shared/condition-hub-intros.ts) feeds the crawler
- * <head> (seo-bot-middleware), the crawler body (seo-body-renderer) and the
+ * <head> (services/page-meta), the page body (seo-body-renderer) and the
  * SPA page (ConditionCategoryPage.tsx — client/src/pages/__tests__/
  * ConditionHubIntro.test.tsx), so bots and browsers get the same title,
  * description, H1, byline, intro, FAQ + FAQPage, sources and owner link.
@@ -16,12 +16,7 @@
  *  - no product/sponsor content (bridgeTopic null; disease topics refused)
  *  - hubs without a record keep their current rendering
  */
-import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
-import express from "express";
-import request from "supertest";
-import fs from "fs";
-import os from "os";
-import path from "path";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { PgDialect } from "drizzle-orm/pg-core";
 
 const state = vi.hoisted(() => ({
@@ -69,14 +64,13 @@ import {
   renderConditionHubIntroHtml,
   renderPageBody,
 } from "../middleware/seo-body-renderer";
-import { invalidateBotCache, resolveStaticPageMeta, seoBotMiddleware } from "../middleware/seo-bot-middleware";
+import { resolvePageMeta, resolveStaticPageMeta } from "../services/page-meta";
 
 const SITE = "https://hydrogenstudies.com";
 const SLUGS = [
   "kidney-health", "chronic-fatigue", "exercise-recovery", "skin-aging", "sleep-quality",
   "cholesterol", "type-2-diabetes", "fatty-liver-nafld", "weight-loss-metabolism", "gut-health",
 ];
-const GOOGLEBOT = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)";
 
 /** What the seed (007_seed_health_conditions) stores — must never render on these hubs. */
 const OLD_DESCRIPTIONS: Record<string, { name: string; description: string }> = {
@@ -139,18 +133,8 @@ function studyRows(prefix: string, n: number) {
   }));
 }
 
-let staticDir: string;
-beforeAll(() => {
-  staticDir = fs.mkdtempSync(path.join(os.tmpdir(), "condition-hub-intros-"));
-  fs.writeFileSync(
-    path.join(staticDir, "index.html"),
-    `<!doctype html><html lang="en"><head><meta charset="UTF-8" /><title>Hydrogen Studies Research Database</title></head><body><div id="root"></div></body></html>`,
-  );
-});
-
 beforeEach(() => {
   __resetConditionHubsForTests();
-  invalidateBotCache();
   state.conditions = [
     ...SLUGS.map((slug, i) => ({ slug, ...OLD_DESCRIPTIONS[slug], study_count: 100 - i })),
     {
@@ -424,7 +408,7 @@ describe("crawler body (seo-body-renderer) for hubs with an intro", () => {
 
 // ── Crawler <head> ──────────────────────────────────────────────
 
-describe("crawler meta (seo-bot-middleware) for hubs with an intro", () => {
+describe("page meta (services/page-meta) for hubs with an intro", () => {
   it.each(SLUGS)("%s: title/description from the record, canonical self, CollectionPage + FAQPage", (slug) => {
     const r = CONDITION_HUB_INTROS[slug];
     const meta = resolveStaticPageMeta(`/explore-by-condition/${slug}`)!;
@@ -442,26 +426,21 @@ describe("crawler meta (seo-bot-middleware) for hubs with an intro", () => {
     expect(meta.jsonLd).toBeUndefined();
   });
 
-  it.each(SLUGS)("%s: full Googlebot response — head + body agree, FAQPage only with the visible FAQ", async (slug) => {
+  it.each(SLUGS)("%s: head + body agree (what /api/page-data/page serves) — FAQPage only with the visible FAQ", async (slug) => {
     const r = CONDITION_HUB_INTROS[slug];
-    const app = express();
-    app.use(seoBotMiddleware(staticDir));
-    const res = await request(app).get(`/explore-by-condition/${slug}`).set("User-Agent", GOOGLEBOT);
-    expect(res.status).toBe(200);
-    const html = res.text;
-    const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-    expect(html).toContain(`<title>${esc(r.metaTitle)}</title>`);
-    expect(html).toContain(`<meta name="description" content="${esc(r.metaDescription)}" />`);
-    expect(html).toContain(`<meta property="og:description" content="${esc(r.metaDescription)}" />`);
-    expect(html).toContain(`<meta name="twitter:title" content="${esc(r.metaTitle)}" />`);
-    expect(html).toContain(`<link rel="canonical" href="${SITE}/explore-by-condition/${slug}" />`);
+    const path = `/explore-by-condition/${slug}`;
+    const [meta, html] = await Promise.all([resolvePageMeta(path), renderPageBody(path)]);
+    expect(meta).not.toBeNull();
+    expect(html).not.toBeNull();
+    expect(meta!.title).toBe(r.metaTitle);
+    expect(meta!.description).toBe(r.metaDescription);
+    expect(meta!.canonical).toBe(`${SITE}${path}`);
     expect(html).not.toMatch(/may benefit and treat/i);
-    const types = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]
-      .map((m) => JSON.parse(m[1])["@type"]);
+    const types = (meta!.jsonLd as any[]).map((b) => b["@type"]);
     expect(types).toEqual(["CollectionPage", "FAQPage"]);
-    expect(count(html, /<h1\b/g)).toBe(1);
+    expect(count(html!, /<h1\b/g)).toBe(1);
     // Every FAQPage question is on the page.
-    expect(faqPairsIfVisible(r.faqs, html.slice(html.indexOf("<body")))).toEqual(r.faqs);
-    expect(text(html)).toContain(text(`<h1>${r.h1}</h1>`));
+    expect(faqPairsIfVisible(r.faqs, html!)).toEqual(r.faqs);
+    expect(text(html!)).toContain(text(`<h1>${r.h1}</h1>`));
   });
 });

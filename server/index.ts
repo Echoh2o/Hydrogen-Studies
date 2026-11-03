@@ -20,7 +20,7 @@ import { log } from "./vite";
 import { pool } from "./db";
 import { jobScheduler } from "./services/job-scheduler";
 import { stopHealthMonitoring } from "./utils/health-monitoring";
-import { isBot } from "./middleware/seo-bot-middleware";
+import { isBot } from "./utils/user-agent";
 import { webFrontDoor } from "./middleware/web-frontdoor";
 import { isKnownSpaRoute, sendSpaShell } from "./middleware/spa-shell";
 import { generalApiRateLimiter } from "./utils/rate-limiting";

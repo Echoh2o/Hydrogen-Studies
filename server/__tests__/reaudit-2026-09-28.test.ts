@@ -82,7 +82,7 @@ import {
   stripTags,
 } from "../../shared/seo-markup";
 import { renderPageBody, __resetConditionHubsForTests } from "../middleware/seo-body-renderer";
-import { buildBlogMeta, resolveStaticPageMeta } from "../middleware/seo-bot-middleware";
+import { buildBlogMeta, resolveStaticPageMeta } from "../services/page-meta";
 import seoRoutes from "../routes/seo-routes";
 import hydrogenRoutes from "../routes/hydrogen-routes";
 

@@ -22,7 +22,7 @@ import { db } from "../db";
 import { blogArticles } from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
 import { createRedirect } from "./redirect-service";
-import { invalidateBotCache } from "../middleware/seo-bot-middleware";
+import { notifyWebRevalidate } from "../services/web-revalidate";
 import { logger } from "../utils/logger";
 
 const TAG = "ContentConsolidation";
@@ -414,7 +414,7 @@ export async function executeConsolidation(opts: {
 
       // 3. Drop stale prerendered HTML for the changed path so crawlers
       //    see the 301 immediately instead of a cached 200.
-      invalidateBotCache(`/blog/${loser.slug}`);
+      notifyWebRevalidate(`/blog/${loser.slug}`);
 
       changes.push({
         articleId: loser.id,

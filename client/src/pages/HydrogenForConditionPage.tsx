@@ -91,7 +91,7 @@ export default function HydrogenForConditionPage() {
   }
 
   const conditionName = condition.name;
-  // Same meta as the bot renderer (seo-bot-middleware resolveStaticPageMeta).
+  // Same meta as the bot renderer (page-meta resolveStaticPageMeta).
   const pageTitle = condition.metaTitle;
   const pageDescription = condition.metaDescription;
   const canonicalUrl = `https://hydrogenstudies.com/hydrogen-for/${condition.slug}`;

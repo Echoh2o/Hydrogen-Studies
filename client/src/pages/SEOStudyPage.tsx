@@ -279,7 +279,7 @@ export default function SEOStudyPage() {
   // Get plain language title for SEO
   const plainTitle = study.plainLanguageTitle || study.plain_language_title;
   // Title, description and JSON-LD come from shared/seo-markup — the bot
-  // renderer (seo-bot-middleware buildStudyMeta) uses the same helpers.
+  // renderer (page-meta buildStudyMeta) uses the same helpers.
   const pageTitle = studyPageTitle({ ...study, plainLanguageTitle: plainTitle });
   const metaDescription = studyDescription(study, 160);
 
