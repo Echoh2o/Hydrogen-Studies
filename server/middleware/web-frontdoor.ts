@@ -31,6 +31,8 @@ export const SSR_FAMILIES: Record<string, RegExp> = {
   analytics: /^\/research-analytics$/,
   // Researcher and journal profile pages (PLAN 4.7).
   profiles: /^\/(?:researchers|journals)(?:\/[^/]+)?$/,
+  // Radical-honesty pages (PLAN 4.6).
+  evidence: /^\/(?:limits-of-the-evidence|null-and-negative-results)$/,
 };
 
 // content-security-policy: Next sets a per-request nonce CSP (web/middleware.ts)

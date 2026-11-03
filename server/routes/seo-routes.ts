@@ -264,6 +264,9 @@ router.get("/sitemap-pages.xml", (req: Request, res: Response) => {
     // /benefits 301s to /blog/molecular-hydrogen-benefits-guide-pillar (merged,
     // owner-approved 2026-09-28) — the guide is listed in sitemap-blog.
     { url: "/about", priority: "0.6", freq: "monthly" },
+    // PLAN 4.6 — radical-honesty pages (numbers recomputed on each build).
+    { url: "/limits-of-the-evidence", priority: "0.8", freq: "weekly" },
+    { url: "/null-and-negative-results", priority: "0.7", freq: "weekly" },
     { url: "/contact", priority: "0.4", freq: "yearly" },
     { url: "/explore-by-condition", priority: "0.9", freq: "weekly" },
     { url: "/explore-by-body-system", priority: "0.9", freq: "weekly" },

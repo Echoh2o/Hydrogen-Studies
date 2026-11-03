@@ -74,6 +74,8 @@ import { studyBreadcrumbs, studyEvidence, studyHubLinks } from "../../shared/stu
 import { POLICY_PAGES } from "../../shared/policy-pages";
 import { breadcrumbs, esc, footer, truncate } from "./html-fragments";
 import { renderJournalIndex, renderJournalPage, renderResearcherIndex, renderResearcherPage } from "./profile-pages";
+import { renderLimitsPage, renderNullResultsHub } from "./evidence-pages";
+import { LIMITS_PATH, NULL_RESULTS_PATH } from "../../shared/evidence-pages";
 import {
   blogListBreadcrumbs,
   blogPostBreadcrumbs,
@@ -1334,6 +1336,10 @@ async function dispatchPageBody(pathname: string): Promise<string | null> {
   // Hydrogen-for pages
   const h4Match = pathname.match(/^\/hydrogen-for\/([^/]+)$/);
   if (h4Match) return renderHydrogenForPage(h4Match[1]);
+
+  // Radical-honesty pages (PLAN 4.6)
+  if (pathname === LIMITS_PATH) return renderLimitsPage();
+  if (pathname === NULL_RESULTS_PATH) return renderNullResultsHub();
 
   // Researcher and journal profiles (PLAN 4.7)
   if (pathname === "/researchers") return renderResearcherIndex();

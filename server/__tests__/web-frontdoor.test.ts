@@ -36,6 +36,9 @@ describe("family matching", () => {
     expect(ssrFamilyFor("/researchers", [...all, "profiles"])).toBe("profiles");
     expect(ssrFamilyFor("/journals/medical-gas-research", [...all, "profiles"])).toBe("profiles");
     expect(ssrFamilyFor("/researchers/a/b", [...all, "profiles"])).toBeNull();
+    expect(ssrFamilyFor("/limits-of-the-evidence", [...all, "evidence"])).toBe("evidence");
+    expect(ssrFamilyFor("/null-and-negative-results", [...all, "evidence"])).toBe("evidence");
+    expect(ssrFamilyFor("/limits-of-the-evidence/x", [...all, "evidence"])).toBeNull();
     expect(ssrFamilyFor("/", [...all, "home"])).toBe("home");
     expect(ssrFamilyFor("/studies", [...all, "studies"])).toBe("studies");
     expect(ssrFamilyFor("/studies/tags", [...all, "studies"])).toBeNull();

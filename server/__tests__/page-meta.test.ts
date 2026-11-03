@@ -48,6 +48,8 @@ describe("resolveStaticPageMeta", () => {
     expect(resolveStaticPageMeta("/search")!.robots).toBe("noindex, follow");
     expect(resolveStaticPageMeta("/explore-by-condition")!.robots).toBeUndefined();
     expect(resolveStaticPageMeta("/researchers")!.robots).toBeUndefined();
+    expect(resolveStaticPageMeta("/limits-of-the-evidence")!.robots).toBeUndefined();
+    expect(resolveStaticPageMeta("/null-and-negative-results")!.title.length).toBeLessThanOrEqual(65);
     expect(resolveStaticPageMeta("/researchers")!.title).toBe("Researchers Publishing on Molecular Hydrogen | Hydrogen Studies");
   });
 

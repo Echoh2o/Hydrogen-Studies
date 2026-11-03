@@ -38,6 +38,7 @@ export function footer(conditions: { name: string; slug: string }[]): string {
   h += `<li><a href="/blog">Blog</a></li>`;
   h += `<li><a href="/researchers">Researchers</a></li>`;
   h += `<li><a href="/journals">Journals</a></li>`;
+  h += `<li><a href="/limits-of-the-evidence">Limits of the evidence</a></li>`;
   h += `<li><a href="/search">Search</a></li>`;
   h += `<li><a href="/advanced-search">Advanced Search</a></li>`;
   h += `</ul></section>`;
@@ -49,6 +50,7 @@ export function footer(conditions: { name: string; slug: string }[]): string {
   h += `<li><a href="/explore-by-delivery-method">By Delivery Method</a></li>`;
   h += `<li><a href="/explore-by-life-stage">By Life Stage</a></li>`;
   h += `<li><a href="/explore-by-benefit">By Benefit</a></li>`;
+  h += `<li><a href="/null-and-negative-results">Null &amp; negative results</a></li>`;
   h += `</ul></section>`;
 
   if (conditions.length > 0) {
