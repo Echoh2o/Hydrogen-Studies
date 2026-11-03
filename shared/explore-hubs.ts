@@ -395,3 +395,10 @@ export function exploreIndexCopy(type: ListedExploreHubType): {
       };
   }
 }
+
+/** The visible H1 of an /explore-by-<type> index (renderer + page meta). */
+export function exploreIndexH1(type: string): string {
+  if (type === "condition") return "Hydrogen Research by Health Condition";
+  if (type === "body-system") return "Hydrogen Research by Body System";
+  return isListedExploreHubType(type) ? exploreIndexCopy(type).h1 : "Explore Hydrogen Research";
+}

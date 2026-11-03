@@ -619,8 +619,8 @@ describe("/hydrogen-for topic records", () => {
     "%s: FAQPage JSON-LD is exactly the FAQ the page shows; sponsor card only when allowed",
     async (slug) => {
       const topic = HYDROGEN_FOR_TOPICS[slug];
-      const ld = resolveStaticPageMeta(`/hydrogen-for/${slug}`)!.jsonLd as any;
-      expect(ld["@type"]).toBe("FAQPage");
+      const ld = (resolveStaticPageMeta(`/hydrogen-for/${slug}`)!.jsonLd as any[]).find((b) => b["@type"] === "FAQPage")!;
+      expect(ld, slug).toBeDefined();
       const pairs = ld.mainEntity.map((q: any) => ({ question: q.name, answer: q.acceptedAnswer.text }));
       expect(pairs).toEqual(topic.faqs.map(({ question, answer }) => ({ question, answer })));
 

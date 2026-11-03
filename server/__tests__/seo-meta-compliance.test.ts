@@ -88,7 +88,7 @@ describe("#1/#11/#12 blog meta", () => {
 
   it("omits FAQPage when any stored question is not visible", () => {
     const types = asArray(buildBlogMeta(blog).jsonLd).map((ld) => ld["@type"]);
-    expect(types).toEqual(["Article"]);
+    expect(types).toEqual(["Article", "BreadcrumbList"]);
   });
 
   it("emits FAQPage when every question is visible in the rendered body", () => {
@@ -97,7 +97,7 @@ describe("#1/#11/#12 blog meta", () => {
       questionAnswerPairs: JSON.stringify([{ question: "Is hydrogen water safe?", answer: "Generally." }]),
     };
     const types = asArray(buildBlogMeta(visible).jsonLd).map((ld) => ld["@type"]);
-    expect(types).toEqual(["Article", "FAQPage"]);
+    expect(types).toEqual(["Article", "FAQPage", "BreadcrumbList"]);
   });
 
   it("Article author/dateModified mirror the visible byline; no reviewedBy without a reviewer", () => {
@@ -141,8 +141,9 @@ describe("#7 per-route static meta", () => {
   });
 
   it("hydrogen-for meta carries FAQPage (the FAQ is rendered visibly)", () => {
-    const ld = resolveStaticPageMeta("/hydrogen-for/diabetes")!.jsonLd as any;
-    expect(ld["@type"]).toBe("FAQPage");
+    const blocks = resolveStaticPageMeta("/hydrogen-for/diabetes")!.jsonLd as any[];
+    expect(blocks.map((b) => b["@type"])).toEqual([["MedicalWebPage", "CollectionPage"], "FAQPage", "BreadcrumbList"]);
+    const ld = blocks.find((b) => b["@type"] === "FAQPage")!;
     expect(ld.mainEntity[0].name).toBe("Can hydrogen water help manage diabetes?");
   });
 

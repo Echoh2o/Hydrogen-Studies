@@ -253,11 +253,11 @@ describe("shared/condition-hub-intros records", () => {
     expect(conditionHubSourceLinks(k6).map((l) => l.label)).toEqual(["PubMed"]);
   });
 
-  it("JSON-LD: CollectionPage + FAQPage built from the same FAQ records; no reviewedBy/lastReviewed", () => {
+  it("JSON-LD: MedicalWebPage/CollectionPage + FAQPage built from the same FAQ records; no reviewedBy/lastReviewed/MedicalCondition", () => {
     for (const r of intros) {
       const canonical = `${SITE}/explore-by-condition/${r.slug}`;
       const ld = conditionHubJsonLd(r, { canonical, siteUrl: SITE });
-      expect(ld.map((x) => x["@type"])).toEqual(["CollectionPage", "FAQPage"]);
+      expect(ld.map((x) => x["@type"])).toEqual([["MedicalWebPage", "CollectionPage"], "FAQPage"]);
       expect(ld[0].name).toBe(r.h1);
       expect(ld[0].url).toBe(canonical);
       expect(ld[0].author).toMatchObject({ "@type": "Organization", name: EDITORIAL_TEAM });
@@ -409,7 +409,7 @@ describe("crawler body (seo-body-renderer) for hubs with an intro", () => {
 // ── Crawler <head> ──────────────────────────────────────────────
 
 describe("page meta (services/page-meta) for hubs with an intro", () => {
-  it.each(SLUGS)("%s: title/description from the record, canonical self, CollectionPage + FAQPage", (slug) => {
+  it.each(SLUGS)("%s: title/description from the record, canonical self, MedicalWebPage/CollectionPage + FAQPage", (slug) => {
     const r = CONDITION_HUB_INTROS[slug];
     const meta = resolveStaticPageMeta(`/explore-by-condition/${slug}`)!;
     expect(meta.title).toBe(r.metaTitle);
@@ -437,7 +437,10 @@ describe("page meta (services/page-meta) for hubs with an intro", () => {
     expect(meta!.canonical).toBe(`${SITE}${path}`);
     expect(html).not.toMatch(/may benefit and treat/i);
     const types = (meta!.jsonLd as any[]).map((b) => b["@type"]);
-    expect(types).toEqual(["CollectionPage", "FAQPage"]);
+    expect(types).toEqual([["MedicalWebPage", "CollectionPage"], "FAQPage", "BreadcrumbList"]);
+    // The BreadcrumbList names the trail the body shows (Home › Health Conditions › hub).
+    const crumbs = types.length && (meta!.jsonLd as any[])[2].itemListElement.map((n: any) => n.name);
+    expect(crumbs).toEqual(["Home", "Health Conditions", OLD_DESCRIPTIONS[slug].name]);
     expect(count(html!, /<h1\b/g)).toBe(1);
     // Every FAQPage question is on the page.
     expect(faqPairsIfVisible(r.faqs, html!)).toEqual(r.faqs);

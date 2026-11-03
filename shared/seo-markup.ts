@@ -564,3 +564,28 @@ export function faqPageJsonLd(pairs: QaPair[]): Record<string, any> {
     })),
   };
 }
+
+// ── Listing / hub pages ──────────────────────────────────────────
+
+/**
+ * The page block for a hub, index or listing page. `name` must be the
+ * page's visible H1. Condition and hydrogen-for hubs are MedicalWebPage as
+ * well (PLAN 3.5); `about: MedicalCondition`, `reviewedBy` and `lastReviewed`
+ * arrive with the named reviewer (PLAN 4.8), never before.
+ */
+export function collectionPageJsonLd(opts: {
+  name: string;
+  description: string;
+  canonical: string;
+  siteUrl: string;
+  medical?: boolean;
+}): Record<string, any> {
+  return {
+    "@context": "https://schema.org",
+    "@type": opts.medical ? ["MedicalWebPage", "CollectionPage"] : "CollectionPage",
+    name: opts.name,
+    description: opts.description,
+    url: opts.canonical,
+    publisher: { "@type": "Organization", name: SITE_NAME, url: opts.siteUrl },
+  };
+}

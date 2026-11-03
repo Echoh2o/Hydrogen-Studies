@@ -335,7 +335,7 @@ describe("Article JSON-LD author type", () => {
       authorName: "Hydrogen Studies Editorial Team",
       updatedAt: "2026-09-23",
     });
-    expect((meta.jsonLd as any).author["@type"]).toBe("Organization");
+    expect((meta.jsonLd as any[])[0].author["@type"]).toBe("Organization");
   });
 
   it("keeps Person for a named human author", () => {
