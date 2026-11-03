@@ -13,3 +13,9 @@ Exact list: `redirect-chains-to-410-2026-11-03.csv` (id, from_path, current_targ
 
 - 172 chains of two 301s were collapsed to point straight at their final page. All 6 final targets were checked live (200). Backup: `reports/backups/redirect-chain-collapse-*.csv`.
 - The cancer-support post's 50 older duplicates now point straight at `/hydrogen-for/cancer-support`.
+
+## Applied 2026-11-03 (Josh: "approved")
+
+- All 5,378 rows changed from 301 to 410. That includes the 115 with impressions: together they had 777 impressions and 0 clicks in 90 days, and most of their top queries were `site:` lookups, so hub redirects weren't worth it.
+- Each change is logged in `redirect_actions_log`. Backups: `reports/backups/redirect-chain-410-*.csv`.
+- Active 301 → redirect chains remaining: 0.
