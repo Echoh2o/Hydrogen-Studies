@@ -1,7 +1,7 @@
 /**
  * /explore-by-condition/:slug evidence-graded intros (keyword plan waves 3–4) —
  * the single source for the SPA page (ConditionCategoryPage.tsx) AND the bot
- * renderer/meta (seo-body-renderer.ts / seo-bot-middleware.ts), so crawlers
+ * renderer/meta (seo-body-renderer.ts / page-meta.ts), so crawlers
  * and browsers get the same title, meta description, H1, byline, intro, FAQ
  * (and therefore the same FAQPage JSON-LD), sources and owner-guide link.
  *

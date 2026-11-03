@@ -125,14 +125,13 @@ import {
   renderPageBody,
   __resetConditionHubsForTests,
 } from "../middleware/seo-body-renderer";
-import { seoBotMiddleware, invalidateBotCache, resolveStaticPageMeta } from "../middleware/seo-bot-middleware";
+import { resolveStaticPageMeta } from "../services/page-meta";
 import { sendSpaShell, spaShellStatus } from "../middleware/explore-hub-404";
 import { CONDITION_HUB_STUDIES_HEADING, getConditionHubIntro } from "../../shared/condition-hub-intros";
 import hydrogenRoutes from "../routes/hydrogen-routes";
 import seoRoutes, { __resetSitemapCacheForTests } from "../routes/seo-routes";
 
 const SITE = "https://hydrogenstudies.com";
-const GOOGLEBOT = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)";
 const CHROME =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36";
 
@@ -146,11 +145,10 @@ function rows(prefix: string, n: number) {
 }
 
 let staticDir: string;
-/** The production wiring: bot middleware first, then the SPA shell fallback. */
+/** The production wiring for SPA-served paths: API routes, then the SPA shell fallback. */
 function siteApp() {
   const app = express();
   app.use(hydrogenRoutes);
-  app.use(seoBotMiddleware(staticDir));
   app.get("*", (req, res) => sendSpaShell(req, res, path.join(staticDir, "index.html")));
   return app;
 }
@@ -166,7 +164,6 @@ beforeAll(() => {
 beforeEach(() => {
   __resetConditionHubsForTests();
   __resetSitemapCacheForTests();
-  invalidateBotCache();
   state.dbDown = false;
   state.conditionSql = [];
   state.conditionStudySql = [];
@@ -269,7 +266,7 @@ describe("exploreHubExists — one rule per hub type", () => {
 
 // ── Same status for bots and browsers ───────────────────────────
 
-describe("unknown hubs: HTTP 404 for Googlebot AND Chrome; real hubs 200 for both", () => {
+describe("unknown hubs: no renderer body and a 404 SPA shell for every visitor; real hubs render + 200", () => {
   const invalid = [
     "/explore-by-demographic/xyzzy",
     "/explore-by-demographic/elderly",
@@ -293,23 +290,18 @@ describe("unknown hubs: HTTP 404 for Googlebot AND Chrome; real hubs 200 for bot
     "/explore-by-condition/type-2-diabetes",
   ];
 
-  it.each(invalid)("%s → 404 (bot: noindex page; browser: SPA shell)", async (url) => {
-    const app = siteApp();
-    const bot = await request(app).get(url).set("User-Agent", GOOGLEBOT);
-    expect(bot.status).toBe(404);
-    expect(bot.text).toMatch(/<meta name="robots" content="noindex, follow"/);
-    const browser = await request(app).get(url).set("User-Agent", CHROME);
+  it.each(invalid)("%s → no body (page-data 404) and a 404 SPA shell", async (url) => {
+    // null body = the page-data API answers 404 and Next renders not-found
+    expect(await renderPageBody(url)).toBeNull();
+    const browser = await request(siteApp()).get(url).set("User-Agent", CHROME);
     expect(browser.status).toBe(404);
     expect(browser.text).toContain('<div id="root"></div>');
     expect(browser.headers["cache-control"]).toBe("no-cache");
   });
 
-  it.each(valid)("%s → 200 for both", async (url) => {
-    const app = siteApp();
-    const bot = await request(app).get(url).set("User-Agent", GOOGLEBOT);
-    expect(bot.status).toBe(200);
-    expect(bot.text).not.toMatch(/content="noindex/);
-    const browser = await request(app).get(url).set("User-Agent", CHROME);
+  it.each(valid)("%s → renders a body and a 200 shell", async (url) => {
+    expect(await renderPageBody(url)).not.toBeNull();
+    const browser = await request(siteApp()).get(url).set("User-Agent", CHROME);
     expect(browser.status).toBe(200);
   });
 

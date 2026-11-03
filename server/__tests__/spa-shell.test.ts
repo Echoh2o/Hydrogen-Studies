@@ -11,7 +11,7 @@ import path from "path";
 
 const state = vi.hoisted(() => ({ meta: null as any, unknownHub: false }));
 
-vi.mock("../middleware/seo-bot-middleware", () => ({
+vi.mock("../services/page-meta", () => ({
   resolvePageMeta: async () => state.meta,
   resolveStaticPageMeta: (p: string) =>
     p === "/"

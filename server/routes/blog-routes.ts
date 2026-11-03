@@ -8,7 +8,7 @@ import {
   aiGenerationRateLimiter,
   generalApiRateLimiter,
 } from "../utils/rate-limiting";
-import { invalidateBotCache } from "../middleware/seo-bot-middleware";
+import { notifyWebRevalidate } from "../services/web-revalidate";
 import { stripDeadBlogLinks } from "../../shared/content-links";
 import { getLiveBlogPredicate } from "../services/live-blog-index";
 
@@ -798,7 +798,7 @@ router.put("/:id(\\d+)", requireAdmin, async (req, res) => {
 
     // Publish/unpublish or slug change — drop the crawler cache for this
     // path so bots stop being served a stale 200 until the TTL expires.
-    invalidateBotCache(`/blog/${updatedBlog.slug}`);
+    notifyWebRevalidate(`/blog/${updatedBlog.slug}`);
 
     res.json({
       success: true,
@@ -838,7 +838,7 @@ router.delete("/:id(\\d+)", requireAdmin, async (req, res) => {
       return res.status(404).json({ error: "Blog not found" });
     }
     // Drop the crawler cache so the deleted page stops being served to bots.
-    invalidateBotCache(`/blog/${result[0].slug}`);
+    notifyWebRevalidate(`/blog/${result[0].slug}`);
     res.json({ success: true });
   } catch (error) {
     console.error("Error deleting blog:", error);
@@ -1364,7 +1364,7 @@ router.patch("/:id(\\d+)/status", requireAdmin, async (req, res) => {
     if (!row) return res.status(404).json({ error: "Blog not found" });
     // Publish/unpublish/archive changed visibility — drop the stale crawler
     // cache entry for this path.
-    invalidateBotCache(`/blog/${row.slug}`);
+    notifyWebRevalidate(`/blog/${row.slug}`);
     res.json({ success: true, data: row });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -1448,7 +1448,7 @@ router.post("/bulk-update", requireAdmin, async (req, res) => {
     // Every bulk action changes visibility (publish/unpublish/archive/delete/
     // schedule) — drop each affected path from the crawler cache.
     for (const row of affectedRows) {
-      invalidateBotCache(`/blog/${row.slug}`);
+      notifyWebRevalidate(`/blog/${row.slug}`);
     }
 
     res.json({ success: true, affected });

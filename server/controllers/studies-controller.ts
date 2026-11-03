@@ -3,7 +3,7 @@ import { studyService } from "../services/study-service";
 import { getPersonalizedRecommendations } from "../services/recommendation-engine";
 import { searchRateLimiter, aiGenerationRateLimiter } from "../utils/rate-limiting";
 import { requireAdmin, isElevatedRequest } from "../auth";
-import { invalidateBotCache } from "../middleware/seo-bot-middleware";
+import { notifyWebRevalidate } from "../services/web-revalidate";
 import { logger } from "../utils/logger";
 import { getConditionHubs } from "../middleware/seo-body-renderer";
 import { studyHubLinks } from "../../shared/study-page";
@@ -722,8 +722,8 @@ export class StudiesController {
   // content/slug change. Studies render at both /studies/:slug and /study/:slug.
   private invalidateStudyBotCache = (slug?: string | null) => {
       if (!slug) return;
-      invalidateBotCache(`/studies/${slug}`);
-      invalidateBotCache(`/study/${slug}`);
+      notifyWebRevalidate(`/studies/${slug}`);
+      notifyWebRevalidate(`/study/${slug}`);
   }
 
   private deleteStudy = async (req: Request, res: Response) => {

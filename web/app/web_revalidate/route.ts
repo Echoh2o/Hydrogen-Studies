@@ -2,7 +2,7 @@ import { revalidateTag } from "next/cache";
 import { PAGE_DATA_TAG } from "@web/lib/page-data";
 
 /**
- * Express calls this when content changes (seo-bot-middleware
+ * Express calls this when content changes (server/services/web-revalidate
  * invalidateBotCache → notifyWebRevalidate): drops the cached page data for
  * those paths so admin edits show on the next request. No paths = all pages.
  */

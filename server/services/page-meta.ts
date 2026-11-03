@@ -1,22 +1,18 @@
 /**
- * SEO Bot Middleware — Server-side meta tag injection for crawlers
+ * Page meta for every public path — title, description, canonical, robots,
+ * Open Graph image/type and the page's JSON-LD.
  *
- * Detects search engine bots and social media crawlers, then injects
- * correct meta tags (title, description, OG, Twitter, JSON-LD) into
- * the HTML before serving. Human visitors get the normal SPA.
+ * Consumed by the Next.js front door (server/routes/page-data-routes.ts →
+ * web/) and by the SPA shell (server/middleware/spa-shell.ts), so browsers
+ * and crawlers get the same <head>. No user-agent logic lives here
+ * (PLAN.md 3.4): the bot-only prerender that used to own this code was
+ * deleted 2026-11-03.
  */
-
-import { Request, Response, NextFunction } from "express";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
 import { db } from "../db";
 import { studies, blogArticles } from "../../shared/schema";
 import { eq, and } from "drizzle-orm";
-import { jsonLdSafe } from "../utils/html-safety";
 import { logger } from "../utils/logger";
 import { toAbsoluteUrl } from "../utils/absolute-url";
-import { ECHOWATER_ORIGIN } from "../../shared/echo-products";
 import {
   blogArticleJsonLd,
   blogPageTitle,
@@ -40,80 +36,11 @@ import {
   type ListedExploreHubType,
 } from "../../shared/explore-hubs";
 import { studyBreadcrumbs, studyHubLinks } from "../../shared/study-page";
+import { getConditionHubs } from "../middleware/seo-body-renderer";
 import { marked } from "marked";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
 const SITE_NAME = "Hydrogen Studies";
-
-// ── Cross-domain canonicals (env-gated, OFF by default) ────────
-//
-// When ECHOWATER_CANONICAL=1, prerendered study and condition pages declare
-// their canonical URL (and JSON-LD url/mainEntityOfPage, and og:url — all
-// derive from PageMeta.canonical) as the echowater.com App Proxy equivalent,
-// consolidating search authority onto the store domain.
-//
-// IMPORTANT: flip this only after the App Proxy is verified live and indexed
-// (https://echowater.com/tools/hydrogen-research/...), otherwise we'd be
-// canonicalizing every study/condition page to a 404.
-//
-// Blog pages are intentionally NOT remapped — they stay canonical on
-// hydrogenstudies.com until native syndication exists on echowater.
-const ECHOWATER_CANONICAL = process.env.ECHOWATER_CANONICAL === "1";
-const ECHOWATER_PROXY_BASE = `${ECHOWATER_ORIGIN}/tools/hydrogen-research`;
-
-function canonicalForStudy(slug: string): string {
-  return ECHOWATER_CANONICAL
-    ? `${ECHOWATER_PROXY_BASE}/study/${slug}`
-    : `${SITE_URL}/study/${slug}`;
-}
-
-function canonicalForCondition(slug: string): string {
-  return ECHOWATER_CANONICAL
-    ? `${ECHOWATER_PROXY_BASE}/condition/${slug}`
-    : `${SITE_URL}/explore-by-condition/${slug}`;
-}
-
-// Bot user-agent patterns
-const BOT_PATTERNS = [
-  /googlebot/i, /bingbot/i, /slurp/i, /duckduckbot/i, /baiduspider/i,
-  /yandexbot/i, /sogou/i, /exabot/i, /facebot/i, /facebookexternalhit/i,
-  /ia_archiver/i, /twitterbot/i, /linkedinbot/i, /embedly/i, /quora link preview/i,
-  /showyoubot/i, /outbrain/i, /pinterest/i, /slackbot/i, /vkshare/i,
-  /w3c_validator/i, /redditbot/i, /applebot/i, /whatsapp/i, /flipboard/i,
-  /tumblr/i, /bitlybot/i, /skypeuripreview/i, /nuzzel/i, /discordbot/i,
-  /google page speed/i, /chromelighthouse/i, /headlesschrome/i,
-  /petalbot/i, /ahrefsbot/i, /semrushbot/i, /dotbot/i, /rogerbot/i,
-  // AI assistants/search — these citing the site is a distribution channel
-  /gptbot/i, /oai-searchbot/i, /chatgpt-user/i, /claudebot/i, /claude-web/i,
-  /anthropic-ai/i, /perplexitybot/i, /perplexity-user/i, /ccbot/i,
-  /meta-externalagent/i,
-  // Claude's user-initiated fetch and search agents (2026-10-30): both got
-  // the empty SPA shell, so Claude web search/fetch saw no content.
-  /claude-user/i, /claude-searchbot/i,
-  // Previously-missing crawlers (audit 2026-08-31): each of these got the
-  // empty SPA shell instead of prerendered HTML — invisible content to any
-  // fetcher that doesn't execute JS.
-  /googleother/i,        // Google R&D/AI fetcher (feeds Gemini) — NOT matched by /googlebot/
-  /google-cloudvertexbot/i,
-  /duckassistbot/i,      // DuckDuckGo AI answers — NOT matched by /duckduckbot/
-  /bingpreview/i, /adidxbot/i, // Bing snapshot + ads crawlers
-  /bytespider/i,         // ByteDance — one of the highest-volume AI crawlers
-  /amazonbot/i, /mistralai-user/i, /cohere/i, /youbot/i, /diffbot/i,
-  /yeti/i,               // Naver (Korea)
-  /seznambot/i, /qwant/i, /mojeekbot/i, /coccocbot/i,
-  // SEO site-audit crawlers (2026-10-06): AhrefsSiteAudit isn't matched by
-  // /ahrefsbot/, so Ahrefs audited the SPA shell (health score 1).
-  /ahrefssiteaudit/i, /siteauditbot/i,
-  // Generic tail: catches well-behaved crawlers we haven't named. Real browser
-  // UAs never contain these tokens, and a false positive is harmless — the
-  // "penalty" is being served real prerendered content.
-  /crawler/i, /spider/i,
-];
-
-export function isBot(userAgent: string): boolean {
-  return BOT_PATTERNS.some(pattern => pattern.test(userAgent));
-}
 
 // Paths whose content is definitively DB-backed: a resolution miss means the
 // page truly doesn't exist (vs. a SPA route missing from the static-meta map),
@@ -128,14 +55,6 @@ export function isContentPath(pathname: string): boolean {
   return CONTENT_PATH_PATTERNS.some(pattern => pattern.test(pathname));
 }
 
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
 
 export interface PageMeta {
   title: string;
@@ -204,14 +123,14 @@ export async function resolvePageMeta(pathname: string): Promise<PageMeta | null
     // Static pages
     return resolveStaticPageMeta(pathname);
   } catch (err) {
-    console.error("[SEO Bot] Error resolving meta for", pathname, err);
+    logger.error("resolvePageMeta failed", err, "PageMeta", { pathname });
     return null;
   }
 }
 
 export function buildStudyMeta(study: any, conditionHubs: readonly ConditionHubRef[] = []): PageMeta {
   const slug = study.slug || `id/${study.id}`;
-  const canonical = canonicalForStudy(slug);
+  const canonical = `${SITE_URL}/study/${slug}`;
   const ogImage = toAbsoluteUrl(study.ogImage || study.imageUrl || "/logo.png", SITE_URL);
   // Same trail the body renderer shows (shared/study-page.ts).
   const pageLabel = realContent(study.plainLanguageTitle) || realContent(study.title);
@@ -449,7 +368,7 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
     // FAQ is visible on the page (bot body + SPA), so FAQPage is allowed.
     const intro = getConditionHubIntro(conditionMatch[1]);
     if (intro) {
-      const canonical = canonicalForCondition(intro.slug);
+      const canonical = `${SITE_URL}/explore-by-condition/${intro.slug}`;
       return {
         title: intro.metaTitle,
         description: intro.metaDescription,
@@ -463,7 +382,7 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
     return {
       title: `Hydrogen Research for ${category} | ${SITE_NAME}`,
       description: `Explore peer-reviewed research studies on hydrogen therapy for ${category.toLowerCase()}. Evidence-based findings, study summaries, and clinical insights.`,
-      canonical: canonicalForCondition(conditionMatch[1]),
+      canonical: `${SITE_URL}/explore-by-condition/${conditionMatch[1]}`,
       ogType: "website",
       ogImage: `${SITE_URL}/logo.png`,
     };
@@ -522,345 +441,4 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
     ogType: "website",
     ogImage: `${SITE_URL}/logo.png`,
   };
-}
-
-/**
- * Extract the Vite entry <script> and <link rel="stylesheet"|"modulepreload">
- * tags from the original template <head>. The production build places the app
- * JS bundle and CSS inside <head>; injectMeta rebuilds <head> from scratch, so
- * these must be re-appended or every bot-served page loses its CSS and has an
- * empty #root with no script to hydrate it (a blank thin page).
- */
-function extractHeadAssets(html: string): string {
-  const headMatch = html.match(/<head>([\s\S]*?)<\/head>/i);
-  if (!headMatch) return "";
-  const head = headMatch[1];
-  const assets: string[] = [];
-  const scriptRe = /<script\b[^>]*>[\s\S]*?<\/script>|<script\b[^>]*\/>/gi;
-  let m: RegExpExecArray | null;
-  while ((m = scriptRe.exec(head)) !== null) assets.push(m[0]);
-  const linkRe = /<link\b[^>]*>/gi;
-  while ((m = linkRe.exec(head)) !== null) {
-    if (/rel=["'](?:stylesheet|modulepreload)["']/i.test(m[0])) assets.push(m[0]);
-  }
-  return assets.length ? "\n    " + assets.join("\n    ") : "";
-}
-
-/** Inject meta tags into HTML template */
-function injectMeta(html: string, meta: PageMeta): string {
-  const title = escapeHtml(meta.title);
-  const desc = escapeHtml(meta.description);
-  const canonical = escapeHtml(meta.canonical);
-  const ogImage = escapeHtml(meta.ogImage);
-  const ogType = escapeHtml(meta.ogType);
-
-  // Build JSON-LD script tag(s)
-  let jsonLdScript = "";
-  if (meta.jsonLd) {
-    if (Array.isArray(meta.jsonLd)) {
-      jsonLdScript = meta.jsonLd.map(ld =>
-        `<script type="application/ld+json">${jsonLdSafe(ld)}</script>`
-      ).join("\n    ");
-    } else {
-      jsonLdScript = `<script type="application/ld+json">${jsonLdSafe(meta.jsonLd)}</script>`;
-    }
-  }
-
-  // Replace the <head> content with proper meta tags
-  const newHead = `<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" href="/favicon.ico" sizes="48x48" />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-
-    <!-- Primary SEO Meta Tags (Server-Injected for Crawlers) -->
-    <title>${title}</title>
-    <meta name="description" content="${desc}" />
-    ${meta.robots ? `<meta name="robots" content="${escapeHtml(meta.robots)}" />` : '<meta name="robots" content="index, follow" />'}
-
-    <!-- Open Graph -->
-    <meta property="og:type" content="${ogType}" />
-    <meta property="og:title" content="${title}" />
-    <meta property="og:description" content="${desc}" />
-    <meta property="og:image" content="${ogImage}" />
-    <meta property="og:url" content="${canonical}" />
-    <meta property="og:site_name" content="${SITE_NAME}" />
-    <meta property="og:locale" content="en_US" />
-
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="${title}" />
-    <meta name="twitter:description" content="${desc}" />
-    <meta name="twitter:image" content="${ogImage}" />
-
-    <!-- Canonical URL -->
-    <link rel="canonical" href="${canonical}" />
-
-    ${jsonLdScript}
-
-    <!-- Ahrefs Analytics -->
-    <script src="https://analytics.ahrefs.com/analytics.js" data-key="rjIt9UY/qFbTPzCzRK8BRg" async></script>`;
-
-  // Replace existing <head> tag content up to the closing </head>, but preserve
-  // the original Vite JS bundle / CSS / modulepreload tags so the page stays
-  // styled and hydratable.
-  const preservedAssets = extractHeadAssets(html);
-  return html.replace(/<head>[\s\S]*?(?=<\/head>)/, `${newHead}${preservedAssets}\n  `);
-}
-
-/** Inject rendered body content into the empty #root div */
-function injectBody(html: string, body: string): string {
-  return html.replace(/<div id="root">\s*<\/div>/, `<div id="root">${body}</div>`);
-}
-
-// ── LRU Cache for bot-rendered HTML ───────────────────────────
-
-const botHtmlCache = new Map<string, { html: string; expiry: number }>();
-const BOT_CACHE_MAX = 6000; // enough for all study + blog + explore pages
-const BOT_CACHE_TTL = 2 * 60 * 60 * 1000; // 2 hours
-
-function getCachedBotHtml(key: string): string | null {
-  const entry = botHtmlCache.get(key);
-  if (!entry) return null;
-  if (Date.now() > entry.expiry) {
-    botHtmlCache.delete(key);
-    return null;
-  }
-  // Move to end (most recently used)
-  botHtmlCache.delete(key);
-  botHtmlCache.set(key, entry);
-  return entry.html;
-}
-
-function setCachedBotHtml(key: string, html: string): void {
-  botHtmlCache.delete(key);
-  if (botHtmlCache.size >= BOT_CACHE_MAX) {
-    const firstKey = botHtmlCache.keys().next().value;
-    if (firstKey) botHtmlCache.delete(firstKey);
-  }
-  botHtmlCache.set(key, { html, expiry: Date.now() + BOT_CACHE_TTL });
-}
-
-/**
- * Invalidate cached bot HTML. Pass a specific path to drop just that entry —
- * call this from study/blog delete, unpublish, and slug-change flows so a
- * removed or changed page stops being served to crawlers with a stale 200
- * (old canonical/JSON-LD) until the 2h TTL expires. Pass no argument to clear
- * the entire cache.
- */
-export function invalidateBotCache(path?: string): void {
-  if (path) {
-    botHtmlCache.delete(path);
-  } else {
-    botHtmlCache.clear();
-  }
-  notifyWebRevalidate(path);
-}
-
-/**
- * Tell the Next.js front door (web/) to drop its cached page data for a
- * changed page — a blog change also refreshes the /blog index. Fire and
- * forget: a failure only means the page refreshes on its normal schedule.
- */
-export function notifyWebRevalidate(path?: string): void {
-  const origin = process.env.WEB_ORIGIN;
-  const key = process.env.PAGE_DATA_KEY;
-  if (!origin || !key) return;
-  // A blog post also refreshes the /blog index; posts and studies also feed
-  // the homepage's "Latest" lists.
-  const paths = path
-    ? [path, ...(path.startsWith("/blog/") ? ["/blog", "/"] : []), ...(/^\/stud(y|ies)\//.test(path) ? ["/"] : [])]
-    : [];
-  fetch(`${origin}/web_revalidate`, {
-    method: "POST",
-    headers: { "content-type": "application/json", "x-page-data-key": key },
-    body: JSON.stringify({ paths }),
-    signal: AbortSignal.timeout(5000),
-  }).catch((err) => {
-    logger.warn("web revalidate failed", "SEOBot", { path, error: err instanceof Error ? err.message : String(err) });
-  });
-}
-
-// ── Middleware ─────────────────────────────────────────────────
-
-import { getConditionHubs, renderPageBody } from "./seo-body-renderer";
-
-/**
- * Express middleware: intercepts requests from bots, injects correct
- * meta tags AND body content, serves enhanced HTML. Human visitors pass through to SPA.
- */
-export function seoBotMiddleware(staticPath: string) {
-  let htmlTemplate: string | null = null;
-
-  return async (req: Request, res: Response, next: NextFunction) => {
-    // Only intercept GET requests for non-API, non-asset paths
-    if (req.method !== "GET") return next();
-    if (req.path.startsWith("/api/")) return next();
-    if (req.path.startsWith("/assets/")) return next();
-    if (req.path.startsWith("/proxy/")) return next();
-    if (req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|map|webp)$/)) return next();
-
-    const ua = req.headers["user-agent"] || "";
-    if (!isBot(ua)) return next();
-
-    // Check LRU cache first
-    const cached = getCachedBotHtml(req.path);
-    if (cached) {
-      res.set("Content-Type", "text/html");
-      // Responses vary entirely by User-Agent (prerendered bot HTML vs SPA
-      // shell) — Vary keeps a shared/CDN cache from serving this to humans.
-      res.set("Vary", "User-Agent");
-      res.set("Cache-Control", "public, max-age=3600");
-      res.set("X-Bot-Cache", "HIT");
-      return res.send(cached);
-    }
-
-    // Load HTML template once
-    if (!htmlTemplate) {
-      const indexPath = path.join(staticPath, "index.html");
-      if (fs.existsSync(indexPath)) {
-        htmlTemplate = fs.readFileSync(indexPath, "utf-8");
-      } else {
-        return next();
-      }
-    }
-    const template = htmlTemplate;
-
-    // Hard 404 (noindex, uncached so the URL recovers the moment content
-    // exists) for any recognized route with no real content to show.
-    const serve404 = () => {
-      const notFoundHtml = injectMeta(template, {
-        title: `Page Not Found | ${SITE_NAME}`,
-        description: "The page you're looking for doesn't exist or has moved.",
-        canonical: `${SITE_URL}${req.path}`,
-        ogType: "website",
-        ogImage: `${SITE_URL}/logo.png`,
-        robots: "noindex, follow",
-      });
-      res.status(404);
-      res.set("Content-Type", "text/html");
-      res.set("Vary", "User-Agent");
-      res.set("Cache-Control", "no-cache");
-      return res.send(notFoundHtml);
-    };
-
-    try {
-      const meta = await resolvePageMeta(req.path);
-
-      // DB-backed content path with no matching row: real 404. Resolved before
-      // rendering a body to avoid a second dead DB lookup for known-dead slugs.
-      if (!meta && isContentPath(req.path)) {
-        return serve404();
-      }
-
-      // Prerender the body. A recognized route that yields no body — a
-      // condition/body-system slug with zero matches, /this-week, /recent, or
-      // any unknown junk path — has no real content, so serve a hard 404 rather
-      // than a soft-404 blank 200 with homepage meta (a cloaking/soft-404
-      // signal that also fills the LRU with junk paths).
-      const body = await renderPageBody(req.path);
-      if (!body) {
-        return serve404();
-      }
-
-      // Meta may still be null for a legit SPA route that rendered a body but
-      // is absent from the static-meta map: fall back to homepage meta with a
-      // self-referential canonical, but never cache the fallback (it is not a
-      // first-class page and must not evict prewarmed entries).
-      const fallbackMeta = resolveStaticPageMeta("/");
-      if (!meta && !fallbackMeta) return next();
-      const effectiveMeta = meta || { ...fallbackMeta!, canonical: `${SITE_URL}${req.path}` };
-
-      let enhancedHtml = injectMeta(template, effectiveMeta);
-      enhancedHtml = injectBody(enhancedHtml, body);
-
-      res.set("Content-Type", "text/html");
-      res.set("Vary", "User-Agent");
-      if (meta) {
-        // First-class page with resolved meta — cache it.
-        setCachedBotHtml(req.path, enhancedHtml);
-        res.set("Cache-Control", "public, max-age=3600");
-        res.set("X-Bot-Cache", "MISS");
-      } else {
-        // Fallback meta — serve but do not cache.
-        res.set("Cache-Control", "no-cache");
-        res.set("X-Bot-Cache", "FALLBACK");
-      }
-      res.send(enhancedHtml);
-    } catch (err) {
-      console.error("[SEO Bot] Middleware error:", err);
-      next(); // Fall through to normal SPA on error
-    }
-  };
-}
-
-// ── Cache pre-warmer ──────────────────────────────────────────
-
-/**
- * Pre-render and cache the most important pages so bot requests
- * never hit cold DB queries. Call after migrations complete.
- */
-export async function prewarmBotCache(staticPath: string): Promise<void> {
-  const indexPath = path.join(staticPath, "index.html");
-  if (!fs.existsSync(indexPath)) return;
-  const template = fs.readFileSync(indexPath, "utf-8");
-
-  console.log("[SEO Bot] Pre-warming bot cache...");
-  const start = Date.now();
-
-  // Collect paths to pre-warm
-  const paths: string[] = ["/", "/studies", "/blog", "/explore-by-condition", "/explore-by-body-system"];
-
-  try {
-    const { db: database } = await import("../db");
-    const { sql } = await import("drizzle-orm");
-
-    // All study slugs
-    const studyRows = await database.execute(sql`SELECT slug FROM studies WHERE slug IS NOT NULL AND is_excluded = false`);
-    for (const row of (studyRows.rows || []) as any[]) {
-      if (row.slug && !row.slug.startsWith("id/")) paths.push(`/study/${row.slug}`);
-    }
-
-    // All blog slugs
-    const blogRows = await database.execute(sql`SELECT slug FROM blog_articles WHERE slug IS NOT NULL AND is_published = true AND is_archived = false`);
-    for (const row of (blogRows.rows || []) as any[]) {
-      if (row.slug) paths.push(`/blog/${row.slug}`);
-    }
-
-    // All condition slugs (a row whose page lists no study renders no body → not cached)
-    const condRows = await database.execute(sql`SELECT slug FROM health_conditions WHERE slug IS NOT NULL`);
-    for (const row of (condRows.rows || []) as any[]) {
-      if (row.slug) paths.push(`/explore-by-condition/${row.slug}`);
-    }
-  } catch (err) {
-    console.error("[SEO Bot] Failed to fetch paths for pre-warm:", err);
-  }
-
-  let warmed = 0;
-  let errors = 0;
-
-  for (const pagePath of paths) {
-    try {
-      const meta = await resolvePageMeta(pagePath);
-      // Mirror the live middleware: never cache homepage-FALLBACK meta (it is
-      // not a first-class page) and never cache a page with no body. Before
-      // this, a transient DB error during boot (e.g. racing a column-adding
-      // migration) pinned homepage meta on content URLs for the 2h TTL.
-      if (!meta) continue;
-      const body = await renderPageBody(pagePath);
-      if (!body) continue;
-      const html = injectBody(injectMeta(template, meta), body);
-
-      setCachedBotHtml(pagePath, html);
-      warmed++;
-    } catch {
-      errors++;
-    }
-
-    // Yield to event loop every 50 pages to avoid blocking
-    if (warmed % 50 === 0) await new Promise((r) => setTimeout(r, 1));
-  }
-
-  const elapsed = ((Date.now() - start) / 1000).toFixed(1);
-  console.log(`[SEO Bot] Cache pre-warmed: ${warmed} pages in ${elapsed}s (${errors} errors, ${paths.length} total)`);
 }

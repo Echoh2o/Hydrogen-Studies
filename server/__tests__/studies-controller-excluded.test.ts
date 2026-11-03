@@ -28,7 +28,7 @@ vi.mock("../auth", () => ({
 vi.mock("../services/recommendation-engine", () => ({
   getPersonalizedRecommendations: async () => ({ recommendations: [] }),
 }));
-vi.mock("../middleware/seo-bot-middleware", () => ({ invalidateBotCache: () => {} }));
+vi.mock("../services/web-revalidate", () => ({ notifyWebRevalidate: () => {} }));
 vi.mock("../db", () => ({ db: {}, pool: { query: async () => ({ rows: [] }) } }));
 
 const { studiesController } = await import("../controllers/studies-controller");

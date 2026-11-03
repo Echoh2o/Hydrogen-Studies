@@ -16,7 +16,7 @@ import fs from "fs";
 import type { Request, Response } from "express";
 import { jsonLdSafe } from "../utils/html-safety";
 import { isUnknownExploreHubPath } from "./explore-hub-404";
-import { resolvePageMeta, resolveStaticPageMeta, type PageMeta } from "./seo-bot-middleware";
+import { resolvePageMeta, resolveStaticPageMeta, type PageMeta } from "../services/page-meta";
 import { logger } from "../utils/logger";
 
 const SITE_URL = "https://hydrogenstudies.com";

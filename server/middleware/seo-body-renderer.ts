@@ -1317,7 +1317,7 @@ export async function renderHydrogenForPage(slug: string): Promise<string | null
       h += `</ul></aside>\n`;
     }
 
-    // Visible FAQ — the page's FAQPage JSON-LD (seo-bot-middleware) is only
+    // Visible FAQ — the page's FAQPage JSON-LD (services/page-meta) is only
     // legitimate because these questions are rendered here, as in the SPA.
     if (topic.faqs.length > 0) {
       h += `<section><h2>Frequently Asked Questions</h2>`;

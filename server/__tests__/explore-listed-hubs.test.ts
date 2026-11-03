@@ -69,7 +69,7 @@ import {
   studyCountLabel,
 } from "../../shared/explore-hubs";
 import { renderPageBody, __resetConditionHubsForTests } from "../middleware/seo-body-renderer";
-import { resolveStaticPageMeta } from "../middleware/seo-bot-middleware";
+import { resolveStaticPageMeta } from "../services/page-meta";
 import seoRoutes from "../routes/seo-routes";
 import hydrogenRoutes from "../routes/hydrogen-routes";
 

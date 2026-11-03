@@ -21,7 +21,7 @@ vi.mock("../services/study-service", () => ({
   },
 }));
 const page = vi.hoisted(() => ({ meta: null as any, body: null as string | null }));
-vi.mock("../middleware/seo-bot-middleware", () => ({
+vi.mock("../services/page-meta", () => ({
   isContentPath: (p: string) => /^\/blog\/[^/]+$/.test(p),
   resolvePageMeta: async () => page.meta,
   resolveStaticPageMeta: () => ({ title: "Home", description: "d", canonical: "https://hydrogenstudies.com/", ogType: "website", ogImage: "x" }),
