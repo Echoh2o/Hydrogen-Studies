@@ -160,6 +160,7 @@ const PATHS = [
   "/journals/medical-gas-research",
   "/limits-of-the-evidence",
   "/null-and-negative-results",
+  "/is-hydrogen-water-a-scam",
 ];
 
 describe("BreadcrumbList = the visible trail; page block name = the visible H1", () => {

@@ -267,6 +267,7 @@ router.get("/sitemap-pages.xml", (req: Request, res: Response) => {
     // PLAN 4.6 — radical-honesty pages (numbers recomputed on each build).
     { url: "/limits-of-the-evidence", priority: "0.8", freq: "weekly" },
     { url: "/null-and-negative-results", priority: "0.7", freq: "weekly" },
+    { url: "/is-hydrogen-water-a-scam", priority: "0.8", freq: "monthly" },
     { url: "/contact", priority: "0.4", freq: "yearly" },
     { url: "/explore-by-condition", priority: "0.9", freq: "weekly" },
     { url: "/explore-by-body-system", priority: "0.9", freq: "weekly" },

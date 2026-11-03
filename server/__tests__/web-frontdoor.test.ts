@@ -39,6 +39,7 @@ describe("family matching", () => {
     expect(ssrFamilyFor("/limits-of-the-evidence", [...all, "evidence"])).toBe("evidence");
     expect(ssrFamilyFor("/null-and-negative-results", [...all, "evidence"])).toBe("evidence");
     expect(ssrFamilyFor("/limits-of-the-evidence/x", [...all, "evidence"])).toBeNull();
+    expect(ssrFamilyFor("/is-hydrogen-water-a-scam", [...all, "evidence"])).toBe("evidence");
     expect(ssrFamilyFor("/", [...all, "home"])).toBe("home");
     expect(ssrFamilyFor("/studies", [...all, "studies"])).toBe("studies");
     expect(ssrFamilyFor("/studies/tags", [...all, "studies"])).toBeNull();
