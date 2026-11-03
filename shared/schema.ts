@@ -319,6 +319,11 @@ export const studies = pgTable(
     hasFullText: boolean("has_full_text").default(false),
     viewCount: integer("view_count").default(0),
     citationCount: integer("citation_count").default(0),
+    // Provenance for citation_count (migration 029, PLAN 4.4): source ("openalex"),
+    // refresh time (shown as "as of"), and the OpenAlex work id the count links to.
+    citationSource: text("citation_source"),
+    citationCountUpdatedAt: timestamp("citation_count_updated_at"),
+    openalexId: text("openalex_id"),
     // Source tracking information
     sourceUrl: text("source_url"),
     sourcePlatform: text("source_platform"),

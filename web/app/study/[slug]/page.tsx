@@ -13,7 +13,7 @@ import {
   studyUpdatedAt,
   type StudyLike,
 } from "@shared/seo-markup";
-import { studyBreadcrumbs, studyDetails, studyEvidence, type HubLink } from "@shared/study-page";
+import { citationLine, studyBreadcrumbs, studyDetails, studyEvidence, type HubLink } from "@shared/study-page";
 import { PageDataError, SITE_URL, pageData, type FooterCondition } from "@web/lib/page-data";
 import { SiteHeader } from "@web/components/SiteHeader";
 import { SiteFooter } from "@web/components/SiteFooter";
@@ -122,6 +122,21 @@ export default async function StudyPage({ params }: { params: { slug: string } }
   for (const d of studyDetails(study as Parameters<typeof studyDetails>[0])) details.push([d.label, d.value]);
   if (study.outcome) details.push(["Outcome", study.outcome]);
   if (study.peerReviewed) details.push(["Peer Reviewed", "Yes"]);
+  // PLAN 4.4: citation count with its source and freshness (OpenAlex, free).
+  const cited = citationLine(study as Parameters<typeof citationLine>[0]);
+  if (cited) {
+    details.push([
+      "Cited by",
+      <span key="cited">
+        {cited.href ? (
+          <a href={cited.href} rel="noopener" className="text-primary underline">{cited.count.toLocaleString("en-US")}</a>
+        ) : (
+          cited.count.toLocaleString("en-US")
+        )}
+        <span className="text-neutral-500"> ({cited.sourceLabel}, as of {cited.asOf})</span>
+      </span>,
+    ]);
+  }
   if (study.country) details.push(["Country", study.country]);
 
   return (
