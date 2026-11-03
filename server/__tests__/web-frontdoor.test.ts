@@ -28,6 +28,11 @@ describe("family matching", () => {
     expect(ssrFamilyFor("/methodology", all)).toBe("policy");
     expect(ssrFamilyFor("/about", [...all, "pages"])).toBe("pages");
     expect(ssrFamilyFor("/contact", [...all, "pages"])).toBe("pages");
+    expect(ssrFamilyFor("/learn", [...all, "learn"])).toBe("learn");
+    expect(ssrFamilyFor("/learn/therapy-guide", [...all, "learn"])).toBe("learn");
+    expect(ssrFamilyFor("/learn/a/b", [...all, "learn"])).toBeNull();
+    expect(ssrFamilyFor("/research-analytics", [...all, "analytics"])).toBe("analytics");
+    expect(ssrFamilyFor("/learn", all)).toBeNull();
     expect(ssrFamilyFor("/", [...all, "home"])).toBe("home");
     expect(ssrFamilyFor("/studies", [...all, "studies"])).toBe("studies");
     expect(ssrFamilyFor("/studies/tags", [...all, "studies"])).toBeNull();

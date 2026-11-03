@@ -357,6 +357,12 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
     "/explore-by-demographic": exploreIndexMeta("demographic"),
     "/explore-by-delivery-method": exploreIndexMeta("delivery-method"),
     "/explore-by-benefit": exploreIndexMeta("benefit"),
+    // /learn stays noindex,follow (PLAN 0.6) until Josh lifts it; the Next
+    // page adds the FAQPage block (the FAQ is visible there).
+    "/learn": {
+      title: `Learn About Molecular Hydrogen | ${SITE_NAME}`,
+      description: "Everything you need to understand molecular hydrogen (H₂) — what it is, how it works, and what 2,000+ studies have (and haven't) found. Plain English. No hype.",
+    },
     "/learn/basics": {
       title: `Hydrogen Therapy Basics | ${SITE_NAME}`,
       description: "Everything you need to know about molecular hydrogen therapy — what it is, how it works, and what the research shows."

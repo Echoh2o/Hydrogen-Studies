@@ -42,6 +42,9 @@ describe("buildBlogMeta", () => {
 describe("resolveStaticPageMeta", () => {
   it("noindexes /learn and the search pages; indexes hubs", () => {
     expect(resolveStaticPageMeta("/learn/basics")!.robots).toBe("noindex, follow");
+    expect(resolveStaticPageMeta("/learn")!.robots).toBe("noindex, follow");
+    expect(resolveStaticPageMeta("/learn")!.title).toBe("Learn About Molecular Hydrogen | Hydrogen Studies");
+    expect(resolveStaticPageMeta("/learn")!.jsonLd).toBeUndefined();
     expect(resolveStaticPageMeta("/search")!.robots).toBe("noindex, follow");
     expect(resolveStaticPageMeta("/explore-by-condition")!.robots).toBeUndefined();
   });
