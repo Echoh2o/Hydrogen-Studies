@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import {
   EDITORIAL_TEAM,
   excerptAtWord,
@@ -38,13 +38,19 @@ interface StudyPageData {
 }
 
 async function load(slug: string): Promise<StudyPageData> {
+  let data: StudyPageData;
   try {
-    return await pageData<StudyPageData>(`/study/${encodeURIComponent(slug)}`, revalidate, [`/study/${slug}`]);
+    data = await pageData<StudyPageData>(`/study/${encodeURIComponent(slug)}`, revalidate, [`/study/${slug}`]);
   } catch (err) {
     // 410s are answered by middleware before rendering; 404 here.
     if (err instanceof PageDataError && (err.status === 404 || err.status === 410)) notFound();
     throw err;
   }
+  // PLAN 3.3: Express resolved the study by its permanent-ID suffix (or a
+  // legacy numeric id / unicode-dash variant), but this URL isn't the slug the
+  // page declares canonical — one 301 to it, never two copies of the page.
+  if (data.study.slug && slug !== data.study.slug) permanentRedirect(`/study/${data.study.slug}`);
+  return data;
 }
 
 function absoluteUrl(path: string): string {

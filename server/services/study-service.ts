@@ -9,6 +9,7 @@ import {
 import { eq, or, sql, desc, asc, and, count, isNull, isNotNull, inArray, getTableColumns } from "drizzle-orm";
 import { logger } from "../utils/logger";
 import { assertOnTopicStudy } from "./study-topic-guard";
+import { parseStableSuffix } from "@shared/study-slug";
 
 // Track whether full-text search is available (set after first successful/failed query)
 let ftsAvailable: boolean | null = null;
@@ -280,7 +281,24 @@ export class StudyService {
         .from(studies)
         .where(eq(studies.slug, normalizedSlug))
         .limit(1);
-    return result[0];
+    if (result[0]) return result[0];
+
+    // PLAN 3.3: a stable slug (<title>-pmid-N | -doi-\u2026 | -hs-N) resolves by its
+    // permanent-ID suffix even when the title portion has drifted; the Next
+    // study page then 301s to the canonical slug. Legacy epoch slugs that
+    // miss are a plain 404 \u2014 no second query.
+    const suffix = parseStableSuffix(normalizedSlug);
+    if (!suffix) return undefined;
+    const where =
+      suffix.kind === "pmid"
+        ? eq(studies.pmid, suffix.pmid)
+        : suffix.kind === "id"
+          ? eq(studies.id, suffix.id)
+          : // Same slugification as shared/study-slug.ts doiSlug(), in SQL, so
+            // it works whether or not the row's slug has been rewritten yet.
+            sql`trim(both '-' from regexp_replace(regexp_replace(lower(${studies.doi}), '^(https?://(dx\\.)?doi\\.org/|doi:\\s*)', ''), '[^a-z0-9]+', '-', 'g')) = ${suffix.doiSlug}`;
+    const bySuffix = await db.select().from(studies).where(where).limit(1);
+    return bySuffix[0];
   }
 
   async getStudyByIdentifier(identifier: string): Promise<Study | undefined> {
