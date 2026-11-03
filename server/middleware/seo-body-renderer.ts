@@ -57,6 +57,7 @@ import {
   exploreDetailCopy,
   exploreHubPath,
   exploreIndexCopy,
+  exploreIndexH1,
   findBodySystemHub,
   isExploreHubType,
   isHubSlugShape,
@@ -70,6 +71,19 @@ import {
   type ListedExploreHubType,
 } from "../../shared/explore-hubs";
 import { studyBreadcrumbs, studyEvidence, studyHubLinks } from "../../shared/study-page";
+import {
+  LAST_CRUMB_MAX,
+  blogListBreadcrumbs,
+  blogPostBreadcrumbs,
+  bodySystemHubBreadcrumbs,
+  conditionHubBreadcrumbs,
+  exploreDetailBreadcrumbs,
+  exploreIndexBreadcrumbs,
+  hydrogenForBreadcrumbs,
+  policyBreadcrumbs,
+  studiesListBreadcrumbs,
+  truncateLabel,
+} from "../../shared/breadcrumbs";
 
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
 
@@ -87,9 +101,9 @@ function esc(str: string | null | undefined): string {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+/** Same rule as the BreadcrumbList names (shared/breadcrumbs.ts). */
 function truncate(str: string, max: number): string {
-  if (!str || str.length <= max) return str || "";
-  return str.substring(0, max - 3) + "...";
+  return truncateLabel(str, max);
 }
 
 function fmtDate(d: string | Date | null | undefined): string {
@@ -383,7 +397,7 @@ function breadcrumbs(items: { label: string; href?: string }[]): string {
     if (item.href && !isLast) {
       return `<li><a href="${esc(item.href)}">${esc(item.label)}</a></li>`;
     }
-    return `<li aria-current="page">${esc(truncate(item.label, 60))}</li>`;
+    return `<li aria-current="page">${esc(truncate(item.label, LAST_CRUMB_MAX))}</li>`;
   });
   return `<nav aria-label="Breadcrumb"><ol>${lis.join("")}</ol></nav>\n`;
 }
@@ -716,13 +730,8 @@ export async function renderBlog(slugOrId: string): Promise<string | null> {
       getLiveBlogPredicate(),
     ]);
 
-    const crumbs = [
-      { label: "Home", href: "/" },
-      { label: "Blog", href: "/blog" },
-      { label: truncate(b.title, 50) },
-    ];
-
-    let h = breadcrumbs(crumbs);
+    // Same trail as the BreadcrumbList in page meta (shared/breadcrumbs.ts).
+    let h = breadcrumbs(blogPostBreadcrumbs(b.title));
     // PLAN.md 0.4: brand/review posts carry an ownership banner until the
     // Section 12 disposition (replace with measurement data / move to
     // echowater.com). Match "is X worth it" slugs and review-style titles.
@@ -788,10 +797,7 @@ export async function renderBlog(slugOrId: string): Promise<string | null> {
 async function renderPolicyPage(pathname: string): Promise<string> {
   const conditions = await getTopConditions();
   const isEditorial = pathname === "/editorial-policy";
-  let h = breadcrumbs([
-    { label: "Home", href: "/" },
-    { label: isEditorial ? "Editorial Policy" : "Methodology" },
-  ]);
+  let h = breadcrumbs(policyBreadcrumbs(isEditorial ? "Editorial Policy" : "Methodology"));
   if (isEditorial) {
     h += `<article><h1>Editorial Policy</h1>
 <h2>Who funds this site</h2>
@@ -885,7 +891,7 @@ async function renderStudiesList(): Promise<string> {
     getTopConditions(),
   ]);
 
-  let h = breadcrumbs([{ label: "Home", href: "/" }, { label: "Research Studies" }]);
+  let h = breadcrumbs(studiesListBreadcrumbs());
   h += `<h1>Research Studies Directory</h1>\n`;
   h += `<p>Browse our comprehensive directory of hydrogen therapy research studies. Filter by condition, body system, study type, and outcome.</p>\n`;
 
@@ -923,7 +929,7 @@ export async function renderBlogList(): Promise<string> {
     getTopConditions(),
   ]);
 
-  let h = breadcrumbs([{ label: "Home", href: "/" }, { label: "Blog" }]);
+  let h = breadcrumbs(blogListBreadcrumbs());
   h += `<h1>Hydrogen Health Blog</h1>\n`;
   h += `<p>Plain-language articles explaining hydrogen therapy research. Understand the science behind molecular hydrogen and its health benefits.</p>\n`;
 
@@ -1010,11 +1016,7 @@ async function renderConditionPage(slug: string): Promise<string | null> {
       studyItems += `</li>`;
     }
 
-    let h = breadcrumbs([
-      { label: "Home", href: "/" },
-      { label: "Health Conditions", href: "/explore-by-condition" },
-      { label: cond.name },
-    ]);
+    let h = breadcrumbs(conditionHubBreadcrumbs(cond.name));
     if (intro) {
       // The reviewed intro REPLACES health_conditions.description and the
       // generic count line: they contradicted it ("Hydrogen water bathing
@@ -1077,11 +1079,7 @@ async function renderBodySystemPage(slug: string): Promise<string | null> {
     const studies = (studiesR.rows || []) as any[];
     if (studies.length === 0) return null;
 
-    let h = breadcrumbs([
-      { label: "Home", href: "/" },
-      { label: "Body Systems", href: "/explore-by-body-system" },
-      { label: displayName },
-    ]);
+    let h = breadcrumbs(bodySystemHubBreadcrumbs(displayName));
     h += `<h1>Hydrogen Research: ${esc(displayName)}</h1>\n`;
     // bodySystemHubName ends in "System" exactly once ("the immune system",
     // not "the immune system system").
@@ -1103,19 +1101,10 @@ async function renderBodySystemPage(slug: string): Promise<string | null> {
 
 async function renderExploreIndex(type: string): Promise<string> {
   const conditions = await getTopConditions();
-  const titles: Record<string, string> = {
-    condition: "Hydrogen Research by Health Condition",
-    "body-system": "Hydrogen Research by Body System",
-    // Shared with the SPA index pages (same H1 for browsers and bots).
-    mechanism: exploreIndexCopy("mechanism").h1,
-    "delivery-method": exploreIndexCopy("delivery-method").h1,
-    "life-stage": exploreIndexCopy("life-stage").h1,
-    benefit: exploreIndexCopy("benefit").h1,
-    demographic: exploreIndexCopy("demographic").h1,
-  };
-  const title = titles[type] || "Explore Hydrogen Research";
+  // Shared with the SPA index pages and page meta (same H1 everywhere).
+  const title = exploreIndexH1(type);
 
-  let h = breadcrumbs([{ label: "Home", href: "/" }, { label: title }]);
+  let h = breadcrumbs(exploreIndexBreadcrumbs(title));
   h += `<h1>${esc(title)}</h1>\n`;
 
   if (type === "condition") {
@@ -1171,8 +1160,8 @@ async function renderExploreIndex(type: string): Promise<string> {
 
   // Cross-link to other browse pages
   h += `<section><h2>More Ways to Browse</h2><ul>`;
-  for (const [key, label] of Object.entries(titles)) {
-    if (key !== type) h += `<li><a href="/explore-by-${key}">${esc(label)}</a></li>`;
+  for (const key of ["condition", "body-system", "mechanism", "delivery-method", "life-stage", "benefit", "demographic"]) {
+    if (key !== type) h += `<li><a href="/explore-by-${key}">${esc(exploreIndexH1(key))}</a></li>`;
   }
   h += `<li><a href="/studies">All Studies</a></li>`;
   h += `<li><a href="/blog">Blog Articles</a></li>`;
@@ -1227,19 +1216,7 @@ async function renderExploreDetail(type: string, slug: string): Promise<string |
       getTopConditions(),
     ]);
 
-    const parentLabels: Record<string, string> = {
-      mechanism: "Mechanisms",
-      "delivery-method": "Delivery Methods",
-      "life-stage": "Life Stages",
-      benefit: "Benefits",
-      demographic: "Demographics",
-    };
-
-    let h = breadcrumbs([
-      { label: "Home", href: "/" },
-      { label: parentLabels[type] || type, href: `/explore-by-${type}` },
-      { label: displayName },
-    ]);
+    let h = breadcrumbs(exploreDetailBreadcrumbs(type, displayName));
     h += `<h1>${esc(h1)}</h1>\n`;
     h += `<p>${esc(intro)}</p>\n`;
 
@@ -1281,7 +1258,7 @@ export async function renderHydrogenForPage(slug: string): Promise<string | null
 
     const studies = (studiesR.rows || []) as any[];
 
-    let h = breadcrumbs([{ label: "Home", href: "/" }, { label: `Hydrogen for ${displayName}` }]);
+    let h = breadcrumbs(hydrogenForBreadcrumbs(displayName));
     h += `<h1>Hydrogen for ${esc(displayName)}</h1>\n`;
     h += `<p>Research on how molecular hydrogen therapy may help with ${esc(displayName.toLowerCase())}. `;
     h += `Explore ${studies.length} peer-reviewed studies below.</p>\n`;

@@ -1008,10 +1008,11 @@ export function conditionHubSourceId(n: number): string {
 }
 
 /**
- * JSON-LD for a hub with an intro — the bot <head> and the SPA emit exactly
- * this. Only what the page shows: the H1, the byline's team + "Updated"
- * date (dateModified; no reviewedBy — no named reviewer), and the visible
- * FAQ (FAQPage).
+ * JSON-LD for a hub with an intro — page meta and the SPA emit exactly this
+ * (the BreadcrumbList is added by page meta, which knows the hub's name).
+ * Only what the page shows: the H1, the byline's team + "Updated" date
+ * (dateModified; no reviewedBy — no named reviewer), and the visible FAQ
+ * (FAQPage).
  */
 export function conditionHubJsonLd(
   intro: ConditionHubIntro,
@@ -1020,7 +1021,9 @@ export function conditionHubJsonLd(
   const by = conditionHubByline(intro);
   const page: Record<string, any> = {
     "@context": "https://schema.org",
-    "@type": "CollectionPage",
+    // A medical topic page that lists studies (PLAN 3.5). `about:
+    // MedicalCondition` and reviewedBy wait for the named reviewer (4.8).
+    "@type": ["MedicalWebPage", "CollectionPage"],
     name: intro.h1,
     description: intro.metaDescription,
     url: opts.canonical,

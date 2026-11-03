@@ -33,8 +33,8 @@ describe("buildBlogMeta", () => {
       content: "<p>body</p>",
       questionAnswerPairs: [{ question: "Hidden?", answer: "Yes" }],
     });
-    expect(Array.isArray(meta.jsonLd)).toBe(false);
-    expect((meta.jsonLd as any)["@type"]).toBe("Article");
+    const types = (meta.jsonLd as any[]).map((b) => b["@type"]);
+    expect(types).toEqual(["Article", "BreadcrumbList"]);
     expect(meta.canonical).toBe("https://hydrogenstudies.com/blog/p");
   });
 });

@@ -86,7 +86,7 @@ const jsonLd = () =>
 describe.each(SLUGS)("ConditionCategoryPage with an evidence-graded intro — %s", (slug) => {
   const r = CONDITION_HUB_INTROS[slug];
 
-  it("head: record title/description/og/twitter, self canonical, CollectionPage + FAQPage — no generic copy", async () => {
+  it("head: record title/description/og/twitter, self canonical, MedicalWebPage/CollectionPage + FAQPage — no generic copy", async () => {
     renderHub(slug);
     await waitFor(() => expect(document.title).toBe(r.metaTitle));
     expect(helmetMeta('meta[name="description"]')).toContain(r.metaDescription);
@@ -96,7 +96,7 @@ describe.each(SLUGS)("ConditionCategoryPage with an evidence-graded intro — %s
     expect(helmetMeta('link[rel="canonical"]')).toEqual([`https://hydrogenstudies.com/explore-by-condition/${slug}`]);
     expect(document.head.innerHTML).not.toMatch(/may benefit and treat|to treat|keywords/i);
     const ld = jsonLd();
-    expect(ld.map((x) => x["@type"]).sort()).toEqual(["CollectionPage", "FAQPage"]);
+    expect(ld.flatMap((x) => ([] as string[]).concat(x["@type"])).sort()).toEqual(["CollectionPage", "FAQPage", "MedicalWebPage"]);
     const faq = ld.find((x) => x["@type"] === "FAQPage");
     expect(faq.mainEntity.map((q: any) => q.name)).toEqual(r.faqs.map((f) => f.question));
   });

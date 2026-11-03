@@ -16,6 +16,7 @@ import { toAbsoluteUrl } from "../utils/absolute-url";
 import {
   blogArticleJsonLd,
   blogPageTitle,
+  collectionPageJsonLd,
   excerptAtWord,
   faqPageJsonLd,
   faqPairsIfVisible,
@@ -29,13 +30,30 @@ import { getHydrogenForTopic } from "../../shared/hydrogen-for-topics";
 import { conditionHubJsonLd, getConditionHubIntro } from "../../shared/condition-hub-intros";
 import {
   bodySystemHubName,
+  exploreDetailCopy,
   exploreDetailMeta,
   exploreIndexCopy,
+  exploreIndexH1,
+  findBodySystemHub,
   mechanismHubMeta,
+  titleCaseSlug,
   type ConditionHubRef,
   type ListedExploreHubType,
 } from "../../shared/explore-hubs";
 import { studyBreadcrumbs, studyHubLinks } from "../../shared/study-page";
+import {
+  blogListBreadcrumbs,
+  blogPostBreadcrumbs,
+  bodySystemHubBreadcrumbs,
+  breadcrumbListJsonLd,
+  conditionHubBreadcrumbs,
+  exploreDetailBreadcrumbs,
+  exploreIndexBreadcrumbs,
+  hydrogenForBreadcrumbs,
+  policyBreadcrumbs,
+  studiesListBreadcrumbs,
+  type Crumb,
+} from "../../shared/breadcrumbs";
 import { getConditionHubs } from "../middleware/seo-body-renderer";
 import { marked } from "marked";
 
@@ -120,6 +138,31 @@ export async function resolvePageMeta(pathname: string): Promise<PageMeta | null
       return null;
     }
 
+    // Condition hubs: the visible crumb is the health_conditions row's name
+    // (what the renderer shows), so the BreadcrumbList needs the hub list.
+    const conditionMatch = pathname.match(/^\/explore-by-condition\/([^/]+)$/);
+    if (conditionMatch) {
+      const base = resolveStaticPageMeta(pathname);
+      if (!base) return null;
+      const hub = (await getConditionHubs()).find((h) => h.slug === conditionMatch[1]);
+      if (!hub) return base; // not a live hub — the renderer 404s it
+      const blocks = asBlocks(base.jsonLd);
+      if (!blocks.length) {
+        // No reviewed intro: the renderer's generic H1.
+        blocks.push(
+          collectionPageJsonLd({
+            name: `Hydrogen Research for ${hub.name}`,
+            description: base.description,
+            canonical: base.canonical,
+            siteUrl: SITE_URL,
+            medical: true,
+          }),
+        );
+      }
+      blocks.push(breadcrumbListJsonLd(conditionHubBreadcrumbs(hub.name), SITE_URL));
+      return { ...base, jsonLd: blocks };
+    }
+
     // Static pages
     return resolveStaticPageMeta(pathname);
   } catch (err) {
@@ -199,8 +242,50 @@ export function buildBlogMeta(blog: any): PageMeta {
     canonical,
     ogType: "article",
     ogImage,
-    jsonLd: visibleFaq ? [article, faqPageJsonLd(visibleFaq)] : article,
+    // The renderer shows Home › Blog › title above the article.
+    jsonLd: [
+      article,
+      ...(visibleFaq ? [faqPageJsonLd(visibleFaq)] : []),
+      breadcrumbListJsonLd(blogPostBreadcrumbs(blog.title), SITE_URL),
+    ],
   };
+}
+
+function asBlocks(jsonLd: PageMeta["jsonLd"]): Record<string, any>[] {
+  return jsonLd ? (Array.isArray(jsonLd) ? [...jsonLd] : [jsonLd]) : [];
+}
+
+/** Page block + BreadcrumbList for a listing page with a visible trail. */
+function listingJsonLd(opts: {
+  name: string;
+  description: string;
+  canonical: string;
+  crumbs: Crumb[];
+  medical?: boolean;
+}): Record<string, any>[] {
+  return [
+    collectionPageJsonLd({ ...opts, siteUrl: SITE_URL }),
+    breadcrumbListJsonLd(opts.crumbs, SITE_URL),
+  ];
+}
+
+/** Blocks for the static listing/policy paths the renderer shows a trail on. */
+function staticPathJsonLd(pathname: string, description: string): Record<string, any>[] | undefined {
+  const canonical = `${SITE_URL}${pathname}`;
+  if (pathname === "/studies") {
+    return listingJsonLd({ name: "Research Studies Directory", description, canonical, crumbs: studiesListBreadcrumbs() });
+  }
+  if (pathname === "/blog") {
+    return listingJsonLd({ name: "Hydrogen Health Blog", description, canonical, crumbs: blogListBreadcrumbs() });
+  }
+  const index = pathname.match(/^\/explore-by-([a-z-]+)$/);
+  if (index) {
+    const h1 = exploreIndexH1(index[1]);
+    return listingJsonLd({ name: h1, description, canonical, crumbs: exploreIndexBreadcrumbs(h1) });
+  }
+  if (pathname === "/editorial-policy") return [breadcrumbListJsonLd(policyBreadcrumbs("Editorial Policy"), SITE_URL)];
+  if (pathname === "/methodology") return [breadcrumbListJsonLd(policyBreadcrumbs("Methodology"), SITE_URL)];
+  return undefined;
 }
 
 function exploreIndexMeta(type: ListedExploreHubType): { title: string; description: string } {
@@ -336,9 +421,19 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
       canonical: `${SITE_URL}/hydrogen-for/${topic.slug}`,
       ogType: "website",
       ogImage: `${SITE_URL}/logo.png`,
-      // The FAQ is rendered visibly on the page (bot body + SPA), so FAQPage
-      // schema is allowed here.
-      jsonLd: faqPageJsonLd(topic.faqs),
+      // The FAQ is rendered visibly on the page (renderer + SPA), so FAQPage
+      // schema is allowed here; the H1 is "Hydrogen for <name>".
+      jsonLd: [
+        collectionPageJsonLd({
+          name: `Hydrogen for ${topic.name}`,
+          description: topic.metaDescription,
+          canonical: `${SITE_URL}/hydrogen-for/${topic.slug}`,
+          siteUrl: SITE_URL,
+          medical: true,
+        }),
+        faqPageJsonLd(topic.faqs),
+        breadcrumbListJsonLd(hydrogenForBreadcrumbs(topic.name), SITE_URL),
+      ],
     };
   }
 
@@ -351,12 +446,19 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
       exploreDetailMatch[1] as "delivery-method" | "benefit" | "demographic",
       exploreDetailMatch[2],
     );
+    const copy = exploreDetailCopy(exploreDetailMatch[2]);
     return {
       title: meta.title,
       description: meta.description,
       canonical: `${SITE_URL}${meta.path}`,
       ogType: "website",
       ogImage: `${SITE_URL}/logo.png`,
+      jsonLd: listingJsonLd({
+        name: copy.h1,
+        description: meta.description,
+        canonical: `${SITE_URL}${meta.path}`,
+        crumbs: exploreDetailBreadcrumbs(exploreDetailMatch[1], copy.name),
+      }),
     };
   }
 
@@ -394,12 +496,21 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
     // Hub label, "System" exactly once — was "Brain Nervous System System",
     // "Immune System System" (re-audit 2026-09-28).
     const system = bodySystemHubName(bodySystemMatch[1]);
+    const description = `Research studies on molecular hydrogen's effects on the ${system.toLowerCase()}. Browse clinical trials, reviews, and findings.`;
+    // The renderer's H1/crumb use the hub label (or the title-cased slug).
+    const label = findBodySystemHub(bodySystemMatch[1])?.label ?? titleCaseSlug(bodySystemMatch[1]);
     return {
       title: `Hydrogen Research: ${system} | ${SITE_NAME}`,
-      description: `Research studies on molecular hydrogen's effects on the ${system.toLowerCase()}. Browse clinical trials, reviews, and findings.`,
+      description,
       canonical: `${SITE_URL}${pathname}`,
       ogType: "website",
       ogImage: `${SITE_URL}/logo.png`,
+      jsonLd: listingJsonLd({
+        name: `Hydrogen Research: ${label}`,
+        description,
+        canonical: `${SITE_URL}${pathname}`,
+        crumbs: bodySystemHubBreadcrumbs(label),
+      }),
     };
   }
 
@@ -408,12 +519,19 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
   if (mechanismMatch) {
     // Shared with the SPA MechanismDetailPage so both emit the same title.
     const mechanism = mechanismHubMeta(mechanismMatch[1]);
+    const copy = exploreDetailCopy(mechanismMatch[1]);
     return {
       title: mechanism.title,
       description: mechanism.description,
       canonical: `${SITE_URL}${mechanism.path}`,
       ogType: "website",
       ogImage: `${SITE_URL}/logo.png`,
+      jsonLd: listingJsonLd({
+        name: copy.h1,
+        description: mechanism.description,
+        canonical: `${SITE_URL}${mechanism.path}`,
+        crumbs: exploreDetailBreadcrumbs("mechanism", copy.name),
+      }),
     };
   }
 
@@ -421,18 +539,27 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
   const lifeStageMatch = pathname.match(/^\/explore-by-life-stage\/([^/]+)$/);
   if (lifeStageMatch) {
     const stage = lifeStageMatch[1].replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    const description = `Hydrogen therapy research studies relevant to ${stage.toLowerCase()}. Evidence-based findings and clinical applications.`;
+    const copy = exploreDetailCopy(lifeStageMatch[1]);
     return {
       title: `Hydrogen Research for ${stage} | ${SITE_NAME}`,
-      description: `Hydrogen therapy research studies relevant to ${stage.toLowerCase()}. Evidence-based findings and clinical applications.`,
+      description,
       canonical: `${SITE_URL}${pathname}`,
       ogType: "website",
       ogImage: `${SITE_URL}/logo.png`,
+      jsonLd: listingJsonLd({
+        name: copy.h1,
+        description,
+        canonical: `${SITE_URL}${pathname}`,
+        crumbs: exploreDetailBreadcrumbs("life-stage", copy.name),
+      }),
     };
   }
 
   const pageMeta = pages[pathname];
   if (!pageMeta) return null;
 
+  const jsonLd = staticPathJsonLd(pathname, pageMeta.description);
   return {
     title: pageMeta.title,
     description: pageMeta.description,
@@ -440,5 +567,6 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
     canonical: `${SITE_URL}${pathname}`,
     ogType: "website",
     ogImage: `${SITE_URL}/logo.png`,
+    ...(jsonLd ? { jsonLd } : {}),
   };
 }
