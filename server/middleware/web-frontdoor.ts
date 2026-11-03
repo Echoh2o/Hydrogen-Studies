@@ -25,6 +25,10 @@ export const SSR_FAMILIES: Record<string, RegExp> = {
   pages: /^\/(?:about|contact|privacy|terms|disclaimer)$/,
   home: /^\/$/,
   studies: /^\/studies$/,
+  // /learn and its three guides; /research-analytics (shared client bodies
+  // with server-fetched data).
+  learn: /^\/learn(?:\/[^/]+)?$/,
+  analytics: /^\/research-analytics$/,
 };
 
 // content-security-policy: Next sets a per-request nonce CSP (web/middleware.ts)
