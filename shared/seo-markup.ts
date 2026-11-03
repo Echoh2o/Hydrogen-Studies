@@ -609,3 +609,27 @@ export function profilePageJsonLd(opts: { name: string; description: string; can
     publisher: { "@type": "Organization", name: SITE_NAME, url: opts.siteUrl },
   };
 }
+
+/**
+ * A reviewed article-style page that is not a listing (e.g. the limits of the
+ * evidence): WebPage named by its H1, authored by the editorial team, with the
+ * prose review date as dateModified.
+ */
+export function webPageJsonLd(opts: {
+  name: string;
+  description: string;
+  canonical: string;
+  siteUrl: string;
+  dateModified?: string;
+}): Record<string, any> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: opts.name,
+    description: opts.description,
+    url: opts.canonical,
+    ...(opts.dateModified ? { dateModified: new Date(opts.dateModified).toISOString() } : {}),
+    author: { "@type": "Organization", name: EDITORIAL_TEAM, url: `${opts.siteUrl}/editorial-policy` },
+    publisher: { "@type": "Organization", name: SITE_NAME, url: opts.siteUrl },
+  };
+}

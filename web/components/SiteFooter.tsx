@@ -12,6 +12,7 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
       { href: "/blog", label: "Blog" },
       { href: "/researchers", label: "Researchers" },
       { href: "/journals", label: "Journals" },
+      { href: "/limits-of-the-evidence", label: "Limits of the evidence" },
       { href: "/search", label: "Search" },
       { href: "/advanced-search", label: "Advanced Search" },
     ],
@@ -25,6 +26,7 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
       { href: "/explore-by-delivery-method", label: "By Delivery Method" },
       { href: "/explore-by-life-stage", label: "By Life Stage" },
       { href: "/explore-by-benefit", label: "By Benefit" },
+      { href: "/null-and-negative-results", label: "Null & negative results" },
     ],
   },
   {

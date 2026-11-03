@@ -40,6 +40,16 @@ vi.mock("../db", () => {
           if (/WHERE slug = \$1/i.test(sql)) return { rows: state.conditions.filter((c) => c.slug === params[0]) };
           return { rows: /COALESCE\(study_count, 0\) > 0/i.test(sql) ? liveConditions() : state.conditions };
         }
+        if (/since2010/i.test(sql)) return { rows: [{ total: 2276, human: 348, since2010: 2149 }] };
+        if (/AS design/i.test(sql)) return { rows: [{ design: "animal", n: 1070 }, { design: "rct", n: 126 }] };
+        if (/median_n/i.test(sql)) return { rows: [{ with_n: 297, median_n: 23, lt30: 169, lt100: 258, ge100: 39, max_n: 2364, with_dur: 258, median_days: 28, single_day: 43, up_to_4w: 106, to_6m: 90, over_6m: 19 }] };
+        if (/human_non_positive/i.test(sql)) return { rows: [{ positive: 1764, neutral: 99, negative: 11, mixed: 10, with_outcome: 1884, human_non_positive: 31 }] };
+        if (/SELECT country/i.test(sql)) return { rows: [{ country: "China", n: 1097 }, { country: "Japan", n: 523 }, { country: "United States", n: 121 }] };
+        if (/registration_mention/i.test(sql)) return { rows: [{ funding: 166, coi: 187, concentration: 550, registration_mention: 37 }] };
+        if (/conditions_with_rct/i.test(sql)) return { rows: [{ conditions_with_rct: 228, conditions_with_2plus: 48 }] };
+        if (/lower\(outcome\) AS outcome/i.test(sql)) {
+          return { rows: [{ slug: "null-1", title: "A null trial", publish_year: 2022, journal: "J", study_design: "rct", study_type: "human", is_human_trial: true, outcome: "neutral" }] };
+        }
         if (/FROM studies/i.test(sql) && /authors/i.test(sql) && /health_conditions/i.test(sql) && !/LIKE/i.test(sql)) {
           // profile index rows: one prolific author, one journal over the threshold
           return {
@@ -148,6 +158,8 @@ const PATHS = [
   "/researchers/xuejun-sun",
   "/journals",
   "/journals/medical-gas-research",
+  "/limits-of-the-evidence",
+  "/null-and-negative-results",
 ];
 
 describe("BreadcrumbList = the visible trail; page block name = the visible H1", () => {
@@ -163,7 +175,7 @@ describe("BreadcrumbList = the visible trail; page block name = the visible H1",
     expect(items.at(-1).item, "current page has no link").toBeUndefined();
     expect(trail.itemListElement.map((n: any) => n.position)).toEqual(items.map((_: any, i: number) => i + 1));
 
-    const page = blocks.find((b) => ([] as string[]).concat(b["@type"]).some((t) => t === "CollectionPage" || t === "MedicalWebPage" || t === "ProfilePage"));
+    const page = blocks.find((b) => ([] as string[]).concat(b["@type"]).some((t) => t === "CollectionPage" || t === "MedicalWebPage" || t === "ProfilePage" || t === "WebPage"));
     if (page) {
       expect(page.name, path).toBe(h1Text(html!));
       expect(page.url, path).toBe(meta!.canonical);

@@ -19,6 +19,7 @@ import {
   buildPageTitle,
   collectionPageJsonLd,
   profilePageJsonLd,
+  webPageJsonLd,
   excerptAtWord,
   faqPageJsonLd,
   faqPairsIfVisible,
@@ -53,6 +54,7 @@ import {
   exploreIndexBreadcrumbs,
   hydrogenForBreadcrumbs,
   journalBreadcrumbs,
+  pageBreadcrumbs,
   policyBreadcrumbs,
   profilesIndexBreadcrumbs,
   researcherBreadcrumbs,
@@ -69,6 +71,7 @@ import {
   researcherDescription,
   researcherTitle,
 } from "../../shared/profiles";
+import { LIMITS_H1, LIMITS_LAST_REVIEWED, LIMITS_PATH, NULL_RESULTS_H1, NULL_RESULTS_PATH } from "../../shared/evidence-pages";
 import { marked } from "marked";
 
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
@@ -338,6 +341,15 @@ function staticPathJsonLd(pathname: string, description: string): Record<string,
     const h1 = exploreIndexH1(index[1]);
     return listingJsonLd({ name: h1, description, canonical, crumbs: exploreIndexBreadcrumbs(h1) });
   }
+  if (pathname === LIMITS_PATH) {
+    return [
+      webPageJsonLd({ name: LIMITS_H1, description, canonical, siteUrl: SITE_URL, dateModified: LIMITS_LAST_REVIEWED }),
+      breadcrumbListJsonLd(pageBreadcrumbs(LIMITS_H1), SITE_URL),
+    ];
+  }
+  if (pathname === NULL_RESULTS_PATH) {
+    return listingJsonLd({ name: NULL_RESULTS_H1, description, canonical, crumbs: pageBreadcrumbs(NULL_RESULTS_H1) });
+  }
   if (pathname === "/researchers") {
     return listingJsonLd({ name: RESEARCHERS_H1, description, canonical, crumbs: profilesIndexBreadcrumbs(RESEARCHERS_H1) });
   }
@@ -465,6 +477,15 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
     "/insights": {
       title: `Hydrogen Research Insights | ${SITE_NAME}`,
       description: "Trends across the hydrogen research database: publication volume by year, study types, conditions studied and where the evidence is strong or still thin."
+    },
+    // PLAN 4.6 — radical-honesty pages (numbers computed live by the renderer).
+    [LIMITS_PATH]: {
+      title: `The Limits of the Evidence on Hydrogen | ${SITE_NAME}`,
+      description: "How much hydrogen research is actually in people, how small and short the trials are, how positive the published results skew, where the work comes from and what has been replicated — computed live.",
+    },
+    [NULL_RESULTS_PATH]: {
+      title: `Null and Negative Results in Hydrogen Research | ${SITE_NAME}`,
+      description: "Every study in our database whose main result for hydrogen was neutral, negative or mixed, people first — the results most hydrogen sites leave out, with links to each paper.",
     },
     "/researchers": {
       title: `Researchers Publishing on Molecular Hydrogen | ${SITE_NAME}`,

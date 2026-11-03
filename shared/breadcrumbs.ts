@@ -92,3 +92,8 @@ export function researcherBreadcrumbs(name: string): Crumb[] {
 export function journalBreadcrumbs(name: string): Crumb[] {
   return [HOME, { label: "Journals", href: "/journals" }, { label: name }];
 }
+
+/** Home › <page> for a top-level page with no section parent. */
+export function pageBreadcrumbs(title: string): Crumb[] {
+  return [HOME, { label: title }];
+}
