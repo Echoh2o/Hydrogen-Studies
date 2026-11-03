@@ -71,7 +71,17 @@ import {
   researcherDescription,
   researcherTitle,
 } from "../../shared/profiles";
-import { LIMITS_H1, LIMITS_LAST_REVIEWED, LIMITS_PATH, NULL_RESULTS_H1, NULL_RESULTS_PATH } from "../../shared/evidence-pages";
+import {
+  LIMITS_H1,
+  LIMITS_LAST_REVIEWED,
+  LIMITS_PATH,
+  NULL_RESULTS_H1,
+  NULL_RESULTS_PATH,
+  SCAM_FAQS,
+  SCAM_H1,
+  SCAM_LAST_REVIEWED,
+  SCAM_PATH,
+} from "../../shared/evidence-pages";
 import { marked } from "marked";
 
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
@@ -350,6 +360,14 @@ function staticPathJsonLd(pathname: string, description: string): Record<string,
   if (pathname === NULL_RESULTS_PATH) {
     return listingJsonLd({ name: NULL_RESULTS_H1, description, canonical, crumbs: pageBreadcrumbs(NULL_RESULTS_H1) });
   }
+  if (pathname === SCAM_PATH) {
+    // The FAQ is rendered visibly on the page (renderScamPage), so FAQPage is allowed.
+    return [
+      webPageJsonLd({ name: SCAM_H1, description, canonical, siteUrl: SITE_URL, dateModified: SCAM_LAST_REVIEWED }),
+      faqPageJsonLd(SCAM_FAQS),
+      breadcrumbListJsonLd(pageBreadcrumbs(SCAM_H1), SITE_URL),
+    ];
+  }
   if (pathname === "/researchers") {
     return listingJsonLd({ name: RESEARCHERS_H1, description, canonical, crumbs: profilesIndexBreadcrumbs(RESEARCHERS_H1) });
   }
@@ -482,6 +500,10 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
     [LIMITS_PATH]: {
       title: `The Limits of the Evidence on Hydrogen | ${SITE_NAME}`,
       description: "How much hydrogen research is actually in people, how small and short the trials are, how positive the published results skew, where the work comes from and what has been replicated — computed live.",
+    },
+    [SCAM_PATH]: {
+      title: `Is Hydrogen Water a Scam? An Honest Answer | ${SITE_NAME}`,
+      description: "Not a scam, but heavily oversold: what the research on hydrogen water actually shows, what it does not, the red flags to watch for, and our own conflict of interest, with the numbers computed live.",
     },
     [NULL_RESULTS_PATH]: {
       title: `Null and Negative Results in Hydrogen Research | ${SITE_NAME}`,

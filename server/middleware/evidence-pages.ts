@@ -18,11 +18,17 @@ import {
   LIMITS_PATH,
   NULL_RESULTS_H1,
   NULL_RESULTS_PATH,
+  SCAM_FAQS,
+  SCAM_H1,
+  SCAM_LAST_REVIEWED,
+  SCAM_PATH,
   fmtInt,
   pct,
 } from "../../shared/evidence-pages";
+import { CONDITION_HUB_INTROS, type EvidenceGrade } from "../../shared/condition-hub-intros";
+import { exploreHubPath, titleCaseSlug } from "../../shared/explore-hubs";
 import { getEvidenceStats, getNonPositiveStudies, type EvidenceStats } from "../services/evidence-stats";
-import { getTopConditions, renderBylineHtml } from "./seo-body-renderer";
+import { getConditionHubs, getTopConditions, renderBylineHtml } from "./seo-body-renderer";
 import { breadcrumbs, esc, footer } from "./html-fragments";
 
 const DESIGN_LABELS: Record<string, string> = {
@@ -101,6 +107,7 @@ export async function renderLimitsPage(): Promise<string> {
   h += `<li>Ask whether anyone has repeated it. Most topics rest on one trial.</li>`;
   h += `<li>Notice who paid, and that for most studies we do not yet know.</li>`;
   h += `<li>Read our hub introductions, which grade the evidence per topic as "Low" or "Very low" for these reasons, and the <a href="/methodology">methodology</a> for how the numbers above are produced.</li>`;
+  h += `<li>If your question is simply whether hydrogen water is a scam, <a href="${SCAM_PATH}">here is our answer</a>.</li>`;
   h += `</ul>\n`;
   h += `<p class="note">Every figure on this page is recomputed from the database when the page is built (as of ${esc(asOf)}); the text is reviewed when the method changes. Corrections: <a href="/contact">contact us</a>.</p>\n`;
   h += `</article>\n`;
@@ -127,6 +134,76 @@ export async function renderNullResultsHub(): Promise<string> {
   };
   if (human.length) h += `<section><h2>In people (${fmtInt(human.length)})</h2>\n${list(human)}</section>\n`;
   if (other.length) h += `<section><h2>In animals, cells and reviews (${fmtInt(other.length)})</h2>\n${list(other)}</section>\n`;
+  h += footer(conditions);
+  return h;
+}
+
+const GRADE_LABEL: Record<EvidenceGrade, string> = { "very low": "Very low", low: "Low", moderate: "Moderate", high: "High" };
+
+export async function renderScamPage(): Promise<string> {
+  const [s, conditions, hubs] = await Promise.all([getEvidenceStats(), getTopConditions(), getConditionHubs()]);
+  const rct = s.designs.find((d) => d.design === "rct")?.n ?? 0;
+  const o = s.outcomes;
+  const nonPositive = o.neutral + o.negative + o.mixed;
+  const ht = s.humanTrials;
+  const asOf = formatLongDate(s.asOf);
+  const intros = Object.values(CONDITION_HUB_INTROS);
+  const hubName = (slug: string) => hubs.find((h) => h.slug === slug)?.name ?? titleCaseSlug(slug);
+  const grades = intros.map((r) => r.evidenceGrade);
+  const bestGrade = grades.includes("high") ? "high" : grades.includes("moderate") ? "moderate" : grades.includes("low") ? "low" : "very low";
+
+  let h = breadcrumbs(pageBreadcrumbs(SCAM_H1));
+  h += `<article>\n<h1>${esc(SCAM_H1)}</h1>\n`;
+  h += renderBylineHtml(blogByline({ authorName: EDITORIAL_TEAM, updatedAt: SCAM_LAST_REVIEWED }));
+  h += `<p class="lead"><strong>Short answer:</strong> hydrogen water is not a scam in the sense of a made-up product with no science behind it. Molecular hydrogen is a real molecule, trials measure it in people's breath and blood after they drink it, and it has been studied in ${fmtInt(s.total)} papers, ${fmtInt(s.human)} of them in people. But much of the marketing runs far ahead of that evidence. No human trial has shown that hydrogen water treats, cures or prevents any disease, most trials are small and short, and the published results lean positive in a way that says more about publishing than about hydrogen. This page, written by a site that is funded by a hydrogen water company, sets out what is real, what is oversold, and how to tell the difference.</p>\n`;
+
+  h += `<h2 id="what-is-real">What is real</h2>\n`;
+  h += `<ul>`;
+  h += `<li><strong>The molecule and the dose are real.</strong> Hydrogen gas dissolves in water, is absorbed when you drink it, and appears in exhaled breath within minutes; trials in this database measure that directly.</li>`;
+  h += `<li><strong>It is well tolerated at the doses studied.</strong> Human trials report mild effects at most, such as loose stools or bloating, mostly with magnesium-based tablets. Long-term safety has not been studied.</li>`;
+  h += `<li><strong>Some trials find effects beyond placebo</strong> on specific measures, such as blood markers of oxidative stress, how tired people feel after exercise, or some metabolic markers; others find none. The effects reported are modest and inconsistent between trials.</li>`;
+  h += `<li><strong>The research is young and growing.</strong> ${pct(s.since2010, s.total)} of the studies here were published since 2010.</li>`;
+  h += `</ul>\n`;
+
+  h += `<h2 id="what-is-oversold">What is oversold</h2>\n`;
+  h += `<ul>`;
+  h += `<li><strong>Disease claims.</strong> Hydrogen water is not an approved treatment for any disease. Of ${fmtInt(s.human)} human studies, ${fmtInt(rct)} are randomized controlled trials, and none shows that drinking hydrogen water treats, cures or prevents a disease; the trials in diagnosed patients measured blood markers over weeks or months. Inhaled hydrogen gas has been studied in hospitals, for example under Japan's advanced-medical-care program for patients after cardiac arrest, but that is a different route, dose and setting from a bottle of water.</li>`;
+  h += `<li><strong>"Thousands of studies."</strong> Our own home page says 2,000+ studies, and this page exists to say what that number is worth: ${fmtInt(s.human)} studies in people (${pct(s.human, s.total)}), with a median of ${ht.medianN == null ? "about twenty" : fmtInt(Math.round(ht.medianN))} participants and a median length of ${ht.medianDays == null ? "a few weeks" : `${fmtInt(Math.round(ht.medianDays))} days`}. The rest is animal and laboratory work and reviews. Details on <a href="${LIMITS_PATH}">the limits of the evidence</a>.</li>`;
+  h += `<li><strong>The positive-result skew.</strong> ${pct(o.positive, o.withOutcome)} of the ${fmtInt(o.withOutcome)} studies with a recorded outcome direction are positive. Nobody's intervention works ${pct(o.positive, o.withOutcome)} of the time; null results are less likely to be published. We list the ${fmtInt(nonPositive)} <a href="${NULL_RESULTS_PATH}">null and negative results</a> rather than hide them.</li>`;
+  h += `<li><strong>Alkaline, ionized, "structured" or "detox" water.</strong> Hydrogen content has nothing to do with pH or any of those labels. A product sold on those words is not selling you hydrogen evidence.</li>`;
+  h += `<li><strong>Concentration claims.</strong> Dissolved hydrogen escapes from water quickly, especially in an open glass, so what matters is the concentration at the moment you drink, measured by someone other than the seller. We have not tested devices ourselves; a published measurement dataset is planned. Until then, treat concentration figures without third-party measurement as unverified.</li>`;
+  h += `<li><strong>Testimonials and "doctor approved."</strong> Neither is evidence. Ask for the trial: how many people, how long, against what placebo, and who paid.</li>`;
+  h += `</ul>\n`;
+
+  h += `<h2 id="topic-by-topic">What the evidence supports, topic by topic</h2>\n`;
+  h += `<p>Our condition hubs grade the human evidence for each use in GRADE-style terms. Today the strongest grade on any topic is "${GRADE_LABEL[bestGrade]}". "Low" means further research is likely to change the estimate; "Very low" means the true effect is probably substantially different from what the trials suggest. No topic currently rates "Moderate" or "High".</p>\n`;
+  h += `<ul>`;
+  for (const r of intros) {
+    h += `<li><a href="${esc(exploreHubPath("condition", r.slug))}">${esc(hubName(r.slug))}</a>: evidence ${esc(GRADE_LABEL[r.evidenceGrade])}</li>`;
+  }
+  h += `</ul>\n`;
+
+  h += `<h2 id="red-flags">How to spot a hydrogen claim that outruns the evidence</h2>\n`;
+  h += `<ul>`;
+  h += `<li>It names a disease it treats, cures or prevents.</li>`;
+  h += `<li>It cites "studies" without saying how many were in people, how many people, or for how long.</li>`;
+  h += `<li>It leans on words like alkaline, ionized, structured, detox or anti-aging.</li>`;
+  h += `<li>It quotes a hydrogen concentration with no independent measurement at drinking time.</li>`;
+  h += `<li>It uses testimonials, celebrity or "doctor approved" labels in place of a named trial.</li>`;
+  h += `<li>It does not say who funded the research it cites. (Funding is recorded for only ${fmtInt(s.coverage.funding)} studies in this database so far, so often nobody knows.)</li>`;
+  h += `</ul>\n`;
+
+  h += `<h2 id="our-conflict">Our conflict of interest</h2>\n`;
+  h += `<p>Hydrogen Studies is owned and funded by Echo Technologies LLC, which sells hydrogen water products. That is a reason to read this page skeptically, and it is the reason the page exists in this form: our <a href="/editorial-policy">editorial policy</a> commits us to listing null and negative results on the same footing as positive ones, keeping product content off disease pages, and never describing hydrogen as a treatment. This page recommends no product.</p>\n`;
+
+  h += `<h2 id="bottom-line">The bottom line</h2>\n`;
+  h += `<p>Hydrogen water is a real, low-risk intervention with early, mixed, mostly small-trial evidence of modest effects on some blood markers and symptom scores. It is not a treatment for any disease, and anyone promising that is overselling it. Whether it is worth your money is a judgment about a small and uncertain benefit, and the honest way to make it is to read the trials for the use you care about, which is what the hubs above are for.</p>\n`;
+
+  h += `<section aria-labelledby="faq"><h2 id="faq">Frequently asked questions</h2>\n`;
+  for (const f of SCAM_FAQS) h += `<h3>${esc(f.question)}</h3><p>${esc(f.answer)}</p>\n`;
+  h += `</section>\n`;
+  h += `<p class="note">Figures on this page are recomputed from the database when the page is built (as of ${esc(asOf)}); the text was last reviewed on ${esc(formatLongDate(SCAM_LAST_REVIEWED))}. Corrections: <a href="/contact">contact us</a>.</p>\n`;
+  h += `</article>\n`;
   h += footer(conditions);
   return h;
 }

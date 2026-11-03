@@ -24,3 +24,42 @@ export function pct(part: number, whole: number, digits = 0): string {
 export function fmtInt(n: number): string {
   return n.toLocaleString("en-US");
 }
+
+// ── /is-hydrogen-water-a-scam ─────────────────────────────────────
+import { LEARN_FAQS } from "./learn-faqs";
+
+export const SCAM_PATH = "/is-hydrogen-water-a-scam";
+export const SCAM_H1 = "Is hydrogen water a scam? An honest answer";
+/** When the prose (not the numbers) was last reviewed. */
+export const SCAM_LAST_REVIEWED = "2026-11-03";
+
+function learnFaq(question: string): { question: string; answer: string } {
+  const f = LEARN_FAQS.find((x) => x.question === question);
+  if (!f) throw new Error(`learn FAQ missing: ${question}`);
+  return f;
+}
+
+/**
+ * Visible FAQ on the scam page (and its FAQPage schema). Three answers are the
+ * Learn page's, verbatim, so the site gives one answer to one question.
+ */
+export const SCAM_FAQS: { question: string; answer: string }[] = [
+  {
+    question: "Is hydrogen water just a placebo?",
+    answer:
+      "Not entirely, but the gap between hydrogen and placebo in trials is small and inconsistent. Several placebo-controlled trials found differences from placebo on specific measures, such as blood markers of oxidative stress or how tired people felt after exercise; others found none. With trials this small and short, a null result is as informative as a positive one. Our topic hubs grade the evidence for each use.",
+  },
+  {
+    question: "Can hydrogen water treat or cure a disease?",
+    answer:
+      "No. No randomized trial has shown that drinking hydrogen water treats, cures or prevents any disease, and it is not an approved treatment for any condition. The trials in people with a diagnosis, such as type 2 diabetes or fatty liver disease, measured changes in blood markers over weeks or months, not whether the disease got better. A seller who claims otherwise is making a claim the research in this database does not support.",
+  },
+  learnFaq("Is hydrogen water safe?"),
+  learnFaq("Does hydrogen stay in the water once it is made?"),
+  learnFaq('Is this the same as "smart water," "structured water," or "alkaline water"?'),
+  {
+    question: "Why does a hydrogen water company publish this page?",
+    answer:
+      "Because a database of hydrogen research run by a hydrogen water company is only worth reading if it says plainly what the research does not show. Echo Technologies LLC funds this site; our editorial policy explains what that does and does not buy. This page recommends no product.",
+  },
+];

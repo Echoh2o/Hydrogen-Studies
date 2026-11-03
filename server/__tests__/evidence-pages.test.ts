@@ -97,6 +97,43 @@ describe("/limits-of-the-evidence", () => {
   });
 });
 
+describe("/is-hydrogen-water-a-scam", () => {
+  it("answers first, states the live numbers, lists every hub grade, and shows the FAQ it declares", async () => {
+    const html = (await renderPageBody("/is-hydrogen-water-a-scam"))!;
+    expect((html.match(/<h1\b/g) ?? []).length).toBe(1);
+    const t = text(html);
+    expect(t).toMatch(/Short answer: hydrogen water is not a scam in the sense of a made-up product/);
+    expect(t).toContain("studied in 2,276 papers, 348 of them in people");
+    expect(t).toContain("Of 348 human studies, 126 are randomized controlled trials");
+    expect(t).toContain("94% of the 1,884 studies with a recorded outcome direction are positive");
+    expect(t).toContain('the strongest grade on any topic is "Low"');
+    const { CONDITION_HUB_INTROS } = await import("../../shared/condition-hub-intros");
+    const hubCount = Object.keys(CONDITION_HUB_INTROS).length;
+    expect((html.match(/: evidence (Very low|Low|Moderate|High)<\/li>/g) ?? []).length).toBe(hubCount);
+    expect(html).toContain('href="/explore-by-condition/type-2-diabetes"');
+    expect(html).toContain("Our conflict of interest");
+    expect(html).toContain("Echo Technologies LLC");
+    expect(html.slice(0, html.indexOf("<footer>"))).not.toContain("echowater.com"); // no product content in the article (the footer carries the disclosure link)
+    for (const re of OVERCLAIMS) expect(t).not.toMatch(re);
+    expect(html).not.toMatch(/\$\{/);
+  });
+
+  it("meta: WebPage + FAQPage (every question visible) + trail", async () => {
+    const meta = (await resolvePageMeta("/is-hydrogen-water-a-scam"))!;
+    expect(meta.title.length).toBeLessThanOrEqual(65);
+    const [page, faq, trail] = meta.jsonLd as any[];
+    expect(page["@type"]).toBe("WebPage");
+    expect(page.name).toBe("Is hydrogen water a scam? An honest answer");
+    expect(faq["@type"]).toBe("FAQPage");
+    const html = (await renderPageBody("/is-hydrogen-water-a-scam"))!;
+    const { faqPairsIfVisible } = await import("../../shared/seo-markup");
+    const pairs = faq.mainEntity.map((q: any) => ({ question: q.name, answer: q.acceptedAnswer.text }));
+    expect(faqPairsIfVisible(pairs, html)).toEqual(pairs);
+    expect(pairs.length).toBe(6);
+    expect(trail.itemListElement.map((n: any) => n.name)).toEqual(["Home", "Is hydrogen water a scam? An honest answer"]);
+  });
+});
+
 describe("/null-and-negative-results", () => {
   it("lists only non-positive studies, people first, each with its recorded result", async () => {
     const html = (await renderPageBody("/null-and-negative-results"))!;
