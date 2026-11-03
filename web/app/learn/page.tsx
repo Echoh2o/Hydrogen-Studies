@@ -4,6 +4,7 @@ import { faqPageJsonLd } from "@shared/seo-markup";
 import { contentPage } from "@web/lib/content-page";
 import { prefetchQueries } from "@web/lib/prefetch";
 import { ClientProviders } from "@web/components/ClientProviders";
+import { WouterBridge } from "@web/components/WouterBridge";
 
 // Same twelve sections as the SPA page, with the stats they show fetched on
 // the server. FAQPage is allowed: FaqSection renders LEARN_FAQS on the page.
@@ -17,7 +18,11 @@ export default async function Page() {
   return (
     <page.Shell className="learn-page">
       <ClientProviders dehydratedState={state}>
-        <LearnContent />
+        {/* The sections' Echo links read the route via wouter (useEchoPageContext),
+            which needs a Router on the server — without one it touches `location`. */}
+        <WouterBridge path="/learn" search="">
+          <LearnContent />
+        </WouterBridge>
       </ClientProviders>
     </page.Shell>
   );
