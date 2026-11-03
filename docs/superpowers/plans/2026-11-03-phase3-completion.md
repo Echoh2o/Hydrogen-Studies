@@ -12,6 +12,8 @@
 
 **Baseline:** `npx vitest run` → 74 files / 1,352 tests green on `cd0e6d5`.
 
+**Status 2026-11-03 (end of day):** A → PR #133 merged+deployed. B → #135 merged+deployed (live schema verified on 7 page types). C → #136 merged; `SSR_FAMILIES` extended with `learn,analytics` after both services deployed. D → #134 merged (resolver + plan); `--apply` NOT run — awaits `approved-by: josh` in `reports/consolidation/stable-study-urls-2026-11-03.csv`. Open for Josh: approve the 3.3 CSV; lift `noindex` on `/learn*`?; make `/insights` a server-side 301 to `/research-analytics` (currently 200 + client redirect).
+
 ---
 
 ## File map
