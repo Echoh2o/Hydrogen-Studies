@@ -29,6 +29,8 @@ export const SSR_FAMILIES: Record<string, RegExp> = {
   // with server-fetched data).
   learn: /^\/learn(?:\/[^/]+)?$/,
   analytics: /^\/research-analytics$/,
+  // Researcher and journal profile pages (PLAN 4.7).
+  profiles: /^\/(?:researchers|journals)(?:\/[^/]+)?$/,
 };
 
 // content-security-policy: Next sets a per-request nonce CSP (web/middleware.ts)

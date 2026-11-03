@@ -14,6 +14,7 @@ const state = vi.hoisted(() => ({
 
 vi.mock("../services/redirect-service", () => ({ resolveRedirect: async () => state.decision }));
 vi.mock("../services/excluded-studies", () => ({ isExcludedStudyPath: async () => state.excluded }));
+vi.mock("../services/profiles", () => ({ authorLinksFor: async () => [{ name: "A. One", href: null }] }));
 vi.mock("../services/study-service", () => ({
   studyService: {
     getStudyBySlug: async () => state.study,

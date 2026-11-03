@@ -579,6 +579,8 @@ export function collectionPageJsonLd(opts: {
   canonical: string;
   siteUrl: string;
   medical?: boolean;
+  /** What the collection is about, when the page names it (e.g. a Periodical). */
+  about?: Record<string, any>;
 }): Record<string, any> {
   return {
     "@context": "https://schema.org",
@@ -586,6 +588,24 @@ export function collectionPageJsonLd(opts: {
     name: opts.name,
     description: opts.description,
     url: opts.canonical,
+    ...(opts.about ? { about: opts.about } : {}),
+    publisher: { "@type": "Organization", name: SITE_NAME, url: opts.siteUrl },
+  };
+}
+
+/**
+ * A researcher profile page (PLAN 4.7): ProfilePage whose mainEntity is the
+ * Person named in the H1. Only the name — no affiliation, ORCID or photo until
+ * we hold that data; identity is by name matching and the page says so.
+ */
+export function profilePageJsonLd(opts: { name: string; description: string; canonical: string; siteUrl: string }): Record<string, any> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    name: opts.name,
+    description: opts.description,
+    url: opts.canonical,
+    mainEntity: { "@type": "Person", name: opts.name },
     publisher: { "@type": "Organization", name: SITE_NAME, url: opts.siteUrl },
   };
 }

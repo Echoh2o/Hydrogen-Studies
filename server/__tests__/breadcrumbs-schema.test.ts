@@ -40,6 +40,15 @@ vi.mock("../db", () => {
           if (/WHERE slug = \$1/i.test(sql)) return { rows: state.conditions.filter((c) => c.slug === params[0]) };
           return { rows: /COALESCE\(study_count, 0\) > 0/i.test(sql) ? liveConditions() : state.conditions };
         }
+        if (/FROM studies/i.test(sql) && /authors/i.test(sql) && /health_conditions/i.test(sql) && !/LIKE/i.test(sql)) {
+          // profile index rows: one prolific author, one journal over the threshold
+          return {
+            rows: Array.from({ length: 12 }, (_, i) => ({
+              id: 500 + i, slug: `p-${i}`, title: `Profile study ${i}`, publish_year: 2010 + i, journal: "Medical Gas Research",
+              study_design: "animal", study_type: "rat", is_human_trial: false, authors: "Xue-jun Sun, Someone & Else", health_conditions: ["Type 2 Diabetes"],
+            })),
+          };
+        }
         if (/FROM blog_articles/i.test(sql)) {
           if (/WHERE (slug|id) = \$1/i.test(sql) && state.blog) return { rows: [state.blog] };
           return { rows: [] };
@@ -70,6 +79,7 @@ vi.mock("../db", () => {
 vi.mock("../utils/logger", () => ({ logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn() } }));
 
 const { renderPageBody, __resetConditionHubsForTests } = await import("../middleware/seo-body-renderer");
+const { __resetProfilesForTests } = await import("../services/profiles");
 const { resolvePageMeta } = await import("../services/page-meta");
 
 const SITE = "https://hydrogenstudies.com";
@@ -95,6 +105,7 @@ const studies = (prefix: string, n: number) =>
 
 beforeEach(() => {
   __resetConditionHubsForTests();
+  __resetProfilesForTests();
   state.conditions = [
     { name: "Type 2 Diabetes", slug: "type-2-diabetes", study_count: 265, description: null },
     { name: "Anxiety & Stress", slug: "anxiety-stress", study_count: 120, description: "Old generic copy." },
@@ -133,6 +144,10 @@ const PATHS = [
   "/blog",
   "/editorial-policy",
   "/methodology",
+  "/researchers",
+  "/researchers/xuejun-sun",
+  "/journals",
+  "/journals/medical-gas-research",
 ];
 
 describe("BreadcrumbList = the visible trail; page block name = the visible H1", () => {
@@ -148,7 +163,7 @@ describe("BreadcrumbList = the visible trail; page block name = the visible H1",
     expect(items.at(-1).item, "current page has no link").toBeUndefined();
     expect(trail.itemListElement.map((n: any) => n.position)).toEqual(items.map((_: any, i: number) => i + 1));
 
-    const page = blocks.find((b) => ([] as string[]).concat(b["@type"]).some((t) => t === "CollectionPage" || t === "MedicalWebPage"));
+    const page = blocks.find((b) => ([] as string[]).concat(b["@type"]).some((t) => t === "CollectionPage" || t === "MedicalWebPage" || t === "ProfilePage"));
     if (page) {
       expect(page.name, path).toBe(h1Text(html!));
       expect(page.url, path).toBe(meta!.canonical);
