@@ -212,7 +212,7 @@ export const HYDROGEN_FOR_TOPICS: Record<string, HydrogenForTopic> = {
     bodySystem: "Immune System",
     searchTerms: ["cancer", "tumor", "chemotherapy", "radiation", "oncology"],
     bridgeTopic: null,
-    metaTitle: "Hydrogen and Cancer Supportive Care | Hydrogen Studies",
+    metaTitle: "Hydrogen Water and Cancer: The Research | Hydrogen Studies",
     metaDescription:
       "Research on molecular hydrogen alongside cancer treatment, such as side effects of chemotherapy and radiation. Not a cancer treatment; talk to your oncologist.",
     products: [],
