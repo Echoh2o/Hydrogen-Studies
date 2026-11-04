@@ -40,6 +40,8 @@ export function footer(conditions: { name: string; slug: string }[]): string {
   h += `<li><a href="/journals">Journals</a></li>`;
   h += `<li><a href="/limits-of-the-evidence">Limits of the evidence</a></li>`;
   h += `<li><a href="/is-hydrogen-water-a-scam">Is hydrogen water a scam?</a></li>`;
+  h += `<li><a href="/state-of-hydrogen-research">State of the research</a></li>`;
+  h += `<li><a href="/dataset">Open dataset</a></li>`;
   h += `<li><a href="/search">Search</a></li>`;
   h += `<li><a href="/advanced-search">Advanced Search</a></li>`;
   h += `</ul></section>`;

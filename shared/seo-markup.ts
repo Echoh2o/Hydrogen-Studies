@@ -633,3 +633,34 @@ export function webPageJsonLd(opts: {
     publisher: { "@type": "Organization", name: SITE_NAME, url: opts.siteUrl },
   };
 }
+
+/**
+ * schema.org Dataset for the public dataset page (PLAN 6.2): licence, free
+ * access, the two downloads, and the fields as variableMeasured.
+ */
+export function datasetJsonLd(opts: {
+  name: string;
+  description: string;
+  canonical: string;
+  siteUrl: string;
+  licenseUrl: string;
+  dateModified: string;
+  distributions: { contentUrl: string; encodingFormat: string }[];
+  fields: readonly { name: string; description: string }[];
+}): Record<string, any> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Dataset",
+    name: opts.name,
+    description: opts.description,
+    url: opts.canonical,
+    license: opts.licenseUrl,
+    isAccessibleForFree: true,
+    dateModified: opts.dateModified,
+    creator: { "@type": "Organization", "@id": `${opts.siteUrl}/#organization`, name: SITE_NAME },
+    publisher: { "@type": "Organization", "@id": `${opts.siteUrl}/#organization`, name: SITE_NAME },
+    keywords: ["molecular hydrogen", "hydrogen water", "hydrogen therapy", "clinical trials", "research database"],
+    distribution: opts.distributions.map((d) => ({ "@type": "DataDownload", encodingFormat: d.encodingFormat, contentUrl: d.contentUrl })),
+    variableMeasured: opts.fields.map((f) => ({ "@type": "PropertyValue", name: f.name, description: f.description })),
+  };
+}

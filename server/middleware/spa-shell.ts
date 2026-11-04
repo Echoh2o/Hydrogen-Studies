@@ -23,7 +23,7 @@ const SITE_URL = "https://hydrogenstudies.com";
 
 /** Routes the SPA renders; anything else is a 404 for everyone. */
 const KNOWN_SPA_ROUTES =
-  /^\/(study|studies|blog|explore-by-|hydrogen-for|learn|admin|search|advanced-search|improved-search|about|benefits|contact|products|recommendations|privacy|terms|disclaimer|cookies|editorial-policy|methodology|insights|research-analytics|researchers|journals|limits-of-the-evidence|null-and-negative-results|is-hydrogen-water-a-scam|login|register|reset-password|my-dashboard|this-week|recent)\b/;
+  /^\/(study|studies|blog|explore-by-|hydrogen-for|learn|admin|search|advanced-search|improved-search|about|benefits|contact|products|recommendations|privacy|terms|disclaimer|cookies|editorial-policy|methodology|insights|research-analytics|researchers|journals|limits-of-the-evidence|null-and-negative-results|is-hydrogen-water-a-scam|dataset|state-of-hydrogen-research|login|register|reset-password|my-dashboard|this-week|recent)\b/;
 
 export function isKnownSpaRoute(pathname: string): boolean {
   return pathname === "/" || KNOWN_SPA_ROUTES.test(pathname);

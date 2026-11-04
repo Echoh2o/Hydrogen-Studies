@@ -91,6 +91,7 @@ import { qualityAudit } from "./utils/comprehensive-quality-audit";
 import { redirectMiddleware, resolveRedirect, ensureRedirectIndexes } from "./services/redirect-service";
 import { excludedStudyGoneMiddleware } from "./services/excluded-studies";
 import pageDataRoutes from "./routes/page-data-routes";
+import datasetRoutes from "./routes/dataset-routes";
 import {
   searchRateLimiter,
   generalApiRateLimiter,
@@ -293,6 +294,8 @@ app.use(seoRoutes);
 // Page data for the Next.js front door (web/): read-only JSON per page type,
 // plus the redirect/410 decision for a path. No session or CSRF needed.
 app.use("/api/page-data", pageDataRoutes);
+// PLAN 6.2 — open dataset downloads (the /dataset page itself is rendered by Next).
+app.use(datasetRoutes);
 
 // Liveness + readiness probe for external uptime monitors (Railway, UptimeRobot,
 // Datadog). Public, no auth, no CSRF. Returns 200 when the DB is reachable and

@@ -33,6 +33,8 @@ export const SSR_FAMILIES: Record<string, RegExp> = {
   profiles: /^\/(?:researchers|journals)(?:\/[^/]+)?$/,
   // Radical-honesty pages (PLAN 4.6).
   evidence: /^\/(?:limits-of-the-evidence|null-and-negative-results|is-hydrogen-water-a-scam)$/,
+  // Open dataset page + yearly report (PLAN 6.2); the CSV/JSON downloads stay on Express.
+  data: /^\/(?:dataset|state-of-hydrogen-research)$/,
 };
 
 // content-security-policy: Next sets a per-request nonce CSP (web/middleware.ts)

@@ -18,6 +18,7 @@ import {
   blogPageTitle,
   buildPageTitle,
   collectionPageJsonLd,
+  datasetJsonLd,
   profilePageJsonLd,
   webPageJsonLd,
   excerptAtWord,
@@ -82,6 +83,18 @@ import {
   SCAM_LAST_REVIEWED,
   SCAM_PATH,
 } from "../../shared/evidence-pages";
+import {
+  DATASET_CSV_PATH,
+  DATASET_FIELDS,
+  DATASET_H1,
+  DATASET_JSON_PATH,
+  DATASET_LAST_REVIEWED,
+  DATASET_LICENSE_URL,
+  DATASET_PATH,
+  REPORT_H1,
+  REPORT_LAST_REVIEWED,
+  REPORT_PATH,
+} from "../../shared/dataset";
 import { marked } from "marked";
 
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
@@ -360,6 +373,30 @@ function staticPathJsonLd(pathname: string, description: string): Record<string,
   if (pathname === NULL_RESULTS_PATH) {
     return listingJsonLd({ name: NULL_RESULTS_H1, description, canonical, crumbs: pageBreadcrumbs(NULL_RESULTS_H1) });
   }
+  if (pathname === DATASET_PATH) {
+    return [
+      datasetJsonLd({
+        name: DATASET_H1,
+        description,
+        canonical,
+        siteUrl: SITE_URL,
+        licenseUrl: DATASET_LICENSE_URL,
+        dateModified: DATASET_LAST_REVIEWED,
+        distributions: [
+          { contentUrl: `${SITE_URL}${DATASET_CSV_PATH}`, encodingFormat: "text/csv" },
+          { contentUrl: `${SITE_URL}${DATASET_JSON_PATH}`, encodingFormat: "application/json" },
+        ],
+        fields: DATASET_FIELDS,
+      }),
+      breadcrumbListJsonLd(pageBreadcrumbs(DATASET_H1), SITE_URL),
+    ];
+  }
+  if (pathname === REPORT_PATH) {
+    return [
+      webPageJsonLd({ name: REPORT_H1, description, canonical, siteUrl: SITE_URL, dateModified: REPORT_LAST_REVIEWED }),
+      breadcrumbListJsonLd(pageBreadcrumbs(REPORT_H1), SITE_URL),
+    ];
+  }
   if (pathname === SCAM_PATH) {
     // The FAQ is rendered visibly on the page (renderScamPage), so FAQPage is allowed.
     return [
@@ -500,6 +537,15 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
     [LIMITS_PATH]: {
       title: `The Limits of the Evidence on Hydrogen | ${SITE_NAME}`,
       description: "How much hydrogen research is actually in people, how small and short the trials are, how positive the published results skew, where the work comes from and what has been replicated — computed live.",
+    },
+    // PLAN 6.2 — open dataset + yearly report.
+    [DATASET_PATH]: {
+      title: `Open Dataset: Every Hydrogen Study, CSV + JSON | ${SITE_NAME}`,
+      description: "Download every study in the Hydrogen Studies database as CSV or JSON under CC BY 4.0: identity, design class, sample size, duration, delivery, concentration, outcome direction, funding, tags and citation counts.",
+    },
+    [REPORT_PATH]: {
+      title: `State of Hydrogen Research: Live Figures | ${SITE_NAME}`,
+      description: "Molecular hydrogen research by the numbers, computed live: studies per year, by design, delivery method, country and condition, the journals and authors publishing it, and how complete the record is.",
     },
     [SCAM_PATH]: {
       title: `Is Hydrogen Water a Scam? An Honest Answer | ${SITE_NAME}`,

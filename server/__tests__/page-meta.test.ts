@@ -50,6 +50,8 @@ describe("resolveStaticPageMeta", () => {
     expect(resolveStaticPageMeta("/researchers")!.robots).toBeUndefined();
     expect(resolveStaticPageMeta("/limits-of-the-evidence")!.robots).toBeUndefined();
     expect(resolveStaticPageMeta("/null-and-negative-results")!.title.length).toBeLessThanOrEqual(65);
+    expect(resolveStaticPageMeta("/dataset")!.title.length).toBeLessThanOrEqual(65);
+    expect(resolveStaticPageMeta("/state-of-hydrogen-research")!.title.length).toBeLessThanOrEqual(65);
     expect(resolveStaticPageMeta("/researchers")!.title).toBe("Researchers Publishing on Molecular Hydrogen | Hydrogen Studies");
   });
 
