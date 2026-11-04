@@ -288,7 +288,7 @@ router.get("/sitemap-pages.xml", (req: Request, res: Response) => {
     { url: "/explore-by-demographic", priority: "0.7", freq: "weekly" },
     { url: "/explore-by-delivery-method", priority: "0.8", freq: "weekly" },
     { url: "/explore-by-benefit", priority: "0.8", freq: "weekly" },
-    { url: "/insights", priority: "0.7", freq: "weekly" },
+    // /insights 301s to /research-analytics (redirects-table row, Josh approved 2026-11-04).
     { url: "/research-analytics", priority: "0.7", freq: "weekly" },
     // /hydrogen-therapy-guide is a 301 (a redirects-table row, not code) —
     // a sitemap lists only final 200 URLs (removal approved, re-audit 2026-09-28).
