@@ -40,6 +40,16 @@ vi.mock("../db", () => {
           if (/WHERE slug = \$1/i.test(sql)) return { rows: state.conditions.filter((c) => c.slug === params[0]) };
           return { rows: /COALESCE\(study_count, 0\) > 0/i.test(sql) ? liveConditions() : state.conditions };
         }
+        if (/AS funding_sources/i.test(sql)) {
+          // dataset export rows
+          return { rows: Array.from({ length: 12 }, (_, i) => ({
+            id: 700 + i, slug: `d-${i}`, title: `Dataset study ${i}`, authors: "Xue-jun Sun, Someone Else", journal: "Medical Gas Research", publish_year: 2010 + i,
+            doi: `10.1/d${i}`, pmid: null, study_design: i % 3 ? "animal" : "rct", is_human_trial: i % 3 === 0, study_type: i % 3 ? "rat" : "human",
+            sample_size: i % 3 ? null : 20, duration: 28, h2_delivery_method: "Water (Electrolysis)", h2_concentration: null, outcome: "Positive",
+            health_conditions: ["Type 2 Diabetes"], body_systems: [], country: "China", funding_sources: null, conflict_of_interest: null,
+            citation_count: 5, citation_source: "openalex", citation_count_updated_at: "2026-11-03T00:00:00Z", openalex_id: `W${i}`,
+          })) };
+        }
         if (/since2010/i.test(sql)) return { rows: [{ total: 2276, human: 348, since2010: 2149 }] };
         if (/AS design/i.test(sql)) return { rows: [{ design: "animal", n: 1070 }, { design: "rct", n: 126 }] };
         if (/median_n/i.test(sql)) return { rows: [{ with_n: 297, median_n: 23, lt30: 169, lt100: 258, ge100: 39, max_n: 2364, with_dur: 258, median_days: 28, single_day: 43, up_to_4w: 106, to_6m: 90, over_6m: 19 }] };
@@ -161,6 +171,8 @@ const PATHS = [
   "/limits-of-the-evidence",
   "/null-and-negative-results",
   "/is-hydrogen-water-a-scam",
+  "/dataset",
+  "/state-of-hydrogen-research",
 ];
 
 describe("BreadcrumbList = the visible trail; page block name = the visible H1", () => {
@@ -176,7 +188,7 @@ describe("BreadcrumbList = the visible trail; page block name = the visible H1",
     expect(items.at(-1).item, "current page has no link").toBeUndefined();
     expect(trail.itemListElement.map((n: any) => n.position)).toEqual(items.map((_: any, i: number) => i + 1));
 
-    const page = blocks.find((b) => ([] as string[]).concat(b["@type"]).some((t) => t === "CollectionPage" || t === "MedicalWebPage" || t === "ProfilePage" || t === "WebPage"));
+    const page = blocks.find((b) => ([] as string[]).concat(b["@type"]).some((t) => t === "CollectionPage" || t === "MedicalWebPage" || t === "ProfilePage" || t === "WebPage" || t === "Dataset"));
     if (page) {
       expect(page.name, path).toBe(h1Text(html!));
       expect(page.url, path).toBe(meta!.canonical);

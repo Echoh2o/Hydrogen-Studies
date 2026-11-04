@@ -40,6 +40,9 @@ describe("family matching", () => {
     expect(ssrFamilyFor("/null-and-negative-results", [...all, "evidence"])).toBe("evidence");
     expect(ssrFamilyFor("/limits-of-the-evidence/x", [...all, "evidence"])).toBeNull();
     expect(ssrFamilyFor("/is-hydrogen-water-a-scam", [...all, "evidence"])).toBe("evidence");
+    expect(ssrFamilyFor("/dataset", [...all, "data"])).toBe("data");
+    expect(ssrFamilyFor("/state-of-hydrogen-research", [...all, "data"])).toBe("data");
+    expect(ssrFamilyFor("/dataset/hydrogen-studies.csv", [...all, "data"])).toBeNull(); // the download stays on Express
     expect(ssrFamilyFor("/", [...all, "home"])).toBe("home");
     expect(ssrFamilyFor("/studies", [...all, "studies"])).toBe("studies");
     expect(ssrFamilyFor("/studies/tags", [...all, "studies"])).toBeNull();
