@@ -86,7 +86,7 @@ export async function renderDatasetPage(): Promise<string> {
 
   h += `<h2 id="what-is-in-it">What is in it</h2>\n`;
   h += `<p>One row per live study: title, authors, journal, year, DOI (${fmtInt(summary.withDoi)} rows) and PubMed ID (${fmtInt(summary.withPmid)} rows) as indexed; our study-design class; whether the study was in people; sample size, duration, delivery method, hydrogen concentration, outcome direction, funding and conflict-of-interest statements where our extraction has recorded them; condition and body-system tags; country; and the paper's OpenAlex citation count with its refresh date. Fields the paper does not report are blank, never guessed.</p>\n`;
-  h += `<p>What is not in it: abstracts (they belong to their publishers; each row links to the paper), our prose summaries, and the ${fmtInt(0)}+ papers we have excluded as retracted or off topic. Extraction coverage is partial and documented on <a href="/methodology">the methodology page</a>; the <a href="${LIMITS_PATH}">limits of the evidence</a> page shows what the numbers can and cannot support.</p>\n`;
+  h += `<p>What is not in it: abstracts (they belong to their publishers; each row links to the paper), our prose summaries, and the papers we have excluded as retracted or off topic (the <a href="/methodology">methodology page</a> gives the current count and reasons). Extraction coverage is partial and documented on <a href="/methodology">the methodology page</a>; the <a href="${LIMITS_PATH}">limits of the evidence</a> page shows what the numbers can and cannot support.</p>\n`;
 
   h += `<h2 id="fields">Fields</h2>\n`;
   h += `<table><thead><tr><th>Column</th><th>Meaning</th></tr></thead><tbody>`;
