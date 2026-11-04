@@ -1,6 +1,8 @@
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useQuery } from "@tanstack/react-query";
 import H2MoleculeSvg from "./svg/H2MoleculeSvg";
+import { Byline } from "@/components/blog/Byline";
+import { learnByline } from "@shared/learn-pages";
 
 export default function LearnHero() {
   const isMobile = useIsMobile();
@@ -60,6 +62,10 @@ export default function LearnHero() {
             Molecular hydrogen (H&#x2082;) has been studied in {stats?.totalStudies?.toLocaleString("en-US") || "2,000"}+ papers across {stats?.healthConditions || "170"}+ health conditions — most in animals or cells. Here's what
             the research shows — in plain English.
           </p>
+          <Byline
+            byline={learnByline()}
+            className="byline text-sm mb-6 text-[#BDD8EE] [&_a]:text-white [&_a:hover]:text-teal-200"
+          />
 
           {/* CTA button */}
           <div className="flex flex-wrap items-center gap-4">

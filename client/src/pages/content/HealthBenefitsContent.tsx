@@ -4,6 +4,8 @@
 // and a wouter Router.
 import React from "react";
 import { Link } from "wouter";
+import { Byline } from "@/components/blog/Byline";
+import { learnByline } from "@shared/learn-pages";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -189,6 +191,7 @@ export function HealthBenefitsContent() {
               What researchers have studied, and how strong the evidence is in
               people. Most of it is early-stage.
             </p>
+            <Byline byline={learnByline()} className="byline text-sm text-gray-600 mb-6" />
             <Badge className="bg-red-100 text-red-800 px-4 py-2">
               {healthCategories.reduce((sum, c) => sum + c.studyCount, 0) > 0
                 ? `${healthCategories.reduce((sum, c) => sum + c.studyCount, 0).toLocaleString("en-US")} studies in these areas`
