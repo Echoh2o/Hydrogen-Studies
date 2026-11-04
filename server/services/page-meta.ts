@@ -82,6 +82,9 @@ import {
   SCAM_H1,
   SCAM_LAST_REVIEWED,
   SCAM_PATH,
+  GAP_MAP_H1,
+  GAP_MAP_LAST_REVIEWED,
+  GAP_MAP_PATH,
 } from "../../shared/evidence-pages";
 import {
   DATASET_CSV_PATH,
@@ -397,6 +400,12 @@ function staticPathJsonLd(pathname: string, description: string): Record<string,
       breadcrumbListJsonLd(pageBreadcrumbs(REPORT_H1), SITE_URL),
     ];
   }
+  if (pathname === GAP_MAP_PATH) {
+    return [
+      webPageJsonLd({ name: GAP_MAP_H1, description, canonical, siteUrl: SITE_URL, dateModified: GAP_MAP_LAST_REVIEWED }),
+      breadcrumbListJsonLd(pageBreadcrumbs(GAP_MAP_H1), SITE_URL),
+    ];
+  }
   if (pathname === SCAM_PATH) {
     // The FAQ is rendered visibly on the page (renderScamPage), so FAQPage is allowed.
     return [
@@ -546,6 +555,10 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
     [REPORT_PATH]: {
       title: `State of Hydrogen Research: Live Figures | ${SITE_NAME}`,
       description: "Molecular hydrogen research by the numbers, computed live: studies per year, by design, delivery method, country and condition, the journals and authors publishing it, and how complete the record is.",
+    },
+    [GAP_MAP_PATH]: {
+      title: `Evidence Gap Map for Hydrogen Research | ${SITE_NAME}`,
+      description: "Every health condition with 20+ hydrogen studies, by evidence type — systematic reviews, randomized trials, other human studies, animal and laboratory work — with human result direction and reviewed certainty. Computed live.",
     },
     [SCAM_PATH]: {
       title: `Is Hydrogen Water a Scam? An Honest Answer | ${SITE_NAME}`,

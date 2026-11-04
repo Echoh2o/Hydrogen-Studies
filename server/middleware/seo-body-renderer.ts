@@ -74,10 +74,10 @@ import { studyBreadcrumbs, studyEvidence, studyHubLinks } from "../../shared/stu
 import { POLICY_PAGES } from "../../shared/policy-pages";
 import { breadcrumbs, esc, footer, truncate } from "./html-fragments";
 import { renderJournalIndex, renderJournalPage, renderResearcherIndex, renderResearcherPage } from "./profile-pages";
-import { renderLimitsPage, renderNullResultsHub, renderScamPage } from "./evidence-pages";
+import { renderGapMapPage, renderLimitsPage, renderNullResultsHub, renderScamPage } from "./evidence-pages";
 import { renderDatasetPage, renderReportPage } from "./report-pages";
 import { DATASET_PATH, REPORT_PATH } from "../../shared/dataset";
-import { LIMITS_PATH, NULL_RESULTS_PATH, SCAM_PATH } from "../../shared/evidence-pages";
+import { GAP_MAP_PATH, LIMITS_PATH, NULL_RESULTS_PATH, SCAM_PATH } from "../../shared/evidence-pages";
 import {
   blogListBreadcrumbs,
   blogPostBreadcrumbs,
@@ -1343,6 +1343,7 @@ async function dispatchPageBody(pathname: string): Promise<string | null> {
   if (pathname === LIMITS_PATH) return renderLimitsPage();
   if (pathname === NULL_RESULTS_PATH) return renderNullResultsHub();
   if (pathname === SCAM_PATH) return renderScamPage();
+  if (pathname === GAP_MAP_PATH) return renderGapMapPage();
 
   // Open dataset + yearly report (PLAN 6.2)
   if (pathname === DATASET_PATH) return renderDatasetPage();

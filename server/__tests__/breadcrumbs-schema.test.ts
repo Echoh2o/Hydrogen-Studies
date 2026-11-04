@@ -50,6 +50,7 @@ vi.mock("../db", () => {
             citation_count: 5, citation_source: "openalex", citation_count_updated_at: "2026-11-03T00:00:00Z", openalex_id: `W${i}`,
           })) };
         }
+        if (/other_human/i.test(sql)) return { rows: [{ cond: "Type 2 Diabetes", total: 69, sr: 1, rct: 6, other_human: 14, animal: 21, in_vitro: 5, review: 18, human_positive: 20, human_non_positive: 0 }, { cond: "Sepsis", total: 101, sr: 0, rct: 0, other_human: 0, animal: 76, in_vitro: 8, review: 12, human_positive: 0, human_non_positive: 0 }] };
         if (/since2010/i.test(sql)) return { rows: [{ total: 2276, human: 348, since2010: 2149 }] };
         if (/AS design/i.test(sql)) return { rows: [{ design: "animal", n: 1070 }, { design: "rct", n: 126 }] };
         if (/median_n/i.test(sql)) return { rows: [{ with_n: 297, median_n: 23, lt30: 169, lt100: 258, ge100: 39, max_n: 2364, with_dur: 258, median_days: 28, single_day: 43, up_to_4w: 106, to_6m: 90, over_6m: 19 }] };
@@ -173,6 +174,7 @@ const PATHS = [
   "/is-hydrogen-water-a-scam",
   "/dataset",
   "/state-of-hydrogen-research",
+  "/evidence-gap-map",
 ];
 
 describe("BreadcrumbList = the visible trail; page block name = the visible H1", () => {

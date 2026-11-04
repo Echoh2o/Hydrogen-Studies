@@ -189,6 +189,7 @@ Hydrogen Studies is built and funded by Echo Technologies LLC, the maker of Echo
 - [RSS feed](${SITE_URL}/rss.xml): latest published articles
 - [Open dataset](${SITE_URL}/dataset): every study as CSV (${SITE_URL}/dataset/hydrogen-studies.csv) or JSON, CC BY 4.0 — identity, design class, sample size, duration, delivery, concentration, outcome direction, funding, tags, citation counts
 - [State of hydrogen research](${SITE_URL}/state-of-hydrogen-research): live counts by year, design, delivery method, country and condition
+- [Evidence gap map](${SITE_URL}/evidence-gap-map): conditions × evidence type matrix with human result direction and reviewed certainty (embeddable at ${SITE_URL}/evidence-gap-map/embed)
 - [robots.txt](${SITE_URL}/robots.txt): crawl policy (all public content is crawlable)
 - [MCP server](${SITE_URL}/mcp): Model Context Protocol endpoint (Streamable HTTP, no auth, read-only) — tools to search studies, profile the evidence for a condition, compare delivery methods or conditions, and aggregate counts. Add it to an MCP client as \`${SITE_URL}/mcp\`.
 
@@ -273,6 +274,7 @@ router.get("/sitemap-pages.xml", (req: Request, res: Response) => {
     // PLAN 6.2 — open dataset + yearly report.
     { url: "/dataset", priority: "0.8", freq: "weekly" },
     { url: "/state-of-hydrogen-research", priority: "0.8", freq: "weekly" },
+    { url: "/evidence-gap-map", priority: "0.8", freq: "weekly" },
     { url: "/contact", priority: "0.4", freq: "yearly" },
     { url: "/explore-by-condition", priority: "0.9", freq: "weekly" },
     { url: "/explore-by-body-system", priority: "0.9", freq: "weekly" },
