@@ -66,6 +66,7 @@ import {
 } from "../../shared/breadcrumbs";
 import { getConditionHubs } from "../middleware/seo-body-renderer";
 import { getJournal, getResearcher } from "./profiles";
+import { openAlexAuthorUrl, orcidUrl } from "../../shared/author-identity";
 import {
   JOURNALS_H1,
   RESEARCHERS_H1,
@@ -200,7 +201,15 @@ export async function resolvePageMeta(pathname: string): Promise<PageMeta | null
         ogType: "profile",
         ogImage: `${SITE_URL}/logo.png`,
         jsonLd: [
-          profilePageJsonLd({ name: p.name, description, canonical, siteUrl: SITE_URL }),
+          profilePageJsonLd({
+            name: p.name,
+            description,
+            canonical,
+            siteUrl: SITE_URL,
+            // Only what the page shows (identity resolved from OpenAlex authorships).
+            sameAs: p.identity ? [...(p.identity.orcid ? [orcidUrl(p.identity.orcid)] : []), openAlexAuthorUrl(p.identity.openalexAuthorId)] : undefined,
+            affiliation: p.identity?.institution ?? null,
+          }),
           breadcrumbListJsonLd(researcherBreadcrumbs(p.name), SITE_URL),
         ],
       };
