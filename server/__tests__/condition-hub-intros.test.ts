@@ -200,7 +200,9 @@ describe("shared/condition-hub-intros records", () => {
       expect(Boolean(s.pmid) || Boolean(s.doi), `source ${s.n}`).toBe(true);
       if (s.pmid) expect(s.pmid).toMatch(/^\d+$/);
       // Permanent study URLs (PMID/DOI-derived slug + id suffix), never regenerated.
-      if (s.ourStudyPath) expect(s.ourStudyPath).toMatch(/^\/study\/[a-z0-9-]+-\d{10,}$/);
+      // PLAN 3.3: links use the permanent-ID slug (…-pmid-N | -doi-… | -hs-N).
+      if (s.ourStudyPath) expect(s.ourStudyPath).toMatch(/^\/study\/[a-z0-9-]+-(?:pmid-\d+|doi-10-[a-z0-9-]+|hs-\d+)$/);
+      if (s.ourStudyPath && /^\d+$/.test(String(s.pmid ?? ""))) expect(s.ourStudyPath.endsWith(`-pmid-${s.pmid}`)).toBe(true);
     }
   });
 
