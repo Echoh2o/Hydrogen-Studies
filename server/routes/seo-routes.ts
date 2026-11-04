@@ -262,11 +262,16 @@ router.get("/sitemap-pages.xml", (req: Request, res: Response) => {
     { url: "/studies", priority: "0.9", freq: "daily" },
     { url: "/blog", priority: "0.9", freq: "daily" },
     // PLAN.md 0.6: internal search results are noindex and out of the sitemap.
-    // PLAN.md 1.8: thin pages (/products, /recommendations, /learn/*) are
-    // noindex until they carry real content — kept in nav, not in the sitemap.
+    // PLAN.md 1.8: thin pages (/products, /recommendations) are noindex until
+    // they carry real content — kept in nav, not in the sitemap.
     // /benefits 301s to /blog/molecular-hydrogen-benefits-guide-pillar (merged,
     // owner-approved 2026-09-28) — the guide is listed in sitemap-blog.
     { url: "/about", priority: "0.6", freq: "monthly" },
+    // /learn guides — indexable since 2026-11-04 (shared/learn-pages.ts).
+    { url: "/learn", priority: "0.8", freq: "monthly" },
+    { url: "/learn/basics", priority: "0.7", freq: "monthly" },
+    { url: "/learn/health-benefits", priority: "0.7", freq: "monthly" },
+    { url: "/learn/therapy-guide", priority: "0.7", freq: "monthly" },
     // PLAN 4.6 — radical-honesty pages (numbers recomputed on each build).
     { url: "/limits-of-the-evidence", priority: "0.8", freq: "weekly" },
     { url: "/null-and-negative-results", priority: "0.7", freq: "weekly" },

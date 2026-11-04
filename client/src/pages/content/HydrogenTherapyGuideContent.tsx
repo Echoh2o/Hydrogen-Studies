@@ -4,6 +4,8 @@
 // wouter <Link> (needs a Router) and client-only UI (Tabs).
 import React from "react";
 import { Link } from "wouter";
+import { Byline } from "@/components/blog/Byline";
+import { learnByline } from "@shared/learn-pages";
 import { Separator } from "@/components/ui/separator";
 import {
   Card,
@@ -46,6 +48,7 @@ export function HydrogenTherapyGuideContent() {
                 A plain-English guide to how hydrogen is studied, how it&apos;s
                 given, and what the evidence does — and doesn&apos;t — show.
               </p>
+              <Byline byline={learnByline()} className="byline text-sm text-gray-600 mb-6" />
               <div className="flex flex-wrap gap-4">
                 <Link href="/studies">
                   <Button size="lg" className="shadow-lg">

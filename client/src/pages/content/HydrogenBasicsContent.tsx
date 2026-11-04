@@ -3,6 +3,8 @@
 // Next.js front door. Needs React Query (/api/public-stats) and a wouter Router.
 import React from "react";
 import { Link } from "wouter";
+import { Byline } from "@/components/blog/Byline";
+import { learnByline } from "@shared/learn-pages";
 import {
   ArrowLeft,
   Atom,
@@ -120,6 +122,7 @@ export function HydrogenBasicsContent() {
               What molecular hydrogen is, how it's taken, and what research
               does — and doesn't — show
             </p>
+            <Byline byline={learnByline()} className="byline text-sm text-gray-600 mb-6" />
             <Badge className="bg-teal-100 text-teal-800 px-4 py-2">
               From a database of {siteStats?.totalStudies ? `${siteStats.totalStudies.toLocaleString("en-US")}+` : "2,000+"} studies — most in animals or cells
             </Badge>

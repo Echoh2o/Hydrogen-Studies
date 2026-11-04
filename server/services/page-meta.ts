@@ -445,7 +445,10 @@ function exploreIndexMeta(type: ListedExploreHubType): { title: string; descript
 export function resolveStaticPageMeta(pathname: string): PageMeta | null {
   // PLAN.md 0.6 + 1.8: internal-search pages and thin pages carry
   // noindex,follow until they have real content. Kept in nav; removed from
-  // sitemap-pages in seo-routes.ts (same deploy).
+  // sitemap-pages in seo-routes.ts (same deploy). The /learn guides were
+  // lifted 2026-11-04 (Josh) after the 2026-11-02 accuracy review; /products
+  // stays until PLAN 5.4 turns it into the device guide; /recommendations is a
+  // personalised app page.
   const NOINDEX_PATHS = new Set([
     "/search",
     "/advanced-search",
@@ -453,9 +456,7 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
     "/recommendations",
   ]);
   const noindexFor = (p: string): string | undefined =>
-    NOINDEX_PATHS.has(p) || p.startsWith("/learn/") || p === "/learn"
-      ? "noindex, follow"
-      : undefined;
+    NOINDEX_PATHS.has(p) ? "noindex, follow" : undefined;
 
   const pages: Record<string, { title: string; description: string }> = {
     "/": {
@@ -506,7 +507,7 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
     "/explore-by-demographic": exploreIndexMeta("demographic"),
     "/explore-by-delivery-method": exploreIndexMeta("delivery-method"),
     "/explore-by-benefit": exploreIndexMeta("benefit"),
-    // /learn stays noindex,follow (PLAN 0.6) until Josh lifts it; the Next
+    // /learn and /learn/* are indexable (shared/learn-pages.ts); the Next
     // page adds the FAQPage block (the FAQ is visible there).
     "/learn": {
       title: `Learn About Molecular Hydrogen | ${SITE_NAME}`,

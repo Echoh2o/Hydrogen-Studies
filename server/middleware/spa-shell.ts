@@ -9,7 +9,7 @@
  *     robots, canonical, OG/Twitter, page JSON-LD) — the same values crawlers
  *     used to get, now for everyone; scripts in index.html are left alone
  *     (consent-gated analytics keeps working)
- *   - no known meta → noindex (account/app pages, unreviewed /learn)
+ *   - no known meta → noindex (account/app pages)
  *   - unknown path or unknown explore hub → 404 + noindex
  */
 import fs from "fs";
