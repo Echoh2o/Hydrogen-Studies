@@ -11,6 +11,8 @@
 import { Router, type Request, type Response } from "express";
 import { DATASET_LICENSE_URL, DATASET_PATH } from "../../shared/dataset";
 import { getDatasetRecords, toCsv } from "../services/dataset-export";
+import { renderGapMapEmbed } from "../middleware/evidence-pages";
+import { GAP_MAP_PATH } from "../../shared/evidence-pages";
 import { logger } from "../utils/logger";
 
 const router = Router();
@@ -52,6 +54,25 @@ router.get("/dataset/hydrogen-studies.json", async (_req: Request, res: Response
   } catch (err) {
     logger.error("dataset json failed", err, "Dataset");
     res.status(500).json({ error: "dataset unavailable" });
+  }
+});
+
+/**
+ * PLAN 6.3 — the evidence gap map as a standalone document for <iframe>
+ * embedding on other sites. Helmet's frame-ancestors 'self' is replaced for
+ * this one response (there is nothing here but a table and a link back).
+ */
+router.get(`${GAP_MAP_PATH}/embed`, async (_req: Request, res: Response) => {
+  try {
+    const html = await renderGapMapEmbed();
+    res.removeHeader("X-Frame-Options");
+    res.set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors *");
+    res.set("Cache-Control", "public, max-age=3600");
+    res.set("X-Robots-Tag", "noindex");
+    res.type("html").send(html);
+  } catch (err) {
+    logger.error("gap map embed failed", err, "Dataset");
+    res.status(500).type("text/plain").send("embed unavailable");
   }
 });
 

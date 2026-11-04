@@ -13,6 +13,15 @@ vi.mock("../db", () => {
     db: {
       execute: async (q: any) => {
         const { sql } = dialect.sqlToQuery(q);
+        if (/other_human/i.test(sql)) {
+          return {
+            rows: [
+              { cond: "Type 2 Diabetes", total: 69, sr: 1, rct: 6, other_human: 14, animal: 21, in_vitro: 5, review: 18, human_positive: 20, human_non_positive: 0 },
+              { cond: "Sepsis", total: 101, sr: 0, rct: 0, other_human: 0, animal: 76, in_vitro: 8, review: 12, human_positive: 0, human_non_positive: 0 },
+              { cond: "Acute Lung Injury", total: 65, sr: 0, rct: 0, other_human: 0, animal: 56, in_vitro: 1, review: 4, human_positive: 0, human_non_positive: 0 },
+            ],
+          };
+        }
         if (/since2010/i.test(sql)) return { rows: [{ total: 2276, human: 348, since2010: 2149 }] };
         if (/AS design/i.test(sql)) {
           return { rows: [{ design: "animal", n: 1070 }, { design: "review", n: 426 }, { design: "in_vitro", n: 276 }, { design: "rct", n: 126 }, { design: "unknown", n: 67 }] };
@@ -32,7 +41,8 @@ vi.mock("../db", () => {
             ],
           };
         }
-        if (/FROM health_conditions/i.test(sql)) return { rows: [] };
+        if (/FROM health_conditions/i.test(sql)) return { rows: [{ name: "Type 2 Diabetes", slug: "type-2-diabetes", study_count: 69, description: null }] };
+        if (/count\(\*\)/i.test(sql) && /health_conditions/i.test(sql)) return { rows: [{ n: 1 }] };
         return { rows: [] };
       },
       select: () => ({ from: () => ({ where: () => ({ limit: async () => [] }) }) }),
@@ -44,12 +54,15 @@ vi.mock("../utils/logger", () => ({ logger: { error: vi.fn(), warn: vi.fn(), inf
 
 const { renderPageBody } = await import("../middleware/seo-body-renderer");
 const { resolvePageMeta } = await import("../services/page-meta");
-const { __resetEvidenceStatsForTests, getEvidenceStats } = await import("../services/evidence-stats");
+const { __resetEvidenceStatsForTests, __resetGapMatrixForTests, getEvidenceStats } = await import("../services/evidence-stats");
 
 const text = (html: string) => html.replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ");
 const OVERCLAIMS = [/\b(can|will|does|may) (cure|treat|prevent)\b/i, /\bproven to\b/i, /\bclinically proven\b/i, /\bmiracle\b/i, /hydrogen works\b(?! \d)/i];
 
-beforeEach(() => __resetEvidenceStatsForTests());
+beforeEach(() => {
+  __resetEvidenceStatsForTests();
+  __resetGapMatrixForTests();
+});
 
 describe("/limits-of-the-evidence", () => {
   it("states the database's numbers, with percentages, and one H1", async () => {
@@ -153,5 +166,53 @@ describe("/null-and-negative-results", () => {
     expect(page["@type"]).toBe("CollectionPage");
     expect(page.name).toBe("Null and negative results");
     expect(trail.itemListElement.map((n: any) => n.name)).toEqual(["Home", "Null and negative results"]);
+  });
+});
+
+describe("/evidence-gap-map", () => {
+  it("one row per tag with cells shaded by count, hub links, reviewed certainty, and the biggest gaps named", async () => {
+    const html = (await renderPageBody("/evidence-gap-map"))!;
+    expect((html.match(/<h1\b/g) ?? []).length).toBe(1);
+    expect((html.match(/<tr><th scope="row">/g) ?? []).length).toBe(3);
+    expect(html).toContain('<th scope="row"><a href="/explore-by-condition/type-2-diabetes">Type 2 Diabetes</a></th>');
+    expect(html).toContain('<td data-level="2"'); // 6 RCTs → bucket 2
+    expect(html).toContain('<td data-level="4"'); // 76 animal → bucket 4
+    expect(html).toContain('<td data-level="0"'); // zeros shown as –
+    expect(html).toContain("20 / 0"); // human results +/−
+    expect(html).toMatch(/Certainty<\/th>/);
+    expect(html).toContain('type-2-diabetes">Very low</a>'); // reviewed hub grade
+    expect(html).toContain("not graded");
+    expect(text(html)).toContain("2 of the 3 tags have no human study at all");
+    expect(text(html)).toContain("Sepsis: 76 animal studies, 0 in people");
+    expect(text(html)).toContain("1 tag has at least one randomized controlled trial; 1 has two or more");
+    expect(html).toContain("/evidence-gap-map/embed"); // embed path mentioned
+    expect(html).not.toMatch(/\$\{/);
+  });
+
+  it("meta: WebPage named by the H1 + trail", async () => {
+    const meta = (await resolvePageMeta("/evidence-gap-map"))!;
+    expect(meta.title.length).toBeLessThanOrEqual(65);
+    const [page, trail] = meta.jsonLd as any[];
+    expect(page["@type"]).toBe("WebPage");
+    expect(page.name).toBe("Evidence gap map: what has been studied, in whom, how well");
+    expect(trail.itemListElement.map((n: any) => n.name)).toEqual(["Home", "Evidence gap map: what has been studied, in whom, how well"]);
+  });
+
+  it("embed: a standalone, script-free document that may be framed anywhere and links back", async () => {
+    const { default: datasetRoutes } = await import("../routes/dataset-routes");
+    const express = (await import("express")).default;
+    const request = (await import("supertest")).default;
+    const app = express();
+    app.use((_req, res, next) => { res.set("X-Frame-Options", "SAMEORIGIN"); next(); }); // what helmet would set
+    app.use(datasetRoutes);
+    const res = await request(app).get("/evidence-gap-map/embed");
+    expect(res.status).toBe(200);
+    expect(res.headers["x-frame-options"]).toBeUndefined();
+    expect(res.headers["content-security-policy"]).toContain("frame-ancestors *");
+    expect(res.headers["x-robots-tag"]).toBe("noindex");
+    expect(res.text).not.toContain("<script");
+    expect(res.text).toContain('href="https://hydrogenstudies.com/evidence-gap-map"');
+    expect(res.text).toContain('href="https://hydrogenstudies.com/explore-by-condition/type-2-diabetes"'); // relative links made absolute
+    expect(res.text).toContain("CC BY 4.0");
   });
 });

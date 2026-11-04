@@ -171,3 +171,65 @@ export function __resetEvidenceStatsForTests(): void {
   _stats = null;
   _nonPositive = null;
 }
+
+// ── Evidence gap map (PLAN 6.3) ───────────────────────────────────
+
+export interface GapRow {
+  condition: string;
+  total: number;
+  /** Systematic reviews / meta-analyses. */
+  sr: number;
+  rct: number;
+  /** Human studies that are neither SR/MA nor RCT. */
+  otherHuman: number;
+  animal: number;
+  inVitro: number;
+  review: number;
+  humanPositive: number;
+  humanNonPositive: number;
+}
+
+let _gap: GapRow[] | null = null;
+let _gapAt = 0;
+
+/** One row per condition tag with ≥ GAP_MAP_MIN_STUDIES studies, most studied first. */
+export async function getGapMatrix(minStudies: number): Promise<GapRow[]> {
+  if (_gap && Date.now() - _gapAt < TTL_MS) return _gap;
+  const r = await db.execute(sql`
+    WITH t AS (
+      SELECT unnest(health_conditions) AS cond, study_design AS d, is_human_trial AS h, lower(outcome) AS o
+        FROM studies WHERE is_excluded = false
+    )
+    SELECT cond, count(*)::int AS total,
+           count(*) FILTER (WHERE d = 'meta_analysis')::int AS sr,
+           count(*) FILTER (WHERE d = 'rct')::int AS rct,
+           count(*) FILTER (WHERE h AND d NOT IN ('meta_analysis', 'rct'))::int AS other_human,
+           count(*) FILTER (WHERE d = 'animal')::int AS animal,
+           count(*) FILTER (WHERE d = 'in_vitro')::int AS in_vitro,
+           count(*) FILTER (WHERE d = 'review')::int AS review,
+           count(*) FILTER (WHERE h AND o = 'positive')::int AS human_positive,
+           count(*) FILTER (WHERE h AND o IN ('neutral', 'negative', 'mixed'))::int AS human_non_positive
+      FROM t
+     WHERE coalesce(cond, '') <> ''
+     GROUP BY cond
+    HAVING count(*) >= ${minStudies}
+     ORDER BY total DESC, cond ASC`);
+  _gap = (r.rows as any[]).map((x) => ({
+    condition: String(x.cond),
+    total: num(x.total),
+    sr: num(x.sr),
+    rct: num(x.rct),
+    otherHuman: num(x.other_human),
+    animal: num(x.animal),
+    inVitro: num(x.in_vitro),
+    review: num(x.review),
+    humanPositive: num(x.human_positive),
+    humanNonPositive: num(x.human_non_positive),
+  }));
+  _gapAt = _gap.length ? Date.now() : 0;
+  return _gap;
+}
+
+export function __resetGapMatrixForTests(): void {
+  _gap = null;
+}

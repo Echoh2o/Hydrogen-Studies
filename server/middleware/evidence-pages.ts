@@ -22,12 +22,18 @@ import {
   SCAM_H1,
   SCAM_LAST_REVIEWED,
   SCAM_PATH,
+  GAP_MAP_H1,
+  GAP_MAP_LAST_REVIEWED,
+  GAP_MAP_MIN_STUDIES,
+  GAP_MAP_PATH,
   fmtInt,
+  gapBucket,
   pct,
 } from "../../shared/evidence-pages";
-import { CONDITION_HUB_INTROS, type EvidenceGrade } from "../../shared/condition-hub-intros";
-import { exploreHubPath, titleCaseSlug } from "../../shared/explore-hubs";
-import { getEvidenceStats, getNonPositiveStudies, type EvidenceStats } from "../services/evidence-stats";
+import { DATASET_PATH } from "../../shared/dataset";
+import { CONDITION_HUB_INTROS, getConditionHubIntro, type EvidenceGrade } from "../../shared/condition-hub-intros";
+import { conditionHubForValue, exploreHubPath, titleCaseSlug } from "../../shared/explore-hubs";
+import { getEvidenceStats, getGapMatrix, getNonPositiveStudies, type EvidenceStats, type GapRow } from "../services/evidence-stats";
 import { getConditionHubs, getTopConditions, renderBylineHtml } from "./seo-body-renderer";
 import { breadcrumbs, esc, footer } from "./html-fragments";
 
@@ -206,4 +212,104 @@ export async function renderScamPage(): Promise<string> {
   h += `</article>\n`;
   h += footer(conditions);
   return h;
+}
+
+// ── Evidence gap map (PLAN 6.3) ───────────────────────────────────
+
+const BUCKET_STYLE: Record<0 | 1 | 2 | 3 | 4, string> = {
+  0: "background:#f8fafc;color:#94a3b8",
+  1: "background:#ccfbf1",
+  2: "background:#5eead4",
+  3: "background:#14b8a6;color:#fff",
+  4: "background:#0f766e;color:#fff",
+};
+
+const GAP_COLUMNS: { key: keyof GapRow; label: string; abbr: string }[] = [
+  { key: "sr", label: "Systematic reviews / meta-analyses", abbr: "SR/MA" },
+  { key: "rct", label: "Randomized controlled trials", abbr: "RCT" },
+  { key: "otherHuman", label: "Other human studies", abbr: "Other human" },
+  { key: "animal", label: "Animal studies", abbr: "Animal" },
+  { key: "inVitro", label: "Laboratory studies", abbr: "Lab" },
+  { key: "review", label: "Reviews and commentaries", abbr: "Review" },
+];
+
+function cell(n: number): string {
+  const b = gapBucket(n);
+  return `<td data-level="${b}" style="${BUCKET_STYLE[b]};text-align:right">${n ? fmtInt(n) : "–"}</td>`;
+}
+
+/**
+ * The matrix itself — shared by the page and the embeddable fragment. Rows
+ * link to the condition hub when one exists; "certainty" is the hub's
+ * reviewed evidence grade, or "not graded" when no intro has been written.
+ */
+export async function renderGapMapTable(): Promise<{ html: string; rows: GapRow[]; asOf: Date }> {
+  const [rows, hubs] = await Promise.all([getGapMatrix(GAP_MAP_MIN_STUDIES), getConditionHubs()]);
+  let h = `<table class="gap-map"><thead><tr><th scope="col">Condition tag</th><th scope="col">All</th>`;
+  for (const c of GAP_COLUMNS) h += `<th scope="col" title="${esc(c.label)}">${esc(c.abbr)}</th>`;
+  h += `<th scope="col" title="Human studies with a positive recorded result / with a neutral, negative or mixed result">Human results +/−</th><th scope="col">Certainty</th></tr></thead><tbody>`;
+  for (const r of rows) {
+    const hub = conditionHubForValue(r.condition, hubs);
+    const intro = hub ? getConditionHubIntro(hub.slug) : null;
+    const label = hub ? `<a href="${esc(exploreHubPath("condition", hub.slug))}">${esc(hub.name || r.condition)}</a>` : esc(r.condition);
+    h += `<tr><th scope="row">${label}</th><td style="text-align:right">${fmtInt(r.total)}</td>`;
+    for (const c of GAP_COLUMNS) h += cell(Number(r[c.key]));
+    const human = r.humanPositive + r.humanNonPositive;
+    h += `<td style="text-align:right">${human ? `${fmtInt(r.humanPositive)} / ${fmtInt(r.humanNonPositive)}` : "–"}</td>`;
+    h += `<td>${intro ? `<a href="${esc(exploreHubPath("condition", intro.slug))}">${esc(GRADE_LABEL[intro.evidenceGrade])}</a>` : "not graded"}</td></tr>`;
+  }
+  h += `</tbody></table>\n`;
+  return { html: h, rows, asOf: new Date() };
+}
+
+export async function renderGapMapPage(): Promise<string> {
+  const [{ html: table, rows, asOf }, conditions] = await Promise.all([renderGapMapTable(), getTopConditions()]);
+  const noHuman = rows.filter((r) => r.sr + r.rct + r.otherHuman === 0);
+  const animalHeavy = noHuman.filter((r) => r.animal >= 20).sort((a, b) => b.animal - a.animal);
+  const rctRows = rows.filter((r) => r.rct > 0);
+  let h = breadcrumbs(pageBreadcrumbs(GAP_MAP_H1));
+  h += `<article>\n<h1>${esc(GAP_MAP_H1)}</h1>\n`;
+  h += renderBylineHtml(blogByline({ authorName: EDITORIAL_TEAM, updatedAt: GAP_MAP_LAST_REVIEWED }));
+  h += `<p class="lead">One table: every health-condition tag with at least ${GAP_MAP_MIN_STUDIES} studies in the database (${fmtInt(rows.length)} tags), by the kind of evidence behind it, from systematic reviews down to reviews that report no new data. Darker cells hold more studies. The last two columns show how the human studies came out and, where we have written a reviewed hub introduction, how certain the evidence is. Figures as of ${esc(formatLongDate(asOf))}; the prose was last reviewed on ${esc(formatLongDate(GAP_MAP_LAST_REVIEWED))}.</p>\n`;
+
+  h += `<h2 id="how-to-read">How to read it</h2>\n`;
+  h += `<ul>`;
+  h += `<li>A row with many animal and laboratory studies and nothing in the SR/MA, RCT or other-human columns is a gap: a topic where no one has yet tested hydrogen in people.</li>`;
+  h += `<li>A row whose human studies sit in the "other human" column has been studied in people, but without randomization; those studies cannot show cause and effect.</li>`;
+  h += `<li>"Human results +/−" counts human studies with a positive recorded result against those with a neutral, negative or mixed one. A high positive share with few studies says more about publishing than about hydrogen — see <a href="${LIMITS_PATH}">the limits of the evidence</a>.</li>`;
+  h += `<li>"Certainty" is the GRADE-style grade from the hub introduction, where one exists; "not graded" means no reviewed introduction has been written for that tag yet.</li>`;
+  h += `<li>Tags are assigned per study and a study can carry several, so rows overlap; columns within a row do not.</li>`;
+  h += `</ul>\n`;
+
+  h += `<h2 id="biggest-gaps">The biggest gaps</h2>\n`;
+  if (animalHeavy.length) {
+    h += `<p>${fmtInt(noHuman.length)} of the ${fmtInt(rows.length)} tags have no human study at all. The ones with the most animal work and still nothing in people:</p>\n<ul>`;
+    for (const r of animalHeavy.slice(0, 10)) h += `<li>${esc(r.condition)}: ${fmtInt(r.animal)} animal studies, 0 in people</li>`;
+    h += `</ul>\n`;
+  } else {
+    h += `<p>${fmtInt(noHuman.length)} of the ${fmtInt(rows.length)} tags have no human study at all.</p>\n`;
+  }
+  const twoPlus = rctRows.filter((r) => r.rct >= 2).length;
+  h += `<p>${fmtInt(rctRows.length)} ${rctRows.length === 1 ? "tag has" : "tags have"} at least one randomized controlled trial; ${fmtInt(twoPlus)} ${twoPlus === 1 ? "has" : "have"} two or more.</p>\n`;
+
+  h += `<h2 id="map">The map</h2>\n`;
+  h += `<p class="legend">Shading: <span style="${BUCKET_STYLE[1]};padding:0 .4em">1–2</span> <span style="${BUCKET_STYLE[2]};padding:0 .4em">3–9</span> <span style="${BUCKET_STYLE[3]};padding:0 .4em">10–29</span> <span style="${BUCKET_STYLE[4]};padding:0 .4em">30+</span> studies.</p>\n`;
+  h += table;
+
+  h += `<h2 id="reuse">Reuse</h2>\n`;
+  h += `<p>The table is built from <a href="${DATASET_PATH}">the open dataset</a> (CC BY 4.0) each time the page is built, so anyone can recompute or extend it. An embeddable version of the table is at <code>${GAP_MAP_PATH}/embed</code>; it carries a link back here. Design classes and tags are machine-drafted and audited (<a href="/methodology">methodology</a>); report a misclassified study via <a href="/contact">contact</a>.</p>\n`;
+  h += `</article>\n`;
+  h += footer(conditions);
+  return h;
+}
+
+/** Standalone, script-free HTML document for an <iframe> on another site. */
+export async function renderGapMapEmbed(): Promise<string> {
+  const { html, asOf } = await renderGapMapTable();
+  const site = "https://hydrogenstudies.com";
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Evidence gap map — Hydrogen Studies</title>
+<style>body{font:14px/1.4 system-ui,sans-serif;margin:0;padding:12px;color:#0f172a}table{border-collapse:collapse;width:100%}th,td{border:1px solid #e2e8f0;padding:4px 6px;font-size:13px}th{background:#f1f5f9;text-align:left}a{color:#0f766e}.src{margin-top:8px;font-size:12px;color:#475569}</style></head><body>
+${html.replace(/href="\//g, `href="${site}/`)}
+<p class="src">Evidence gap map by <a href="${site}${GAP_MAP_PATH}">Hydrogen Studies</a> (funded by Echo Technologies LLC), from the <a href="${site}${DATASET_PATH}">open dataset</a>, CC BY 4.0. Figures as of ${esc(formatLongDate(asOf))}.</p>
+</body></html>`;
 }

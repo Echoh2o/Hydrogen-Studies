@@ -15,6 +15,7 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
       { href: "/limits-of-the-evidence", label: "Limits of the evidence" },
       { href: "/is-hydrogen-water-a-scam", label: "Is hydrogen water a scam?" },
       { href: "/state-of-hydrogen-research", label: "State of the research" },
+      { href: "/evidence-gap-map", label: "Evidence gap map" },
       { href: "/dataset", label: "Open dataset" },
       { href: "/search", label: "Search" },
       { href: "/advanced-search", label: "Advanced Search" },

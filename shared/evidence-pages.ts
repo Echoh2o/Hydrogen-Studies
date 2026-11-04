@@ -63,3 +63,20 @@ export const SCAM_FAQS: { question: string; answer: string }[] = [
       "Because a database of hydrogen research run by a hydrogen water company is only worth reading if it says plainly what the research does not show. Echo Technologies LLC funds this site; our editorial policy explains what that does and does not buy. This page recommends no product.",
   },
 ];
+
+// ── /evidence-gap-map ──────────────────────────────────────────────
+export const GAP_MAP_PATH = "/evidence-gap-map";
+export const GAP_MAP_H1 = "Evidence gap map: what has been studied, in whom, how well";
+/** When the prose (not the numbers) was last reviewed. */
+export const GAP_MAP_LAST_REVIEWED = "2026-11-03";
+/** Condition tags with at least this many studies appear as rows. */
+export const GAP_MAP_MIN_STUDIES = 20;
+
+/** Shade bucket for a cell count: 0 → none … 4 → heavy. */
+export function gapBucket(n: number): 0 | 1 | 2 | 3 | 4 {
+  if (n <= 0) return 0;
+  if (n <= 2) return 1;
+  if (n <= 9) return 2;
+  if (n <= 29) return 3;
+  return 4;
+}
