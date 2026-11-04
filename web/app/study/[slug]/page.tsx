@@ -14,6 +14,7 @@ import {
   type StudyLike,
 } from "@shared/seo-markup";
 import { citationLine, studyBreadcrumbs, studyDetails, studyEvidence, type HubLink } from "@shared/study-page";
+import { LAST_CRUMB_MAX, truncateLabel } from "@shared/breadcrumbs";
 import { PageDataError, SITE_URL, pageData, type FooterCondition } from "@web/lib/page-data";
 import { SiteHeader } from "@web/components/SiteHeader";
 import { SiteFooter } from "@web/components/SiteFooter";
@@ -94,7 +95,11 @@ export default async function StudyPage({ params }: { params: { slug: string } }
   const input = helperInput(study);
   const plainTitle = realContent(study.plainLanguageTitle);
   const pageTitle = plainTitle || study.title;
-  const crumbs = studyBreadcrumbs(pageTitle, hubLinks);
+  // The current-page crumb is truncated once, here, so the visible trail and the
+  // BreadcrumbList in studyJsonLd carry the same label (schema = what is shown).
+  const crumbs = studyBreadcrumbs(pageTitle, hubLinks).map((c, i, all) =>
+    i === all.length - 1 ? { label: truncateLabel(c.label, LAST_CRUMB_MAX) } : c,
+  );
   const evidence = studyEvidence({
     studyDesign: study.studyDesign,
     studyType: study.studyType,
@@ -168,9 +173,7 @@ export default async function StudyPage({ params }: { params: { slug: string } }
                     <span className="mx-2" aria-hidden="true">/</span>
                   </>
                 ) : (
-                  <span aria-current="page" className="line-clamp-1 text-neutral-800">
-                    {c.label.length > 60 ? `${c.label.slice(0, 60).trimEnd()}…` : c.label}
-                  </span>
+                  <span aria-current="page" className="line-clamp-1 text-neutral-800">{c.label}</span>
                 )}
               </li>
             ))}
