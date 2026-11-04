@@ -23,7 +23,7 @@ Reading: hydrogenstudies.com is cited almost entirely by Perplexity (which crawl
 
 "hydrogen water research", "is hydrogen water backed by science", "hydrogen water studies", "best hydrogen water bottle backed by research", "is hydrogen water a scam".
 
-**Not measured this month.** Per-prompt citation checks need an Ahrefs Brand Radar report with these prompts; the workspace has none (`management/brand-radar/reports` returned an empty list on 2026-11-04). Creating one is a dashboard action for Josh (Brand Radar → new report → brand "Hydrogen Studies", competitors as desired, add the five prompts); once it exists, `brand-radar-cited-pages` and `brand-radar-mentions-overview` give the per-prompt numbers for this report. The §10 target is "cited in ≥30%" of the tracked prompts.
+**Tracking started 2026-11-04; no per-prompt numbers yet.** The Ahrefs Brand Radar report "Hydrogen Studies — PLAN §10 prompts" (report id `01a1a5f0-87b6-7faf-8eba-f04ec0491c80`, project Hydrogenstudies) was created on 2026-11-04. It holds the five prompts above (US, tag `plan-s10`). The brand is hydrogenstudies.com. The competitors are the Molecular Hydrogen Institute, Examine, Healthline and echowater.com. Prompts run weekly on ChatGPT, Google AI Overviews, Google AI Mode, Perplexity, Gemini and Claude, monthly on Copilot, and not on Grok. The first results arrive after the first weekly run. The December pull reads them with `brand-radar-cited-pages` and `brand-radar-mentions-overview` (`report_id` above, `prompts=custom`). The §10 target is "cited in ≥30%" of the tracked prompts.
 
 ## What changed on the site this month that bears on AI citations
 
@@ -37,7 +37,7 @@ All of these pages were created or made server-rendered for every fetcher (Claud
 ## Next pull (early December 2026)
 
 1. Repeat the two `ai-responses-count` calls; add a "Δ vs. November" column.
-2. If the Brand Radar report exists, add the per-prompt table (cited yes/no per platform, cited pages).
+2. Add the per-prompt table from the Brand Radar report (cited yes/no per platform, cited pages).
 3. Note which of the new pages appear among cited pages.
 
 Baseline recorded by the editorial automation on 2026-11-04.
