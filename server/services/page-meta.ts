@@ -55,11 +55,13 @@ import {
   exploreIndexBreadcrumbs,
   hydrogenForBreadcrumbs,
   journalBreadcrumbs,
+  LAST_CRUMB_MAX,
   pageBreadcrumbs,
   policyBreadcrumbs,
   profilesIndexBreadcrumbs,
   researcherBreadcrumbs,
   studiesListBreadcrumbs,
+  truncateLabel,
   type Crumb,
 } from "../../shared/breadcrumbs";
 import { getConditionHubs } from "../middleware/seo-body-renderer";
@@ -261,10 +263,11 @@ export function buildStudyMeta(study: any, conditionHubs: readonly ConditionHubR
   const ogImage = toAbsoluteUrl(study.ogImage || study.imageUrl || "/logo.png", SITE_URL);
   // Same trail the body renderer shows (shared/study-page.ts).
   const pageLabel = realContent(study.plainLanguageTitle) || realContent(study.title);
+  // Same truncation as the visible trail (web/app/study/[slug]/page.tsx).
   const breadcrumbs = studyBreadcrumbs(
     pageLabel,
     studyHubLinks({ healthConditions: study.healthConditions, bodySystems: study.bodySystems }, conditionHubs),
-  );
+  ).map((c, i, all) => (i === all.length - 1 ? { label: truncateLabel(c.label, LAST_CRUMB_MAX) } : c));
 
   // Shared with the SPA (SEOStudyPage) so both paths emit identical schema.
   // No `abstract` field and a ≤300-char description (publisher copyright).
