@@ -48,7 +48,9 @@ export async function getIdentityMap(): Promise<Map<string, ResearcherIdentity>>
         },
       ]),
     );
-    _at = Date.now();
+    // An empty table (migration just ran, backfill not yet applied) is not cached,
+    // so the first apply shows up on the next request rather than after the TTL.
+    _at = _map.size ? Date.now() : 0;
   } catch (err) {
     // Table missing (migration pending) or DB blip: profiles render name-only.
     logger.warn("researcher identities unavailable", "Profiles", { error: err instanceof Error ? err.message : String(err) });
