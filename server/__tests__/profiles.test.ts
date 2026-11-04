@@ -34,6 +34,12 @@ vi.mock("../db", () => {
   };
 });
 vi.mock("../utils/logger", () => ({ logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn() } }));
+const identities = vi.hoisted(() => ({ rows: [] as any[] }));
+vi.mock("../services/researcher-identities", () => ({
+  getIdentityMap: async () => new Map(identities.rows.map((r: any) => [r.authorKey, r])),
+  getIdentity: async (k: string) => identities.rows.find((r: any) => r.authorKey === k) ?? null,
+  __resetIdentitiesForTests: () => {},
+}));
 
 const profiles = await import("../services/profiles");
 const { renderPageBody, __resetConditionHubsForTests } = await import("../middleware/seo-body-renderer");
@@ -53,6 +59,7 @@ const study = (id: number, authors: string, journal = "Medical Gas Research", ye
 });
 
 beforeEach(() => {
+  identities.rows = [];
   profiles.__resetProfilesForTests();
   __resetConditionHubsForTests();
   // Xue-jun Sun on 9 studies (two spellings), Ke-liang Xie on 3, one journal with 10.
@@ -170,5 +177,30 @@ describe("rendered pages + meta", () => {
     expect(page.name).toBe("Journals publishing hydrogen research");
     expect(trail.itemListElement.map((n: any) => n.name)).toEqual(["Home", "Journals publishing hydrogen research"]);
     expect(meta.robots).toBeUndefined(); // indexable
+  });
+});
+
+describe("resolved identity (OpenAlex authorships)", () => {
+  it("shows ORCID, affiliation and the author record only when an identity exists; schema sameAs mirrors it", async () => {
+    identities.rows = [{ authorKey: "xuejun sun", openalexAuthorId: "A5012345678", displayName: "Xuejun Sun", orcid: "0000-0001-2345-6789", institution: "Naval Medical University", institutionCountry: "CN", institutionRor: null, occurrences: 7, share: 0.9, updatedAt: null }];
+    const html = (await renderPageBody("/researchers/xuejun-sun"))!;
+    expect(html).toContain('ORCID <a href="https://orcid.org/0000-0001-2345-6789" rel="noopener">0000-0001-2345-6789</a>');
+    expect(html).toContain("Naval Medical University (CN)");
+    expect(html).toContain('href="https://openalex.org/A5012345678"');
+    expect(html).toContain("Resolved from the author lists of 7 of their papers");
+    expect(html).not.toContain("we hold no affiliation or credential data for this name");
+    const meta = (await resolvePageMeta("/researchers/xuejun-sun"))!;
+    const person = (meta.jsonLd as any[])[0].mainEntity;
+    expect(person.sameAs).toEqual(["https://orcid.org/0000-0001-2345-6789", "https://openalex.org/A5012345678"]);
+    expect(person.affiliation).toEqual({ "@type": "Organization", name: "Naval Medical University" });
+  });
+
+  it("without an identity the page stays name-only and the schema makes no identity claims", async () => {
+    const html = (await renderPageBody("/researchers/xuejun-sun"))!;
+    expect(html).not.toContain("ORCID");
+    expect(html).toContain("we hold no affiliation or credential data for this name");
+    const person = ((await resolvePageMeta("/researchers/xuejun-sun"))!.jsonLd as any[])[0].mainEntity;
+    expect(person.sameAs).toBeUndefined();
+    expect(person.affiliation).toBeUndefined();
   });
 });

@@ -82,6 +82,21 @@ export interface ResearcherProfile {
   journals: { name: string; count: number }[];
   /** Health conditions their studies are tagged with most, with counts. */
   conditions: { name: string; count: number }[];
+  /**
+   * From OpenAlex authorships (migration 030), only when this name resolves to
+   * ONE OpenAlex author across our studies; otherwise absent and the page is
+   * name-only.
+   */
+  identity?: ResearcherIdentityView | null;
+}
+
+export interface ResearcherIdentityView {
+  openalexAuthorId: string;
+  orcid: string | null;
+  institution: string | null;
+  institutionCountry: string | null;
+  /** How many of our works' authorships carry this OpenAlex author. */
+  occurrences: number;
 }
 
 export interface JournalProfile {

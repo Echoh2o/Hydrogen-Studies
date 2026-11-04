@@ -7,6 +7,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../db";
 import { logger } from "../utils/logger";
 import { studyEvidence } from "../../shared/study-page";
+import { getIdentityMap } from "./researcher-identities";
 import {
   JOURNAL_MIN_STUDIES,
   RESEARCHER_MIN_STUDIES,
@@ -114,7 +115,15 @@ export async function getAuthorIndex(): Promise<AuthorIndex> {
 
 export async function getResearcher(slug: string): Promise<ResearcherProfile | null> {
   try {
-    return (await getAuthorIndex()).bySlug.get(slug.toLowerCase()) ?? null;
+    const p = (await getAuthorIndex()).bySlug.get(slug.toLowerCase());
+    if (!p) return null;
+    const id = (await getIdentityMap()).get(slug.toLowerCase().replace(/-/g, " "));
+    return {
+      ...p,
+      identity: id
+        ? { openalexAuthorId: id.openalexAuthorId, orcid: id.orcid, institution: id.institution, institutionCountry: id.institutionCountry, occurrences: id.occurrences }
+        : null,
+    };
   } catch (err) {
     logger.error("researcher index failed", err, "Profiles", { slug });
     return null;

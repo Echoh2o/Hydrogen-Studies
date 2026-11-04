@@ -24,6 +24,7 @@ import {
   type ProfileStudy,
 } from "../../shared/profiles";
 import { getAuthorIndex, getJournal, getJournalIndex, getResearcher } from "../services/profiles";
+import { openAlexAuthorUrl, orcidUrl } from "../../shared/author-identity";
 import { getConditionHubs, getTopConditions } from "./seo-body-renderer";
 import { breadcrumbs, esc, footer } from "./html-fragments";
 
@@ -84,9 +85,21 @@ export async function renderResearcherPage(slug: string): Promise<string | null>
       .join(", ");
     h += `.</p>\n`;
   }
-  h += `<p>Find this author elsewhere: <a href="${esc(pubmedAuthorUrl(p.name))}" rel="noopener">PubMed</a> · <a href="${esc(openAlexAuthorSearchUrl(p.name))}" rel="noopener">OpenAlex</a>.</p>\n`;
+  if (p.identity) {
+    // Resolved identity (OpenAlex authorships on our studies): link the record, not a search.
+    const idp: string[] = [];
+    if (p.identity.orcid) idp.push(`ORCID <a href="${esc(orcidUrl(p.identity.orcid))}" rel="noopener">${esc(p.identity.orcid)}</a>`);
+    if (p.identity.institution) idp.push(`affiliation (as listed on their recent hydrogen papers): ${esc(p.identity.institution)}${p.identity.institutionCountry ? ` (${esc(p.identity.institutionCountry)})` : ""}`);
+    idp.push(`<a href="${esc(openAlexAuthorUrl(p.identity.openalexAuthorId))}" rel="noopener">OpenAlex author record</a>`);
+    h += `<p class="identity">${idp.join(" · ")}. Resolved from the author lists of ${p.identity.occurrences} of their papers via OpenAlex; <a href="/contact">tell us</a> if this is the wrong person.</p>\n`;
+    h += `<p>Also search: <a href="${esc(pubmedAuthorUrl(p.name))}" rel="noopener">PubMed</a>.</p>\n`;
+  } else {
+    h += `<p>Find this author elsewhere: <a href="${esc(pubmedAuthorUrl(p.name))}" rel="noopener">PubMed</a> · <a href="${esc(openAlexAuthorSearchUrl(p.name))}" rel="noopener">OpenAlex</a>.</p>\n`;
+  }
   h += `<section><h2>Studies</h2>\n${studyList(p.studies)}</section>\n`;
-  h += `<p class="note">About this page: it is built from the author names on the studies in our database and groups spellings of the same name. Researchers who share a name share a page, and we hold no affiliation or credential data for authors. Corrections: <a href="/contact">contact us</a>.</p>\n`;
+  h += p.identity
+    ? `<p class="note">About this page: it is built from the author names on the studies in our database and groups spellings of the same name. The ORCID and affiliation come from OpenAlex's author records for those papers and are shown only because one author account covers most of them; we hold no other credential data. Corrections: <a href="/contact">contact us</a>.</p>\n`
+    : `<p class="note">About this page: it is built from the author names on the studies in our database and groups spellings of the same name. Researchers who share a name share a page, and we hold no affiliation or credential data for this name. Corrections: <a href="/contact">contact us</a>.</p>\n`;
   h += `</article>\n`;
   h += footer(conditions);
   return h;

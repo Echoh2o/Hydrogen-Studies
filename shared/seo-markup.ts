@@ -598,14 +598,26 @@ export function collectionPageJsonLd(opts: {
  * Person named in the H1. Only the name — no affiliation, ORCID or photo until
  * we hold that data; identity is by name matching and the page says so.
  */
-export function profilePageJsonLd(opts: { name: string; description: string; canonical: string; siteUrl: string }): Record<string, any> {
+export function profilePageJsonLd(opts: {
+  name: string;
+  description: string;
+  canonical: string;
+  siteUrl: string;
+  /** Identity URLs shown on the page (ORCID, OpenAlex author record). */
+  sameAs?: string[];
+  /** Affiliation shown on the page. */
+  affiliation?: string | null;
+}): Record<string, any> {
+  const person: Record<string, any> = { "@type": "Person", name: opts.name };
+  if (opts.sameAs?.length) person.sameAs = opts.sameAs;
+  if (opts.affiliation) person.affiliation = { "@type": "Organization", name: opts.affiliation };
   return {
     "@context": "https://schema.org",
     "@type": "ProfilePage",
     name: opts.name,
     description: opts.description,
     url: opts.canonical,
-    mainEntity: { "@type": "Person", name: opts.name },
+    mainEntity: person,
     publisher: { "@type": "Organization", name: SITE_NAME, url: opts.siteUrl },
   };
 }

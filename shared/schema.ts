@@ -1,19 +1,5 @@
 // @ts-nocheck - drizzle-zod generates types incompatible with zod@3.25+ (v4 internals)
-import {
-  pgTable,
-  text,
-  serial,
-  integer,
-  boolean,
-  timestamp,
-  primaryKey,
-  varchar,
-  unique,
-  index,
-  uniqueIndex,
-  customType,
-  jsonb,
-} from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, primaryKey, varchar, unique, index, uniqueIndex, customType, jsonb, numeric } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -2882,3 +2868,21 @@ export const storedImages = pgTable(
 );
 
 export type StoredImage = typeof storedImages.$inferSelect;
+
+/**
+ * Researcher identities from OpenAlex authorships (migration 030, PLAN 4.7):
+ * one row per author-name key (shared/profiles.ts authorKey) whose name maps
+ * to a single OpenAlex author across our studies. Shown on profile pages.
+ */
+export const researcherIdentities = pgTable("researcher_identities", {
+  authorKey: text("author_key").primaryKey(),
+  openalexAuthorId: text("openalex_author_id").notNull(),
+  displayName: text("display_name").notNull(),
+  orcid: text("orcid"),
+  institution: text("institution"),
+  institutionCountry: text("institution_country"),
+  institutionRor: text("institution_ror"),
+  occurrences: integer("occurrences").notNull(),
+  share: numeric("share", { precision: 4, scale: 3 }).notNull(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
