@@ -21,6 +21,7 @@ import { eq, and, sql } from "drizzle-orm";
 import { ai } from "./ai-provider";
 import { logger } from "../utils/logger";
 import { checkStudyTopic, OffTopicStudyError } from "./study-topic-guard";
+import { molecularHydrogenRelevance } from "@shared/molecular-hydrogen-relevance";
 
 /** Classifier input for a queued discovery item. */
 function topicInputOf(item: PipelineQueueItem) {
@@ -328,7 +329,13 @@ async function processItem(item: PipelineQueueItem): Promise<void> {
 
   // Topic guard BEFORE any AI step: off-topic hydrogen-ENERGY papers (e.g.
   // queued before the discovery filter existed) are rejected without spend.
-  const topic = checkStudyTopic(topicInputOf(item), "pipeline");
+  const energy = checkStudyTopic(topicInputOf(item), "pipeline");
+  const relevance = molecularHydrogenRelevance(topicInputOf(item));
+  const topic = energy.excluded
+    ? energy
+    : relevance.verdict === "off_topic"
+      ? { ...energy, excluded: true, reason: relevance.reason }
+      : energy;
   if (topic.excluded) {
     await db
       .update(pipelineQueue)
