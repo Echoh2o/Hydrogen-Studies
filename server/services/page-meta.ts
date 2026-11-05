@@ -101,6 +101,7 @@ import {
   REPORT_LAST_REVIEWED,
   REPORT_PATH,
 } from "../../shared/dataset";
+import { PRODUCTS_H1, PRODUCTS_LAST_REVIEWED, PRODUCTS_PATH } from "../../shared/products-guide";
 import { marked } from "marked";
 
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
@@ -412,6 +413,12 @@ function staticPathJsonLd(pathname: string, description: string): Record<string,
       breadcrumbListJsonLd(pageBreadcrumbs(REPORT_H1), SITE_URL),
     ];
   }
+  if (pathname === PRODUCTS_PATH) {
+    return [
+      webPageJsonLd({ name: PRODUCTS_H1, description, canonical, siteUrl: SITE_URL, dateModified: PRODUCTS_LAST_REVIEWED }),
+      breadcrumbListJsonLd(pageBreadcrumbs(PRODUCTS_H1), SITE_URL),
+    ];
+  }
   if (pathname === GAP_MAP_PATH) {
     return [
       webPageJsonLd({ name: GAP_MAP_H1, description, canonical, siteUrl: SITE_URL, dateModified: GAP_MAP_LAST_REVIEWED }),
@@ -447,12 +454,11 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
   // noindex,follow until they have real content. Kept in nav; removed from
   // sitemap-pages in seo-routes.ts (same deploy). The /learn guides were
   // lifted 2026-11-04 (Josh) after the 2026-11-02 accuracy review; /products
-  // stays until PLAN 5.4 turns it into the device guide; /recommendations is a
+  // became the PLAN 5.4 device guide the same day; /recommendations is a
   // personalised app page.
   const NOINDEX_PATHS = new Set([
     "/search",
     "/advanced-search",
-    "/products",
     "/recommendations",
   ]);
   const noindexFor = (p: string): string | undefined =>
@@ -529,9 +535,10 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
       title: `Research Recommendations | ${SITE_NAME}`,
       description: "Personalized hydrogen therapy research recommendations based on your interests, health conditions, and reading history."
     },
-    "/products": {
-      title: `Hydrogen Products | ${SITE_NAME}`,
-      description: "Hydrogen water bottles, machines, inhalation and bath devices from Echo Water, the company that funds Hydrogen Studies."
+    // PLAN 5.4 device guide (shared/products-guide.ts); indexable since 2026-11-04.
+    [PRODUCTS_PATH]: {
+      title: `Hydrogen Water Devices: What to Check | ${SITE_NAME}`,
+      description: "How hydrogen water bottles, machines, tablets and inhalers work, what ppm figures mean, outgassing, electrodes and third-party testing, plus our funder Echo's devices, labeled."
     },
     "/contact": {
       title: `Contact Us | ${SITE_NAME}`,

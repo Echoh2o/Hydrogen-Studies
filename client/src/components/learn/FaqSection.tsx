@@ -50,7 +50,9 @@ export default function FaqSection() {
                   >
                     {item.question}
                   </AccordionTrigger>
-                  <AccordionContent>
+                  {/* forceMount: answers stay in the server HTML while collapsed, so the
+                      FAQPage block on /learn matches what's on the page. */}
+                  <AccordionContent forceMount>
                     <div
                       style={{
                         background: "var(--lp-bg)",
