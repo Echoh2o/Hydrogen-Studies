@@ -375,7 +375,7 @@ export function StudiesContent({ initial }: { initial?: { key: string; data: Stu
                       {/* Pagination */}
                       {totalPages > 1 && (
                         <div className="mt-8 flex flex-col items-center gap-4">
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center justify-center gap-2">
                             <Button
                               variant="outline"
                               size="sm"

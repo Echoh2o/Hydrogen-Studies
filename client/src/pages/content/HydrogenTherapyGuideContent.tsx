@@ -156,7 +156,7 @@ export function HydrogenTherapyGuideContent() {
           </div>
 
           <Tabs defaultValue="water" className="w-full">
-            <TabsList className="w-full max-w-2xl mx-auto flex justify-between mb-8">
+            <TabsList className="w-full max-w-2xl mx-auto grid h-auto grid-cols-2 gap-1 sm:grid-cols-4 mb-8">
               <TabsTrigger value="water" className="flex-1">
                 Hydrogen Water
               </TabsTrigger>

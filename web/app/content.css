@@ -12,6 +12,11 @@
 .page-body dt { @apply m-0 font-medium text-neutral-500; }
 .page-body dd { @apply m-0 p-0 text-neutral-800; }
 .page-body img { @apply rounded-lg; }
+/* Wide renderer tables (blog evidence tables, the gap map) and fixed-width SVG
+   charts scroll or scale inside the column instead of widening the page on
+   phones (found 2026-11-04: up to 309px horizontal overflow at 390px). */
+.page-body table { @apply block max-w-full overflow-x-auto; }
+.page-body svg.chart { @apply h-auto max-w-full; }
 
 /* index.css names "Montserrat" literally; in Next it's self-hosted under
    next/font's generated family (exposed as --font-montserrat). */
