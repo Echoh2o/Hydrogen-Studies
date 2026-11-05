@@ -87,25 +87,37 @@ export const CHECKLIST: Checkpoint[] = [
   },
 ];
 
-/** Echo devices, figures as Echo states them on echowater.com. */
+/** Echo devices, figures as Echo states them on its echowater.com product pages. */
 export interface EchoDeviceFact {
-  key: "flask" | "h2Machine" | "forty" | "one" | "ultimate" | "refresh" | "revive";
+  key: "flask" | "h2Machine" | "forty" | "one" | "ultimate" | "flow" | "refresh" | "revive";
   type: string;
-  echoStates?: string;
+  echoStates: string;
+  /** A published third-party test report, when Echo links one. */
+  report?: { label: string; href: string };
 }
 
+// Read from the live product pages (not the API description field) on 2026-11-04.
 export const ECHO_DEVICE_FACTS: EchoDeviceFact[] = [
-  { key: "flask", type: "Bottle (electrolysis)", echoStates: "Up to 8 ppm after a 20-minute cycle, 6 ppm after 10 minutes" },
-  { key: "forty", type: "40 oz tumbler (electrolysis)" },
+  {
+    key: "flask",
+    type: "Bottle (electrolysis)",
+    echoStates: "Up to 8 ppm after a 20-minute cycle, 6 ppm after 10 minutes",
+    report: {
+      label: "H2 Analytics report H2AR-250116-1 (January 16, 2025): 6.07 mg/L after 10 minutes and 8.25 mg/L after 20 minutes, by gas chromatography in distilled water",
+      href: "https://cdn.shopify.com/s/files/1/0828/0083/6914/files/Echo_Flask_H2_Test_Report_H2AR-250116-1.pdf",
+    },
+  },
+  { key: "forty", type: "40 oz tumbler (electrolysis)", echoStates: "4 to 6 ppm" },
   { key: "h2Machine", type: "Countertop or under-sink machine with filter", echoStates: "Up to 1.44 ppm, with no change to the water's pH" },
-  { key: "one", type: "Under-counter reverse osmosis + hydrogen" },
-  { key: "ultimate", type: "Multi-water kitchen machine" },
-  { key: "refresh", type: "Inhalation machine" },
-  { key: "revive", type: "Bath machine" },
+  { key: "flow", type: "Under-sink hydrogen generator (pairs with a home water system)", echoStates: "Up to 1.21 ppm" },
+  { key: "ultimate", type: "Multi-water kitchen machine", echoStates: "Up to 1.46 ppm" },
+  { key: "one", type: "Under-counter reverse osmosis + hydrogen", echoStates: "2 to 4 ppm" },
+  { key: "revive", type: "Bath machine", echoStates: "Up to 1.6 ppm in the bath water" },
+  { key: "refresh", type: "Inhalation machine", echoStates: "Rated by gas flow, not by a water concentration" },
 ];
 
 export const ECHO_TESTING_NOTE =
-  "Echo has its devices tested by H2 Analytics, a third-party hydrogen testing lab in Las Vegas. We have not yet published those test reports on this site. They will appear, with the method and the outgassing curve, in our device measurement dataset, which will cover other brands as well.";
+  "Echo has its devices tested by H2 Analytics, a third-party hydrogen testing lab in Las Vegas, and publishes the Flask report linked above. That report gives the concentration at the end of a cycle. It does not show how quickly the hydrogen escapes once the bottle is opened. Our own device measurement dataset will add that outgassing curve and will cover other brands as well.";
 
 export const PRODUCTS_FAQS: { question: string; answer: string }[] = [
   {

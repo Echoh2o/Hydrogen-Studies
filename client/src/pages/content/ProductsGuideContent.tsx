@@ -113,7 +113,17 @@ export function ProductsGuideContent() {
                         </a>
                       </td>
                       <td className="py-2 pr-4 text-gray-700">{f.type}</td>
-                      <td className="py-2 text-gray-700">{f.echoStates ?? "No figure on the product page"}</td>
+                      <td className="py-2 text-gray-700">
+                        {f.echoStates}
+                        {f.report && (
+                          <>
+                            {". "}
+                            <a href={f.report.href} target="_blank" rel="noopener" className="text-teal-700 underline">
+                              {f.report.label}
+                            </a>
+                          </>
+                        )}
+                      </td>
                     </tr>
                   );
                 })}
@@ -122,7 +132,7 @@ export function ProductsGuideContent() {
           </div>
           <p className="mt-4 text-gray-700">{ECHO_TESTING_NOTE}</p>
           <p className="mt-2 text-xs text-gray-500">
-            Echo figures read from echowater.com on November 4, 2026. Links go to echowater.com.
+            Echo figures read from the echowater.com product pages on November 4, 2026. Device links go to echowater.com.
           </p>
         </section>
 
