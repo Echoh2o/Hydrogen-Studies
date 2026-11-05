@@ -69,6 +69,7 @@ import adminSettingsRoutes from "./routes/admin-settings-routes";
 import adminLinkRoutes from "./routes/admin-link-routes";
 import adminRedirectRoutes from "./routes/admin-redirect-routes";
 import adminMcpKeysRoutes from "./routes/admin-mcp-keys-routes";
+import adminEvidenceRoutes from "./routes/admin-evidence-routes";
 import contactRoutes from "./routes/contact-routes";
 import pipelineRoutes from "./routes/pipeline-routes";
 import imageGenerationRoutes from "./routes/image-generation-routes";
@@ -879,6 +880,7 @@ app.use("/api/admin/redirects", adminRedirectRoutes);
 
 // Internal MCP keys (/admin/mcp)
 app.use("/api/admin/mcp-keys", adminMcpKeysRoutes);
+app.use("/api/admin/evidence-fields", adminEvidenceRoutes);
 
 // Research Intelligence Pipeline (admin-only)
 app.use("/api/pipeline", pipelineRoutes);
