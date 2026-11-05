@@ -53,3 +53,30 @@ Not changed yet: these are marketing pages owned by the Echo team. Of the 12, th
 - **8.1 nightly metaobject sync:** engineering work. The JS embed already supplies the live count, so nothing is broken.
 - **8.3 citations on why-hydrogen:** 23 theme sections. This needs the theme-edit path above and a study-by-claim mapping.
 - **8.6 Flask research block:** the Flask PDP has none. It needs the theme path and three or more allowed-topic study links.
+
+---
+
+## 2026-11-05: approved items done (Josh: "approved or go with your recommendations")
+
+Backups: `reports/backups/echowater/approved-changes-before-2026-11-05.json` (pages/redirects) and `reports/backups/echowater/claims-rewrite-originals-2026-11-05.md` (copy).
+
+| Item | Change | Live check |
+|---|---|---|
+| 301 #1 | Unpublished `/pages/hydrogen-science`; redirect → `/pages/why-hydrogen` (UrlRedirect 614473597234) | 301 ✓ |
+| 301 #2 | Unpublished `/pages/hydrogen-deficiency-quiz`; redirect → `/pages/quiz` (UrlRedirect 614473630002) | 301 ✓ |
+| Chain | `/pages/dr-fab` now → `/products/echo-flask` (one hop; UrlRedirect 463044837682) | 301 ✓ |
+| 8.4 | Published `/pages/how-we-measure-hydrogen` (Page 167092420914). The draft line was removed, and "we are arranging measurements" was changed to "not published yet", so the page makes no commitment Echo hasn't made. | 200 ✓ |
+| Claims | Replacement-filter description: removed "infection, liver and kidney damage, cancer" and "tested and proven" | ✓ |
+| Claims | Refresh description: removed "feel the positive effects… right away" and "stand alone therapy"; added the H2 Analytics report H2A24020802 and "a wellness device, not a medical treatment" | ✓ |
+| Claims | Weight-loss blog post: rewritten as what the research does and doesn't show; removed "Backed by over 1,000 studies" and "Yes—hydrogen water can support weight loss…" | ✓ |
+| Claims | Prebiotic stick-pack product description rewritten (H2 Analytics H2AR-250930-1), **but the product page renders its copy from a theme section**, so "clinically-backed" and "reduces gut inflammation" still show → theme patch 7 below | ✗ (theme) |
+
+GOTCHA: the claude.ai Shopify connector had drifted to the **wholesale** store (Echo Water Business). Run `get-shop-info` before every write.
+
+### Theme patches still needed (claims in theme-section copy; the live theme isn't writable by the connector)
+
+7. **Prebiotic stick-pack page section:** replace "clinically-backed molecular hydrogen", "Help Reduce inflammation & accelerate recovery" and "hydrogen reduces gut inflammation and supports microbial diversity" with the product-description wording above.
+8. **Home + Flask page:** replace "Clinically Studied | Scientifically Proven | Naturally Powerful" with "Third-party tested | Backed by published research | Naturally simple". Replace "Repairs the Microbiome" with "Your gut makes hydrogen too". The FAQ line is theme patch 3.
+9. **`/pages/why-hydrogen`:** remove "✔ Improves insulin sensitivity" and "Improved glucose control"; this is part of the 8.3 citation work.
+10. **`/pages/ebook-download-page`:** "inflammation which is the leading cause of disease" → "oxidative stress, which researchers study in many conditions".
+11. **`/pages/newsroom`:** retitle the video "Hydrogen Water for Chronic Pain Relief" (e.g. "Hydrogen Water: What the Research Says") or remove it.
