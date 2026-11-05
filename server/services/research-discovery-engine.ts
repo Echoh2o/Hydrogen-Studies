@@ -103,21 +103,31 @@ interface DiscoveryResult {
 /**
  * Check if a study already exists in our database or queue
  */
-async function isDuplicate(item: DiscoveryResult): Promise<boolean> {
-  // 1. Exact DOI match in studies table
-  if (item.doi) {
-    const existingStudy = await db.query.studies.findFirst({
-      where: eq(studies.doi, item.doi),
-      columns: { id: true },
-    });
-    if (existingStudy) return true;
+/** DOI as compared for duplicates: lowercase, no https://doi.org/ or doi: prefix. */
+export function normalizeDoiForMatch(doi: string | null | undefined): string {
+  return String(doi ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/^(?:https?:\/\/(?:dx\.)?doi\.org\/|doi:\s*)/, "")
+    .replace(/[.\s]+$/, "");
+}
 
-    // Check pipeline queue too
-    const existingQueue = await db.query.pipelineQueue.findFirst({
-      where: eq(pipelineQueue.doi, item.doi),
-      columns: { id: true },
-    });
-    if (existingQueue) return true;
+/** Correction / retraction / erratum notices are not studies; never queue them. */
+export function isPublicationNotice(title: string | null | undefined): boolean {
+  return /^\s*(?:\[retracted\]|retracted\b|retraction\b|correction\b|corrigendum\b|erratum\b|expression of concern\b|withdrawn\b)/i.test(String(title ?? ""));
+}
+
+async function isDuplicate(item: DiscoveryResult): Promise<boolean> {
+  if (isPublicationNotice(item.title)) return true;
+  // 1. DOI match (normalised: 148 queue duplicates slipped past an exact,
+  //    case-sensitive comparison before 2026-11-05).
+  const doi = normalizeDoiForMatch(item.doi);
+  if (doi) {
+    const norm = sql`lower(regexp_replace(trim(coalesce(doi, '')), '^(https?://(dx\.)?doi\.org/|doi:\s*)', '', 'i'))`;
+    const existingStudy = await db.execute(sql`SELECT 1 FROM studies WHERE ${norm} = ${doi} LIMIT 1`);
+    if (existingStudy.rows?.length) return true;
+    const existingQueue = await db.execute(sql`SELECT 1 FROM pipeline_queue WHERE ${norm} = ${doi} LIMIT 1`);
+    if (existingQueue.rows?.length) return true;
   }
 
   // 2. Title similarity check against studies table
