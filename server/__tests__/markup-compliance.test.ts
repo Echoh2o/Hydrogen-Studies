@@ -155,6 +155,12 @@ describe("buildEchoUrl / pageContextFromPath (UTM rule)", () => {
     ["/explore-by-condition/inflammation", "condition", "inflammation"],
     ["/about", "about", "about"],
     ["/blog", "blog", "blog"],
+    ["/researchers/olga-pol", "researcher", "olga-pol"],
+    ["/researchers", "researcher", "researchers"],
+    ["/journals/medical-gas-research", "journal", "medical-gas-research"],
+    ["/learn/basics", "learn", "basics"],
+    ["/explore-by-body-system/cardiovascular", "body-system", "cardiovascular"],
+    ["/dataset", "dataset", "dataset"],
   ])("pageContextFromPath(%s) → %s/%s", (path, pageType, slug) => {
     expect(pageContextFromPath(path)).toEqual({ pageType, slug });
   });

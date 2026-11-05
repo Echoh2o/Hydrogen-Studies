@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { PageDataError, pageData, type FooterCondition } from "@web/lib/page-data";
 import { SiteHeader } from "@web/components/SiteHeader";
 import { SiteFooter } from "@web/components/SiteFooter";
+import { pageContextFromPath } from "@shared/echo-products";
 
 /**
  * Pages the crawler renderer already builds (blog, hubs, /hydrogen-for,
@@ -39,13 +40,6 @@ function robotsFrom(value: string | undefined): Metadata["robots"] {
   return { index: !v.includes("noindex"), follow: !v.includes("nofollow") };
 }
 
-/** The page_type UTM value for links on this path (CLAUDE.md UTM rule). */
-function pageTypeFor(path: string): string {
-  if (path.startsWith("/blog")) return "blog";
-  if (path.startsWith("/hydrogen-for/")) return "hydrogen-for";
-  if (path.startsWith("/explore-by-")) return "hub";
-  return path.replace(/^\//, "") || "home";
-}
 
 export function genericPage<P>(pathFor: (params: P) => string, revalidate: number) {
   async function generateMetadata({ params }: { params: P }): Promise<Metadata> {
@@ -73,7 +67,7 @@ export function genericPage<P>(pathFor: (params: P) => string, revalidate: numbe
     const path = pathFor(params);
     const { meta, bodyHtml, footerConditions } = await load(path, revalidate);
     const ld = meta.jsonLd ? (Array.isArray(meta.jsonLd) ? meta.jsonLd : [meta.jsonLd]) : [];
-    const slug = path.split("/").filter(Boolean).pop() ?? "home";
+    const utm = pageContextFromPath(path); // same UTM rule as the body links (shared/echo-products)
     return (
       <>
         {ld.map((block, i) => (
@@ -84,7 +78,7 @@ export function genericPage<P>(pathFor: (params: P) => string, revalidate: numbe
           {/* Server-rendered, sanitized by the Express renderer (same HTML crawlers indexed). */}
           <div className="page-body" dangerouslySetInnerHTML={{ __html: bodyHtml }} />
         </main>
-        <SiteFooter conditions={footerConditions} pageType={pageTypeFor(path)} slug={slug} />
+        <SiteFooter conditions={footerConditions} pageType={utm.pageType} slug={utm.slug} />
       </>
     );
   }

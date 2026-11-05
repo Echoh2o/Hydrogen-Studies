@@ -178,7 +178,11 @@ export function echoProductUrl(product: EchoProduct, ctx: EchoUtmContext): strin
  *   /hub/<topic>               → hub / <topic>
  *   /hydrogen-for/<slug>       → hydrogen-for / <slug>
  *   /explore-by-condition/<x>  → condition / <x>
+ *   /researchers/<slug>        → researcher / <slug>  (index: researcher / researchers)
+ *   /journals/<slug>           → journal / <slug>
+ *   /learn/<guide>             → learn / <guide>
  *   /about                     → about / about
+ * The Next front door's footer uses this too (web/lib/*-page.tsx).
  */
 export function pageContextFromPath(pathname: string | null | undefined): EchoUtmContext {
   const clean = String(pathname ?? "/").split(/[?#]/)[0];
@@ -194,6 +198,9 @@ export function pageContextFromPath(pathname: string | null | undefined): EchoUt
     "explore-by-condition": "condition",
     "explore-by-body-system": "body-system",
     learn: "learn",
+    // Profiles: one campaign per page type, the person/journal is the content.
+    researchers: "researcher",
+    journals: "journal",
   };
   const pageType =
     TYPE_MAP[first] ?? (first.startsWith("explore-by-") ? first.replace(/^explore-by-/, "explore-") : first);

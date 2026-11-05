@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { PageDataError, pageData, type FooterCondition } from "@web/lib/page-data";
 import { SiteHeader } from "@web/components/SiteHeader";
 import { SiteFooter } from "@web/components/SiteFooter";
+import { pageContextFromPath } from "@shared/echo-products";
 
 /**
  * Pages whose body is a shared React component (client/src/pages/content/*):
@@ -48,6 +49,7 @@ export function contentPage(path: string, extraJsonLd: object[] = []) {
 
   async function Shell({ children, className }: { children: ReactNode; className?: string }) {
     const { meta, footerConditions } = await load(path);
+    const utm = pageContextFromPath(path); // same UTM rule as the SPA and the body links
     const ld = [...(meta.jsonLd ? (Array.isArray(meta.jsonLd) ? meta.jsonLd : [meta.jsonLd]) : []), ...extraJsonLd];
     return (
       <div className={className}>
@@ -56,7 +58,7 @@ export function contentPage(path: string, extraJsonLd: object[] = []) {
         ))}
         <SiteHeader />
         <div id="main">{children}</div>
-        <SiteFooter conditions={footerConditions} pageType={path.slice(1) || "home"} slug={path.slice(1) || "home"} />
+        <SiteFooter conditions={footerConditions} pageType={utm.pageType} slug={utm.slug} />
       </div>
     );
   }
