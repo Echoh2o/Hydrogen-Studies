@@ -113,9 +113,9 @@ The live Shopify theme cannot be written by the Shopify connector, and Echo's te
   | Echo Revive (bath) | H2A24020801 | 2024-02-08 | read from PDF at seed time | tap | — |
   | Echo Refresh (inhalation) | H2A24020802 | 2024-02-08 | gas output, read from PDF at seed time | n/a | — |
   | Hydrogen Prebiotic sticks | H2AR-250930-1 (also H2AR-250410-1) | 2025-09-30 | 16.15 mg/L, measured in a sealed headspace vial (5 g in 350 mL) | distilled | IHSA COC 25-0410-1-PX |
-  | Echo Forty, Echo One | none found on the support site | — | — | — | — |
+  | Echo Forty, Echo One | none yet: still in development; H2 Analytics tests once a product is on sale (Josh, 2026-11-05) | — | — | — | — |
 
-  Store each report's PDF URL (support.echowater.com article attachments) as `certificate_url`/`report_url`. **The stick-pack figure was measured in a closed lab vial.** Its badge and modal must say that, because an open glass will not hold 16 mg/L. Forty and One stay `badge_enabled=false` until reports exist. Design it so per-timepoint measurements can be added later (`product_measurements`: minute, mg/L, lab, date).
+  Store each report's PDF URL (support.echowater.com article attachments) as `certificate_url`/`report_url`. **The stick-pack figure was measured in a closed lab vial.** Its badge and modal must say that, because an open glass will not hold 16 mg/L. Forty and One stay `badge_enabled=false` until they launch and their reports are published. Seeding should pick them up automatically once the support articles exist. Design it so per-timepoint measurements can be added later (`product_measurements`: minute, mg/L, lab, date).
 - [ ] **0.7 AI-assisted extraction, report first.** Extend the existing field-extraction pipeline (`h2_extraction_attempted_at`, the 2026-10 backfill scripts) to the new fields.
   - **Input:** title and abstract, plus PMC Open Access full text where it exists. Full text is used for extraction only and never republished.
   - **Model:** the `ai-provider` extraction tier, `effort:"low"`.
@@ -293,7 +293,7 @@ The live Shopify theme cannot be written by the Shopify connector, and Echo's te
 
 **Answered 2026-11-05:**
 - Reviewer: Sarah reviews every study before it is published, and approved the schema.
-- Certificates: on support.echowater.com (seed table in 0.6). Forty and One have none.
+- Certificates: on support.echowater.com (seed table in 0.6). Forty and One are still in development and will be tested once they launch.
 - Turnstile: not at launch.
 - Question logs: routed by intent, as in 3.5.
 
