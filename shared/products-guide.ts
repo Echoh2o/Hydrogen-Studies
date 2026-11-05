@@ -107,11 +107,11 @@ export const ECHO_DEVICE_FACTS: EchoDeviceFact[] = [
       href: "https://cdn.shopify.com/s/files/1/0828/0083/6914/files/Echo_Flask_H2_Test_Report_H2AR-250116-1.pdf",
     },
   },
-  { key: "forty", type: "40 oz tumbler (electrolysis)", echoStates: "4 to 6 ppm" },
+  { key: "forty", type: "40 oz tumbler (electrolysis)", echoStates: "4 to 6 ppm (pre-release target; lab test after launch)" },
   { key: "h2Machine", type: "Countertop or under-sink machine with filter", echoStates: "Up to 1.44 ppm, with no change to the water's pH" },
   { key: "flow", type: "Under-sink hydrogen generator (pairs with a home water system)", echoStates: "Up to 1.21 ppm" },
   { key: "ultimate", type: "Multi-water kitchen machine", echoStates: "Up to 1.46 ppm" },
-  { key: "one", type: "Under-counter reverse osmosis + hydrogen", echoStates: "2 to 4 ppm" },
+  { key: "one", type: "Under-counter reverse osmosis + hydrogen", echoStates: "2 to 4 ppm (pre-release target; lab test after launch)" },
   { key: "revive", type: "Bath machine", echoStates: "Up to 1.6 ppm in the bath water" },
   { key: "refresh", type: "Inhalation machine", echoStates: "Rated by gas flow, not by a water concentration" },
 ];
