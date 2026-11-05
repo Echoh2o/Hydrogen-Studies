@@ -1,11 +1,11 @@
 # TRUST-BADGE-PLAN.md — Evidence Profile badges for Echo product pages (v1)
 
-**Owner:** Josh · **Date:** Nov 5, 2026 (v1.1, same day: Josh's answers folded in) · **Status:** plan only, no code yet
+**Owner:** Josh · **Date:** Nov 5, 2026 (v1.2, same day: Josh's answers folded in) · **Status:** plan only, no code yet
 **Builds on:** `docs/PLAN.md` v3 (4.3, 4.8, 5.1, 5.2, 6.4, 8.1, 8.6, Appendix E). This plan references those items and does not repeat them.
 
 **What it is:** a FrontrowMD-style badge on echowater.com product pages. It keeps two of the three things that make "Clinicians' Choice" work: **a specific number** and **proof on click**. It replaces the third, the claim of independence, with **checkable information about independent research**. The research comes from studies Echo did not fund and that did not use Echo devices, and the page says so only when the data shows it. Every number is computed from the Hydrogen Studies database by a matching rule written in plain language that anyone can re-run.
 
-**How to use:** same as PLAN.md. Work top to bottom. Every task is a checkbox. Each phase has "Done when" criteria. Nothing in this plan ships to echowater.com until the copy file passes legal review (guardrail 5).
+**How to use:** same as PLAN.md. Work top to bottom. Every task is a checkbox. Each phase has "Done when" criteria. Nothing in this plan ships to echowater.com until Josh approves the copy file (guardrail 5). There is no outside counsel for now, so the copy rules below are written to be checkable without a lawyer.
 
 ---
 
@@ -39,7 +39,7 @@
 1. **Concentration is free text** (`h2_concentration varchar`) in units like ppm, mg/L, mM, ppb and "super-saturated". There is no numeric column, no dose (mL/day), and no record of whether the figure was measured or stated.
 2. **Outcome direction is one label per paper and is about 91% "Positive"** for human studies: 308 positive, 29 neutral, 2 negative, 9 unrecorded. Of the 58 dose-matched studies, 57 are "positive". That can't support a statement like "34 studies show…". It needs re-extraction per **primary outcome**, with a `mixed` value (PLAN 4.3 `effect_direction`).
 3. **No products table.** Certified concentrations live only in Shopify copy and in `shared/products-guide.ts`.
-4. **Reviewer:** Josh confirmed on 2026-11-05 that **Sarah Taylor has reviewed every study in the system and reviews each new study before it is published**, and that she approved the schema. So `reviewedBy` (Person: Sarah Taylor) is allowed on study pages, the evidence page and the modal. Two facts are still needed before the byline and schema can carry them: (a) her credentials line (degree, role) for the visible byline and `hasCredential`/`jobTitle`; (b) her relationship to Echo. An author named Sarah Taylor has 21 posts on the echowater.com blog. If she is Echo staff, the byline must say so ("Reviewed by Sarah Taylor, [credential], Echo Water"), and she can never be described as independent (guardrail 2).
+4. **Reviewer:** Josh confirmed on 2026-11-05 that **Sarah Taylor has reviewed every study in the system and reviews each new study before it is published**, and that she approved the schema. So `reviewedBy` (Person: Sarah Taylor) is allowed on study pages, the evidence page and the modal. **Sarah is a contractor for Echo** (Josh, 2026-11-05), so every byline and schema entry discloses that: "Reviewed by Sarah Taylor, [title], contractor for Echo Water". She is never described as independent (guardrail 2). Her bio, with title and credentials, is coming from Sarah via Josh. The credential part of the byline and `hasCredential`/`jobTitle` render only once it arrives (CLAUDE.md: empty fields never render). The name and affiliation can ship before then.
 
 **Infra facts:** Express on Railway is the source of truth. Next (`web` service) server-renders public routes via `SSR_FAMILIES` (`server/middleware/web-frontdoor.ts`). Cloudflare sits in front.
 - It **caches the SVG** (`/embed/badge.svg` → `cf-cache-status: HIT`) and **rewrites its browser TTL to 4 h**.
@@ -57,7 +57,7 @@ The live Shopify theme cannot be written by the Shopify connector, and Echo's te
 - Echo's own review is never called "verified," "certified," "independent," "clinician-approved," or "doctor-recommended." Only a third-party lab's device test may be called "certified," naming the lab, report ID and date.
 - The badge, modal and Q&A never say or imply the studies tested Echo products, unless a study actually used an Echo device (the `used_echo_device` field).
 - No disease or treatment claims on the badge, the modal, /evidence pages, the claim widget, or Q&A answers. Topic widgets render only for Appendix E allowed topics; the API refuses others.
-- All badge, modal, claim-widget and Q&A copy lives in one file (shared/evidence-badge-copy.ts), flagged LEGAL_REVIEW_REQUIRED; nothing ships to echowater.com until it is marked approved with a date.
+- All badge, modal, claim-widget and Q&A copy lives in one file (shared/evidence-badge-copy.ts), flagged COPY_REVIEW_REQUIRED; nothing ships to echowater.com until Josh marks it approved with a date. Until outside counsel reviews it, the copy uses only (a) numbers computed from the database, (b) facts quoted from a named lab report, and (c) the fixed hedges in this file; it never states a health benefit in its own words.
 - Counts always travel with their denominator and outcome mix ("58 of 63 studies that report a concentration; 41 improved the main outcome, 12 no clear effect, 5 mixed"). Never "N studies show X."
 - A product gets a dose-match badge only if it has a third-party certificate on file (lab, report ID, date, method, water type).
 ```
@@ -168,7 +168,7 @@ The live Shopify theme cannot be written by the Shopify connector, and Echo's te
 - [ ] **1.5 `/evidence/:product` page.** Express page-data plus a Next route; a new SSR family `evidence_profile` matching `/^\/evidence\/[^/]+$/`. It must not collide with the existing `evidence` family, which matches `/evidence-gap-map` etc.
   - **Contents:** the full modal content as a page, a disclosure box ("Echo Water makes this product and funds Hydrogen Studies"), byline, last-updated date, methodology link and the link to the `/products` guide.
   - **Schema (approved by Sarah, 2026-11-05):** `MedicalWebPage` with `reviewedBy` (Person: Sarah Taylor, with credentials and affiliation once supplied), `lastReviewed` (the latest field-approval date among matched studies), plus `BreadcrumbList` + `ItemList` of `ScholarlyArticle`. There is never `about: MedicalCondition` on a product page, and the reviewer byline must be visible on the page.
-  - **Indexing:** decided in open question 2. The recommendation is `noindex,follow` at launch.
+  - **Indexing:** `noindex,follow` at launch (Josh, 2026-11-05), so the research site's editorial identity stays separate from product pages. It stays out of the sitemap. Revisit after 3 months of Search Console and AI-citation data.
 - [ ] **1.6 Cache and invalidation.**
   - **Server:** a 30-minute in-process cache keyed by rule version plus a data hash. The hash is the `max(updated_at)` of matched studies and the product row.
   - **Busting on writes:** extraction applies, admin study edits and product-row changes call `invalidateEvidenceCache()` and POST `web_revalidate` with the tag `/evidence/<product>`.
@@ -219,7 +219,7 @@ The live Shopify theme cannot be written by the Shopify connector, and Echo's te
   - Mobile CLS = 0.
   - The modal works with JavaScript off (the link fallback).
   - Every link to echowater.com inside the modal or page carries the CLAUDE.md UTM.
-  - Legal has approved the copy file.
+  - Josh has approved the copy file.
 
 **Done when:**
 - The Flask PDP shows the badge, server-rendered from the metafield, with numbers that match the API.
@@ -227,7 +227,7 @@ The live Shopify theme cannot be written by the Shopify connector, and Echo's te
 - The claim snippet renders only for allowed topics.
 - The 8.6 cards are replaced, so no prohibited topics remain.
 - CLS stays at 0.
-- The copy file is marked legal-approved.
+- Josh has marked the copy file approved.
 
 ---
 
@@ -270,7 +270,7 @@ The live Shopify theme cannot be written by the Shopify connector, and Echo's te
 - The eval set passes the gate.
 - `/api/ask` is live with rate limits and a cost cap.
 - The `ask_log` export reaches the Marketing Command Center weekly.
-- The legal-approved copy is in place.
+- Josh-approved copy is in place.
 - `/api/chat`'s product recommendations are removed or limited to Appendix E topics. Track this as a separate fix.
 
 ---
@@ -280,11 +280,11 @@ The live Shopify theme cannot be written by the Shopify connector, and Echo's te
 - **4.3 (structured fields).** Phase 0 *is* 4.3 for the human-study subset, done first. It is not a parallel schema. 4.3's `evidence_level`, `effect_size` and `registration_id` stay in 4.3 for later.
 - **4.8 (trust schema).** The user spec asks for `MedicalWebPage` on `/evidence/:product`. Resolution: use `WebPage` until a named, credentialed reviewer signs off. Then use `MedicalWebPage` with `reviewedBy`/`lastReviewed`, and never `about: MedicalCondition` on a product evidence page.
 - **5.1 (dose vs. device).** It uses the same matching engine (1.1). 5.1 stays on hydrogenstudies.com study and hub pages. The badge is the echowater.com side.
-- **5.2 (for-clinicians).** Kept separate. The evidence profile isn't a practitioner brief. Counsel reviews both copy sets together.
+- **5.2 (for-clinicians).** Kept separate. The evidence profile isn't a practitioner brief. Josh reviews both copy sets together (no outside counsel for now).
 - **6.4 (measurement dataset).** The `products` table (0.6) is its seed. Measurements are added later. Until 6.4 exists, only the lab's certified figure is used.
 - **8.1 (nightly sync).** Phase 2.1 depends on it. If 8.1 isn't ready, build its badge slice first.
 - **8.6 ("Backed by research" PDP section).** It is replaced by the claim snippet, which also removes the prohibited study cards.
-- **Appendix E.** The user's example "Improve Athletic Performance" is an allowed context. But the heading itself is a structure/function claim on a sales page. The widget supports it with data and can't make it compliant, so legal reviews the headings too.
+- **Appendix E.** The user's example "Improve Athletic Performance" is an allowed context. But the heading itself is a structure/function claim on a sales page. The widget supports it with data and can't make it compliant, so Josh reviews the headings too, against the claim rules in the copy file.
 - **CLAUDE.md UTM rule.** It covers links *to* echowater.com. Links *from* echowater.com to hydrogenstudies.com get the `utm_source=echowater…` tags (2.2). Both directions are tagged.
 
 ---
@@ -295,13 +295,13 @@ The live Shopify theme cannot be written by the Shopify connector, and Echo's te
 - Reviewer: Sarah reviews every study before it is published, and approved the schema.
 - Certificates: on support.echowater.com (seed table in 0.6). Forty and One are still in development and will be tested once they launch.
 - Turnstile: not at launch.
+- Indexing: `/evidence/:product` launches `noindex,follow`.
+- Copy review: Josh, with no outside counsel for now.
+- Sarah is an Echo contractor, disclosed in every byline.
 - Question logs: routed by intent, as in 3.5.
 
 **Still open:**
-1. **Sarah's byline.** Her credential line, and is she Echo staff? (An author named Sarah Taylor writes for the echowater.com blog.) This decides the byline wording.
-2. **Indexing.** Should `/evidence/:product` be indexed, or `noindex,follow` at launch? The recommendation is noindex.
-3. **Support handoff.** Are Zendesk tickets OK as the handoff, and who on support owns the weekly digest?
-4. **Counsel.** Who reviews the copy file, and how long does review take?
+1. **Sarah's bio.** Her title and credentials, which Sarah is sending to Josh. Until then, bylines show her name and "contractor for Echo Water" only.
 
 ## 5. Assumptions
 
@@ -318,10 +318,10 @@ The live Shopify theme cannot be written by the Shopify connector, and Echo's te
 |---|---|---|---|
 | 1 | Phase 0 migrations + products table + extraction dry run | 3–4 days | — |
 | 2 | Phase 0 review queue + Sarah's sign-off + apply + coverage report | 3–4 days of engineering, plus Sarah's review time (~164 human drinking studies first) | Josh approves the apply CSV |
-| 3 | Copy file draft → counsel | 0.5 day to draft, then counsel's time | runs in parallel with 4–5 |
+| 3 | Copy file draft → Josh's review | 0.5 day to draft, then Josh's review | runs in parallel with 4–5 |
 | 4 | Phase 1 engine, API, SVG, page, cache | 4–5 days | Phase 0 done |
 | 5 | 8.1 minimal sync + Phase 2 spec handoff | 2 days (sync) + 0.5 day (spec) | Phase 1 live |
 | 6 | Phase 2 theme work (Echo theme team) | 2–3 days | copy approved |
 | 7 | Phase 3 `/api/ask` + eval set + widget | 7–9 days | Phase 0 done; copy approved |
 
-Total: about 4–5 weeks of engineering. The critical path is Phase 0 data quality and legal review of the copy file, not the code.
+Total: about 4–5 weeks of engineering. The critical path is Phase 0 data quality and Sarah's review of the extracted fields, not the code.
