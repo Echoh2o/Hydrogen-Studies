@@ -1,6 +1,6 @@
 # TRUST-BADGE-PLAN.md — Evidence Profile badges for Echo product pages (v1)
 
-**Owner:** Josh · **Date:** Nov 5, 2026 · **Status:** plan only, no code yet
+**Owner:** Josh · **Date:** Nov 5, 2026 (v1.1, same day: Josh's answers folded in) · **Status:** plan only, no code yet
 **Builds on:** `docs/PLAN.md` v3 (4.3, 4.8, 5.1, 5.2, 6.4, 8.1, 8.6, Appendix E). This plan references those items and does not repeat them.
 
 **What it is:** a FrontrowMD-style badge on echowater.com product pages. It keeps two of the three things that make "Clinicians' Choice" work: **a specific number** and **proof on click**. It replaces the third, the claim of independence, with **checkable information about independent research**. The research comes from studies Echo did not fund and that did not use Echo devices, and the page says so only when the data shows it. Every number is computed from the Hydrogen Studies database by a matching rule written in plain language that anyone can re-run.
@@ -39,7 +39,7 @@
 1. **Concentration is free text** (`h2_concentration varchar`) in units like ppm, mg/L, mM, ppb and "super-saturated". There is no numeric column, no dose (mL/day), and no record of whether the figure was measured or stated.
 2. **Outcome direction is one label per paper and is about 91% "Positive"** for human studies: 308 positive, 29 neutral, 2 negative, 9 unrecorded. Of the 58 dose-matched studies, 57 are "positive". That can't support a statement like "34 studies show…". It needs re-extraction per **primary outcome**, with a `mixed` value (PLAN 4.3 `effect_direction`).
 3. **No products table.** Certified concentrations live only in Shopify copy and in `shared/products-guide.ts`.
-4. **The reviewer has a name only.** Sarah Taylor's credentials are pending, so the modal cannot show "reviewer name and credentials" yet, and the schema cannot carry `reviewedBy` (CLAUDE.md).
+4. **Reviewer:** Josh confirmed on 2026-11-05 that **Sarah Taylor has reviewed every study in the system and reviews each new study before it is published**, and that she approved the schema. So `reviewedBy` (Person: Sarah Taylor) is allowed on study pages, the evidence page and the modal. Two facts are still needed before the byline and schema can carry them: (a) her credentials line (degree, role) for the visible byline and `hasCredential`/`jobTitle`; (b) her relationship to Echo. An author named Sarah Taylor has 21 posts on the echowater.com blog. If she is Echo staff, the byline must say so ("Reviewed by Sarah Taylor, [credential], Echo Water"), and she can never be described as independent (guardrail 2).
 
 **Infra facts:** Express on Railway is the source of truth. Next (`web` service) server-renders public routes via `SSR_FAMILIES` (`server/middleware/web-frontdoor.ts`). Cloudflare sits in front.
 - It **caches the SVG** (`/embed/badge.svg` → `cf-cache-status: HIT`) and **rewrites its browser TTL to 4 h**.
@@ -93,7 +93,7 @@ The live Shopify theme cannot be written by the Shopify connector, and Echo's te
   - `device_maker text`
   - `coi_declared` enum: `none` | `some` | `not_stated`
   - These feed the "independent research" line. It says only what the data supports, for example "None of the 58 were funded by Echo or used an Echo device; 40 state their funding."
-- [ ] **0.6 `products` table.** Columns:
+- [ ] **0.6 `products` table.** Seed it from the H2 Analytics documents Echo already publishes on support.echowater.com (table below), not from marketing copy. Columns:
   - `slug`, `shopify_handle`, `name`, `delivery_route`
   - `certified_concentration_ppm` and `certified_at_minutes`
   - `lab`, `report_id`, `test_date`, `method`, `water_type`
@@ -101,19 +101,35 @@ The live Shopify theme cannot be written by the Shopify connector, and Echo's te
   - `stated_concentration_text`, which is marketing copy shown only as "Echo states…"
   - `badge_enabled bool`
   - `allowed_claim_topics text[]`, which must be a subset of Appendix E
-  - Seed the Flask: 8.25 mg/L at 20 min, H2 Analytics H2AR-250116-1, 2025-01-16, gas chromatography, distilled water, plus the certificate PDF. The other devices get stated figures only and `badge_enabled=false` until a certificate exists. This table is the seed of PLAN 6.4. Design it so per-timepoint measurements can be added later (`product_measurements`: minute, mg/L, lab, date).
+  - This table is the seed of PLAN 6.4.
+
+  | Product | Lab report | Test date | Measured (GC, static headspace) | Water | Certificate of compliance |
+  |---|---|---|---|---|---|
+  | Echo Flask | H2AR-250116-1 (also H2AR-250618-1) | 2025-01-16 | 6.07 mg/L at 10 min; 8.25 mg/L at 20 min (~350 mL) | distilled, 24.5 °C | IHSA COC 25-0301-1-PB |
+  | Echo H2 Machine | H2A-240603-3 | 2024-06-03 | 1.43 mg/L | per report | IHSA COC (PDF) |
+  | Echo Ultimate | H2A-240603-4 | 2024-06-03 | 1.46 mg/L | per report | IHSA COC (PDF) |
+  | Echo Flow (formerly Server) | H2A-240603-5 | 2024-06-03 | 1.21 mg/L | per report | IHSA COC (PDF) |
+  | Echo Pitcher | H2A-240603-6 | 2024-06-03 | 1.03 mg/L at 10 min; 1.40 mg/L at 20 min | per report | IHSA COC (PDF) |
+  | Echo Revive (bath) | H2A24020801 | 2024-02-08 | read from PDF at seed time | tap | — |
+  | Echo Refresh (inhalation) | H2A24020802 | 2024-02-08 | gas output, read from PDF at seed time | n/a | — |
+  | Hydrogen Prebiotic sticks | H2AR-250930-1 (also H2AR-250410-1) | 2025-09-30 | 16.15 mg/L, measured in a sealed headspace vial (5 g in 350 mL) | distilled | IHSA COC 25-0410-1-PX |
+  | Echo Forty, Echo One | none found on the support site | — | — | — | — |
+
+  Store each report's PDF URL (support.echowater.com article attachments) as `certificate_url`/`report_url`. **The stick-pack figure was measured in a closed lab vial.** Its badge and modal must say that, because an open glass will not hold 16 mg/L. Forty and One stay `badge_enabled=false` until reports exist. Design it so per-timepoint measurements can be added later (`product_measurements`: minute, mg/L, lab, date).
 - [ ] **0.7 AI-assisted extraction, report first.** Extend the existing field-extraction pipeline (`h2_extraction_attempted_at`, the 2026-10 backfill scripts) to the new fields.
   - **Input:** title and abstract, plus PMC Open Access full text where it exists. Full text is used for extraction only and never republished.
   - **Model:** the `ai-provider` extraction tier, `effort:"low"`.
   - **Output:** strict JSON per field with a confidence score and the source span (abstract or full text, plus the quote).
   - **Process:** a dry-run CSV first (`reports/research/evidence-fields-<date>.csv`), then `--apply` behind `approved-by: josh`, with a backup JSON and `--rollback`. This is the same pattern as the stable-URL and identity backfills.
   - **Scope order:** human drinking studies (164), then all human studies (348), then everything else.
-- [ ] **0.8 Human spot-check.**
-  - **100%** of the studies that feed any public count. That means the dose-matched set and each allowed-topic claim set, roughly 60–160 studies.
-  - A **random 10%** of the remaining human studies.
-  - **Reviewer:** Sarah Taylor once her credentials are in. Until then a second-pass extraction with a different prompt plus Josh's review.
-  - Disagreements are logged in `reports/research/evidence-spotcheck-<date>.csv`.
-  - Each check sets `reviewed_by` and `reviewed_at` on the study fields.
+- [ ] **0.8 Reviewer sign-off (Sarah Taylor, every study).** Sarah already reviews every study before publication. The new extracted fields go through the same gate:
+  - Extraction writes to a **pending** state.
+  - A review queue in `/admin` shows each field with its source quote.
+  - Sarah approves or corrects each one.
+  - Only approved values count toward any public number.
+  - Each approval records `fields_reviewed_by` and `fields_reviewed_at` per study, which also gives the per-study `lastReviewed` date the schema needs.
+  - New studies can't be published until their fields are approved.
+  - Corrections are logged in `reports/research/evidence-review-<date>.csv` so extraction prompts can be tuned. Agreement is tracked as an extraction-quality metric, not a sampling estimate.
 - [ ] **0.9 Coverage report** (`reports/research/evidence-coverage-<date>.md`). Each field's percentage filled (with `not_reported` counted as filled), the confidence distribution, spot-check agreement, and the before/after outcome mix.
 
 **Coverage targets (for human drinking studies):**
@@ -121,12 +137,12 @@ The live Shopify theme cannot be written by the Shopify connector, and Echo's te
 - `h2_concentration_ppm` or `not_reported`: 100%; numeric value present in at least 60% (today 38%)
 - `duration_days`: ≥ 90%
 - `funding_category`: 100% (including `not_stated`)
-- Spot-check agreement on `effect_direction`: ≥ 90%
+- Sarah's approval: 100% of fields used in any public count; extraction-vs-reviewer agreement on `effect_direction` reported (target ≥ 90%, to tune the prompts)
 
 **Done when:**
 - The migration has run in prod and the products table holds the Flask with its certificate.
 - The coverage report meets the targets for human drinking studies.
-- 100% of studies in any public count are human-checked.
+- 100% of studies in any public count have reviewer-approved fields.
 - The outcome mix has been re-derived. Whatever share is "improved", the null-results hub and `/limits-of-the-evidence` switch to `effect_direction` in the same deploy.
 
 ---
@@ -151,7 +167,7 @@ The live Shopify theme cannot be written by the Shopify connector, and Echo's te
 - [ ] **1.4 `GET /badge/:product.svg?v=<data_version>`**, served by the embed router using `renderBadgeSvg` patterns. It shows two lines (copy from the copy file), light/dark themes and an accessible `<title>`. The SVG is the no-JS and crawler fallback. The Shopify block renders HTML text (Phase 2).
 - [ ] **1.5 `/evidence/:product` page.** Express page-data plus a Next route; a new SSR family `evidence_profile` matching `/^\/evidence\/[^/]+$/`. It must not collide with the existing `evidence` family, which matches `/evidence-gap-map` etc.
   - **Contents:** the full modal content as a page, a disclosure box ("Echo Water makes this product and funds Hydrogen Studies"), byline, last-updated date, methodology link and the link to the `/products` guide.
-  - **Schema:** `WebPage` + `BreadcrumbList` + `ItemList` of `ScholarlyArticle`. `MedicalWebPage` with `reviewedBy`/`lastReviewed` is added **only** when a credentialed reviewer has signed off (PLAN 4.8, CLAUDE.md). There is never `about: MedicalCondition` on a product page.
+  - **Schema (approved by Sarah, 2026-11-05):** `MedicalWebPage` with `reviewedBy` (Person: Sarah Taylor, with credentials and affiliation once supplied), `lastReviewed` (the latest field-approval date among matched studies), plus `BreadcrumbList` + `ItemList` of `ScholarlyArticle`. There is never `about: MedicalCondition` on a product page, and the reviewer byline must be visible on the page.
   - **Indexing:** decided in open question 2. The recommendation is `noindex,follow` at launch.
 - [ ] **1.6 Cache and invalidation.**
   - **Server:** a 30-minute in-process cache keyed by rule version plus a data hash. The hash is the `max(updated_at)` of matched studies and the product row.
@@ -225,15 +241,22 @@ The live Shopify theme cannot be written by the Shopify connector, and Echo's te
 - [ ] **3.4 Refusals.** A classifier plus rules. Diagnosis, treatment and dosing-for-a-condition questions get fixed copy that points to a clinician.
   - **On echowater.com:** questions on Appendix E prohibited topics get no answer content beyond a link to hydrogenstudies.com, where the research is presented without product context. Disease research next to a product is an implied claim.
   - **On hydrogenstudies.com:** research summaries are allowed, with no product content.
-- [ ] **3.5 Logging for objection analysis.** A new table `ask_log` with:
+- [ ] **3.5 Logging, objection analysis and support routing.**
+  - **Intent split first.** Each question is classified as `research` (what do studies say), `product_support` (orders, shipping, warranty, setup, troubleshooting, certificates, "how do I use my Flask") or `medical` (diagnose, treat, dose for a condition).
+  - **Support questions don't get a research answer.** The widget searches the support.echowater.com Help Center through Zendesk's public search API and shows the best matching articles. It then offers "Ask Echo support", which opens a ticket **only if the shopper types their email and agrees**, with the question attached. That's a better answer for them and a qualified lead for support. Certificate questions land on the H2 Analytics articles directly.
+  - **Don't auto-forward every question to support.** Many are health questions, which carries privacy and liability risk (support agents must not give medical advice). The volume would also bury real tickets.
+  - **Weekly digests, aggregated:**
+    - to the **Marketing Command Center**: objections, topic demand, refusal rate
+    - to **support**: top product questions with no Help Center match, so articles can be written
+    - to **Sarah**: research questions where the database has weak or no evidence (content gaps) A new table `ask_log` with:
   - question text, after PII scrubbing (emails, phones, names)
   - topic, `refused_reason`, retrieved IDs, answer hash
   - context (product, page), timestamp, and a salted day-hash of the IP (never the raw IP)
 
-  Retention is 180 days, and the privacy policy is updated before launch. A weekly aggregate export (objection categories, top questions, refusal rate, "no evidence" questions by topic) goes to the Marketing Command Center (open question 5).
+  Retention is 180 days, and the privacy policy is updated before launch. The weekly digests above are built from this table.
 - [ ] **3.6 Abuse and cost.**
   - Per-IP and per-origin rate limits (reuse `chatRateLimiter`), a 500-character limit and a daily cost cap with a kill switch env.
-  - Cloudflare Turnstile on the widget after N questions per session (needs Cloudflare access).
+  - **No CAPTCHA at launch.** Cloudflare Turnstile is a free, mostly invisible bot check that stops scripts from hammering the widget and running up AI costs. Rate limits plus the daily cost cap are enough to start. Add Turnstile only if the logs show abuse. It needs a Cloudflare site key, not an API token.
   - Answers are cached for identical normalised questions.
   - The model is the `ai-provider` cheap tier, escalating only on a validator retry.
 - [ ] **3.7 Evaluation set.** 150 questions: allowed topics, disease bait, dosing bait, "does Echo cure…", competitor questions, and no-evidence topics. Release gate:
@@ -268,16 +291,21 @@ The live Shopify theme cannot be written by the Shopify connector, and Echo's te
 
 ## 4. Open questions for Josh
 
-1. **Which products launch?** Only the Flask has a third-party certificate on file. Do H2 Analytics reports exist for the Forty, One, H2, Ultimate, Flow and Revive?
-2. **Indexing.** Should `/evidence/:product` be indexed on hydrogenstudies.com, or `noindex,follow`? The recommendation is noindex at launch, to keep the research site's editorial identity separate from product pages.
-3. **Reviewer time.** Sarah Taylor's credentials, and whether she can review the roughly 60–160 studies behind public counts. That's about 10–15 hours.
-4. **Cloudflare access.** An API token for Turnstile (and optional purge), or accept versioned URLs only?
-5. **Marketing Command Center.** Should the export use its API, a shared sheet, or a webhook?
-6. **Counsel.** Who reviews the copy file, and how long does review take?
+**Answered 2026-11-05:**
+- Reviewer: Sarah reviews every study before it is published, and approved the schema.
+- Certificates: on support.echowater.com (seed table in 0.6). Forty and One have none.
+- Turnstile: not at launch.
+- Question logs: routed by intent, as in 3.5.
+
+**Still open:**
+1. **Sarah's byline.** Her credential line, and is she Echo staff? (An author named Sarah Taylor writes for the echowater.com blog.) This decides the byline wording.
+2. **Indexing.** Should `/evidence/:product` be indexed, or `noindex,follow` at launch? The recommendation is noindex.
+3. **Support handoff.** Are Zendesk tickets OK as the handoff, and who on support owns the weekly digest?
+4. **Counsel.** Who reviews the copy file, and how long does review take?
 
 ## 5. Assumptions
 
-- The Flask's matching ceiling is the lab-measured **8.25 mg/L at 20 minutes** (shown as "8 ppm"), not Echo's marketing copy.
+- Each product's matching ceiling is its **latest H2 Analytics measured value** (Flask 8.25 mg/L at 20 min, shown as "8 ppm"), not marketing copy. Where a report gives several cycles, the longest standard cycle is the ceiling and the others are shown too.
 - "Dose match" means the study's reported concentration is ≤ the device's certified concentration and the route is drinking water. Studies that don't report a concentration are shown as a separate count, never silently dropped.
 - Water made with tablets counts as drinking water. Inhaled gas, saline infusion and bathing are excluded from drinking-water devices.
 - Example figures in the brief ("147 human studies", "38 at ≤8 ppm", "34 studies") are illustrative. Today's real numbers are 348, 58 (of 63 that report a concentration) and TBD per topic.
@@ -289,7 +317,7 @@ The live Shopify theme cannot be written by the Shopify connector, and Echo's te
 | Order | Work | Effort | Gate |
 |---|---|---|---|
 | 1 | Phase 0 migrations + products table + extraction dry run | 3–4 days | — |
-| 2 | Phase 0 spot-check + apply + coverage report | 2–3 days of engineering, plus 10–15 h of reviewer time | Josh approves the apply CSV |
+| 2 | Phase 0 review queue + Sarah's sign-off + apply + coverage report | 3–4 days of engineering, plus Sarah's review time (~164 human drinking studies first) | Josh approves the apply CSV |
 | 3 | Copy file draft → counsel | 0.5 day to draft, then counsel's time | runs in parallel with 4–5 |
 | 4 | Phase 1 engine, API, SVG, page, cache | 4–5 days | Phase 0 done |
 | 5 | 8.1 minimal sync + Phase 2 spec handoff | 2 days (sync) + 0.5 day (spec) | Phase 1 live |
