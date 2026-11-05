@@ -45,7 +45,7 @@ hydrogenstudies.WordPress.2026-02-20.xml
 *.db
 
 # Marketing reference material (product page snapshots, images)
-products/
+/products/
 
 # Study-exclusion row backups (contain full publisher abstracts — never commit)
 reports/backups/study-exclusions/

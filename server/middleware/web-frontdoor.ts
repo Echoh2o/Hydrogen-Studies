@@ -35,6 +35,8 @@ export const SSR_FAMILIES: Record<string, RegExp> = {
   evidence: /^\/(?:limits-of-the-evidence|null-and-negative-results|is-hydrogen-water-a-scam|evidence-gap-map)$/,
   // Open dataset page + yearly report (PLAN 6.2); the CSV/JSON downloads stay on Express.
   data: /^\/(?:dataset|state-of-hydrogen-research)$/,
+  // PLAN 5.4 device guide (shared/products-guide.ts).
+  products: /^\/products$/,
 };
 
 // content-security-policy: Next sets a per-request nonce CSP (web/middleware.ts)

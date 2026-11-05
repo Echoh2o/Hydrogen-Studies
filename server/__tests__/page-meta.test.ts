@@ -44,7 +44,7 @@ describe("resolveStaticPageMeta", () => {
     for (const p of ["/learn", "/learn/basics", "/learn/health-benefits", "/learn/therapy-guide"]) {
       expect(resolveStaticPageMeta(p)!.robots).toBeUndefined();
     }
-    for (const p of ["/search", "/advanced-search", "/products", "/recommendations"]) {
+    for (const p of ["/search", "/advanced-search", "/recommendations"]) {
       expect(resolveStaticPageMeta(p)!.robots).toBe("noindex, follow");
     }
     expect(resolveStaticPageMeta("/learn")!.title).toBe("Learn About Molecular Hydrogen | Hydrogen Studies");

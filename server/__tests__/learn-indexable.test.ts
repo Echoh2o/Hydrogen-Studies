@@ -26,7 +26,7 @@ describe("/learn indexable", () => {
     expect(res.status).toBe(200);
     for (const p of LEARN_PATHS) expect(res.text).toContain(`<loc>${SITE}${p}</loc>`);
     // /insights is a 301 to /research-analytics: a sitemap lists only final 200 URLs.
-    for (const p of ["/products", "/recommendations", "/search", "/advanced-search", "/insights"]) {
+    for (const p of ["/recommendations", "/search", "/advanced-search", "/insights"]) {
       expect(res.text).not.toContain(`<loc>${SITE}${p}</loc>`);
     }
   });
