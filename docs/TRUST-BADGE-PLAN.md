@@ -122,14 +122,12 @@ The live Shopify theme cannot be written by the Shopify connector, and Echo's te
   - **Output:** strict JSON per field with a confidence score and the source span (abstract or full text, plus the quote).
   - **Process:** a dry-run CSV first (`reports/research/evidence-fields-<date>.csv`), then `--apply` behind `approved-by: josh`, with a backup JSON and `--rollback`. This is the same pattern as the stable-URL and identity backfills.
   - **Scope order:** human drinking studies (164), then all human studies (348), then everything else.
-- [ ] **0.8 Reviewer sign-off (Sarah Taylor, every study).** Sarah already reviews every study before publication. The new extracted fields go through the same gate:
-  - Extraction writes to a **pending** state.
-  - A review queue in `/admin` shows each field with its source quote.
-  - Sarah approves or corrects each one.
-  - Only approved values count toward any public number.
-  - Each approval records `fields_reviewed_by` and `fields_reviewed_at` per study, which also gives the per-study `lastReviewed` date the schema needs.
-  - New studies can't be published until their fields are approved.
-  - Corrections are logged in `reports/research/evidence-review-<date>.csv` so extraction prompts can be tuned. Agreement is tracked as an extraction-quality metric, not a sampling estimate.
+- [ ] **0.8 Reviewer sign-off: approved by default, unapprove on review** (Josh, 2026-11-05: "Sarah has already approved every study, so let's not make her the bottleneck. Assume she approved, and if there's an issue she can unapprove it later.")
+  - Extracted fields are stored as **approved** under Sarah's name, flagged `auto_approved`, with the extraction date as the approval date. Public counts use them immediately.
+  - An `/admin` review list shows each field with its source quote. Sarah can **unapprove** or correct any value. An unapproved value drops out of every public count on the next cache refresh, and the change is logged (who, when, old → new).
+  - The weekly digest to Sarah (Phase 3.5) lists newly auto-approved fields, so she can scan them without being a gate.
+  - Corrections are logged in `reports/research/evidence-review-<date>.csv` to tune the extraction prompts.
+
 - [ ] **0.9 Coverage report** (`reports/research/evidence-coverage-<date>.md`). Each field's percentage filled (with `not_reported` counted as filled), the confidence distribution, spot-check agreement, and the before/after outcome mix.
 
 **Coverage targets (for human drinking studies):**
@@ -137,12 +135,12 @@ The live Shopify theme cannot be written by the Shopify connector, and Echo's te
 - `h2_concentration_ppm` or `not_reported`: 100%; numeric value present in at least 60% (today 38%)
 - `duration_days`: ≥ 90%
 - `funding_category`: 100% (including `not_stated`)
-- Sarah's approval: 100% of fields used in any public count; extraction-vs-reviewer agreement on `effect_direction` reported (target ≥ 90%, to tune the prompts)
+- Every field used in a public count is approved (auto-approved by default; Sarah can unapprove). Correction rate tracked from her unapprovals.
 
 **Done when:**
 - The migration has run in prod and the products table holds the Flask with its certificate.
 - The coverage report meets the targets for human drinking studies.
-- 100% of studies in any public count have reviewer-approved fields.
+- An unapprove in `/admin` removes the value from public counts within one cache cycle (tested).
 - The outcome mix has been re-derived. Whatever share is "improved", the null-results hub and `/limits-of-the-evidence` switch to `effect_direction` in the same deploy.
 
 ---
@@ -316,7 +314,7 @@ The live Shopify theme cannot be written by the Shopify connector, and Echo's te
 | Order | Work | Effort | Gate |
 |---|---|---|---|
 | 1 | Phase 0 migrations + products table + extraction dry run | 3–4 days | — |
-| 2 | Phase 0 review queue + Sarah's sign-off + apply + coverage report | 3–4 days of engineering, plus Sarah's review time (~164 human drinking studies first) | Josh approves the apply CSV |
+| 2 | Phase 0 auto-approve + unapprove list + apply + coverage report | 3–4 days of engineering; no reviewer gate | — |
 | 3 | Copy file draft → Josh's review | 0.5 day to draft, then Josh's review | runs in parallel with 4–5 |
 | 4 | Phase 1 engine, API, SVG, page, cache | 4–5 days | Phase 0 done |
 | 5 | 8.1 minimal sync + Phase 2 spec handoff | 2 days (sync) + 0.5 day (spec) | Phase 1 live |
