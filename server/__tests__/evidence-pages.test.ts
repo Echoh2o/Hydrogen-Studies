@@ -33,7 +33,7 @@ vi.mock("../db", () => {
         if (/SELECT country/i.test(sql)) return { rows: [{ country: "China", n: 1097 }, { country: "Japan", n: 523 }, { country: "United States", n: 121 }] };
         if (/registration_mention/i.test(sql)) return { rows: [{ funding: 166, coi: 187, concentration: 550, registration_mention: 37 }] };
         if (/conditions_with_rct/i.test(sql)) return { rows: [{ conditions_with_rct: 228, conditions_with_2plus: 48 }] };
-        if (/lower\(outcome\) AS outcome/i.test(sql)) {
+        if (/\) AS outcome\b/i.test(sql)) {
           return {
             rows: [
               { slug: "null-human", title: "Hydrogen water did not change HbA1c", publish_year: 2022, journal: "Diabetes J", study_design: "rct", study_type: "human", is_human_trial: true, outcome: "neutral" },
@@ -157,7 +157,7 @@ describe("/null-and-negative-results", () => {
     expect(html).toContain("result: neutral");
     expect(html).toContain("Randomized controlled trial · Human study");
     expect(html).toContain('href="/limits-of-the-evidence"');
-    expect(html).toContain("machine-drafted"); // how a study gets here is explained
+    expect(html).toContain("our reviewer can correct it"); // how a study gets here is explained
   });
 
   it("meta: CollectionPage named by the H1 + trail", async () => {

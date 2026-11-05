@@ -28,6 +28,8 @@ interface Row {
   h2_delivery_method: string | null;
   h2_concentration: string | null;
   outcome: string | null;
+  effect_direction: string | null;
+  evidence_fields_status: string | null;
   health_conditions: string[] | null;
   body_systems: string[] | null;
   country: string | null;
@@ -48,7 +50,7 @@ async function liveRows(): Promise<Row[]> {
   if (_rows && Date.now() - _rowsAt < TTL_MS) return _rows;
   const r = await db.execute(sql`
     SELECT id, slug, title, authors, journal, publish_year, doi, pmid, study_design, is_human_trial, study_type,
-           sample_size, duration, h2_delivery_method, h2_concentration, outcome, health_conditions, body_systems,
+           sample_size, duration, h2_delivery_method, h2_concentration, outcome, effect_direction, evidence_fields_status, health_conditions, body_systems,
            country, funding_sources::text AS funding_sources, conflict_of_interest,
            citation_count, citation_source, citation_count_updated_at, openalex_id
       FROM studies
@@ -63,6 +65,14 @@ const clean = (v: unknown): string | null => {
   const s = String(v ?? "").trim();
   return s && s !== "null" && s !== "[]" ? s : null;
 };
+
+/** Same rule as evidence-stats OUTCOME_SQL: approved effect_direction first, legacy label otherwise. */
+export function outcomeDirection(r: Pick<Row, "outcome" | "effect_direction" | "evidence_fields_status">): string | null {
+  if (r.evidence_fields_status === "auto_approved" || r.evidence_fields_status === "approved") {
+    return ({ improved: "positive", no_clear_effect: "neutral", worsened: "negative", mixed: "mixed" } as Record<string, string>)[r.effect_direction ?? ""] ?? null;
+  }
+  return clean(r.outcome)?.toLowerCase() ?? null;
+}
 
 export function toRecord(r: Row): DatasetRecord {
   const cited = r.citation_source === "openalex" && typeof r.citation_count === "number";
@@ -83,7 +93,7 @@ export function toRecord(r: Row): DatasetRecord {
     duration_days: r.duration != null && r.duration > 0 ? Number(r.duration) : null,
     delivery_method: clean(r.h2_delivery_method),
     h2_concentration: clean(r.h2_concentration),
-    outcome_direction: clean(r.outcome)?.toLowerCase() ?? null,
+    outcome_direction: outcomeDirection(r),
     health_conditions: r.health_conditions?.length ? r.health_conditions.join("|") : null,
     body_systems: r.body_systems?.length ? r.body_systems.join("|") : null,
     country: clean(r.country),
