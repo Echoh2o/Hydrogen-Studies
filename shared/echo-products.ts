@@ -54,8 +54,9 @@ export const ECHO_PRODUCTS: Record<string, EchoProduct> = {
     blurb: "Flagship multi-water hydrogen machine.",
   },
   flow: {
-    handle: "echo-h2-server-hydrogen-water",
-    title: "ECHO Flow",
+    // Old handle echo-h2-server-hydrogen-water 301s here (checked 2026-11-04).
+    handle: "echo-flow-hydrogen-water-machine",
+    title: "ECHO Flow Hydrogen Water Machine",
     priceUsd: 2500,
     deliveryMethods: ["drinking"],
     blurb: "Filter-less hydrogen generator that pairs with RO/home water systems.",
@@ -75,7 +76,8 @@ export const ECHO_PRODUCTS: Record<string, EchoProduct> = {
     blurb: "Hydrogen gas inhalation machine.",
   },
   revive: {
-    handle: "echo-revive",
+    // Old handle echo-revive 301s here (checked 2026-11-04).
+    handle: "echo-revive-hydrogen-bath-machine",
     title: "ECHO Revive Hydrogen Bath Machine",
     priceUsd: 7500,
     deliveryMethods: ["bathing"],
