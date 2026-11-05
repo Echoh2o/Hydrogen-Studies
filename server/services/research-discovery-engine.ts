@@ -23,6 +23,7 @@ import { searchEuropePMC } from "./europepmc-api";
 import { externalApi } from "../utils/http";
 import { logger } from "../utils/logger";
 import { checkStudyTopic } from "./study-topic-guard";
+import { molecularHydrogenRelevance } from "@shared/molecular-hydrogen-relevance";
 
 // Rotating query set — covers the breadth of hydrogen research
 const DISCOVERY_QUERIES = [
@@ -372,8 +373,15 @@ export async function runDiscovery(customQuery?: string): Promise<{
       // Check against database
       for (const result of uniqueResults) {
         // Topic guard first — cheap, and saves the dedupe probes + all
-        // downstream AI pipeline spend on off-topic hydrogen-energy papers.
-        if (checkStudyTopic({ title: result.title, abstract: result.abstract, journal: result.journal }, `discovery:${result.sourcePlatform}`).excluded) {
+        // downstream AI pipeline spend. Off-topic = hydrogen energy (2026-09-28)
+        // or no molecular hydrogen at all: peroxide, sulfide, hydrogen bonds,
+        // ions… (2026-11-05; ~97% of the old queue). Ambiguous papers are
+        // still queued for the reviewer.
+        const topicInput = { title: result.title, abstract: result.abstract, journal: result.journal };
+        if (
+          checkStudyTopic(topicInput, `discovery:${result.sourcePlatform}`).excluded ||
+          molecularHydrogenRelevance(topicInput).verdict === "off_topic"
+        ) {
           totalOffTopic++;
           continue;
         }
