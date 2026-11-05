@@ -1,3 +1,4 @@
+import { STUDY_REVIEWER, reviewerBylineLabel } from "@shared/reviewer";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
 import { formatAuthors, imageSrc } from "@/lib/utils";
@@ -424,6 +425,10 @@ export default function SEOStudyPage() {
                     <Link href="/methodology" className="underline hover:text-primary">
                       {EDITORIAL_TEAM}
                     </Link>
+                    {" "}· Reviewed by{" "}
+                    <a href={STUDY_REVIEWER.profileHref} className="underline hover:text-primary">
+                      {reviewerBylineLabel()}
+                    </a>
                     {updatedAt && (
                       <>
                         {" "}· Updated{" "}

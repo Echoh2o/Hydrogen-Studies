@@ -1,5 +1,6 @@
 // Body of /editorial-policy and /methodology for the SPA routes — the same
 // shared/policy-pages.ts text the server renderer serves to every visitor.
+import { headingId } from "@shared/heading-id";
 import Markdown from "react-markdown";
 import { Card } from "@/components/ui/card";
 import type { LucideIcon } from "lucide-react";
@@ -22,7 +23,7 @@ export function PolicyPageContent({ page, icon: Icon }: { page: PolicyPage; icon
         <div className="prose prose-gray max-w-none">
           {page.sections.map((section) => (
             <section key={section.heading}>
-              <h2 className="text-xl font-semibold text-gray-900 mt-8 mb-3">{section.heading}</h2>
+              <h2 id={headingId(section.heading)} className="text-xl font-semibold text-gray-900 mt-8 mb-3">{section.heading}</h2>
               <Markdown>{section.markdown}</Markdown>
             </section>
           ))}

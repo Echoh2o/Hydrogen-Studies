@@ -65,7 +65,8 @@ describe("editorial policy covers PLAN 4.2's list", () => {
     ["who runs it", /Echo Technologies LLC/],
     ["funding + independence", /does not choose which studies appear/],
     ["AI-assisted drafting", /large language models/],
-    ["human review step", /methodologist reviewer/],
+    ["human review step", /reviewed by a person before it is published/],
+    ["named reviewer + disclosed affiliation", /Sarah Taylor-Laine[\s\S]*Research Director at Echo Water[\s\S]*not independent of Echo/],
     ["update cadence", /every six hours/],
     ["corrections process", /fix the page/],
     ["contact", /\/contact/],
@@ -98,5 +99,18 @@ describe("methodology covers PLAN 4.2's list", () => {
         }
       }
     }
+  });
+});
+
+describe("reviewer: byline = schema (CLAUDE.md: reviewedBy only for a named, visible reviewer)", () => {
+  it("study schema names the same reviewer the byline shows, with affiliation, and no lastReviewed date", async () => {
+    const { studyJsonLd } = await import("../../shared/seo-markup");
+    const { STUDY_REVIEWER, reviewerBylineLabel } = await import("../../shared/reviewer");
+    const ld = studyJsonLd({ title: "T", slug: "t" } as any, { canonical: "https://hydrogenstudies.com/study/t", siteUrl: "https://hydrogenstudies.com" });
+    expect(ld.reviewedBy.name).toBe(STUDY_REVIEWER.name);
+    expect(ld.reviewedBy.worksFor.name).toBe("Echo Water");
+    expect(ld.lastReviewed).toBeUndefined();
+    expect(reviewerBylineLabel()).toBe("Sarah Taylor-Laine, M.Sc., Research Director, Echo Water");
+    expect(JSON.stringify(STUDY_REVIEWER).toLowerCase()).not.toMatch(/independent reviewer|verified|certified|doctor/);
   });
 });

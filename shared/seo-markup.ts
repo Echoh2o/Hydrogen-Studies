@@ -14,6 +14,8 @@
  * Keep dependency-free: this module ships in the browser bundle.
  */
 
+import { reviewerPersonJsonLd } from "./reviewer";
+
 export const SITE_NAME = "Hydrogen Studies";
 export const EDITORIAL_TEAM = "Hydrogen Studies Editorial Team";
 export const TITLE_SUFFIX = ` | ${SITE_NAME}`;
@@ -379,6 +381,9 @@ export function studyJsonLd(
     ...(opts.image ? { image: opts.image } : {}),
     ...(updated ? { dateModified: updated } : {}),
     author: { "@type": "Organization", name: EDITORIAL_TEAM, url: `${opts.siteUrl}/methodology` },
+    // Every study is reviewed by the named reviewer before publication
+    // (shared/reviewer.ts); the byline shows the same name and affiliation.
+    reviewedBy: reviewerPersonJsonLd(opts.siteUrl),
     publisher: { "@type": "Organization", "@id": `${opts.siteUrl}/#organization`, name: SITE_NAME },
     isPartOf: { "@type": "WebSite", "@id": `${opts.siteUrl}/#website` },
     about: paper,
