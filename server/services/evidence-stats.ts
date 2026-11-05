@@ -177,6 +177,13 @@ export async function getNonPositiveStudies(): Promise<NonPositiveStudy[]> {
   return _nonPositive;
 }
 
+/** Drop every cached evidence number (called when a reviewer approves/unapproves/corrects). */
+export function invalidateEvidenceStats(): void {
+  _stats = null;
+  _nonPositive = null;
+  _gap = null;
+}
+
 export function __resetEvidenceStatsForTests(): void {
   _stats = null;
   _nonPositive = null;

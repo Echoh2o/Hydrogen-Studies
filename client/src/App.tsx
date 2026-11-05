@@ -187,6 +187,7 @@ const PipelineDashboardPage = lazy(() => import("./pages/admin/PipelineDashboard
 const LinkManagementPage = lazy(() => import("./pages/admin/LinkManagementPage"));
 const RedirectsPage = lazy(() => import("./pages/admin/RedirectsPage"));
 const McpPage = lazy(() => import("./pages/admin/McpPage"));
+const EvidenceReviewPage = lazy(() => import("./pages/admin/EvidenceReviewPage"));
 const SearchConsolePage = lazy(() => import("./pages/admin/SearchConsolePage"));
 const AnalyticsGa4Page = lazy(() => import("./pages/admin/AnalyticsGa4Page"));
 const PillarsPage = lazy(() => import("./pages/admin/PillarsPage"));
@@ -487,6 +488,14 @@ function Router() {
           {() => (
             <ProtectedRoute requiredRoles={["admin"]}>
               <RedirectsPage />
+            </ProtectedRoute>
+          )}
+        </Route>
+        {/* Admin evidence review (TRUST-BADGE-PLAN 0.8) - Protected */}
+        <Route path="/admin/evidence-review">
+          {() => (
+            <ProtectedRoute requiredRoles={["admin"]}>
+              <EvidenceReviewPage />
             </ProtectedRoute>
           )}
         </Route>
