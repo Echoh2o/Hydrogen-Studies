@@ -160,10 +160,10 @@ describe("#2/#3/#12 bot study page", () => {
     );
   });
 
-  it("shows the 'Summary by … · Updated' line linking to /methodology", async () => {
+  it("shows the 'Summary by … · Reviewed by … · Updated' line", async () => {
     const html = (await renderStudy("h2-oxidative-stress"))!;
     expect(html).toContain(
-      '<p class="byline">Summary by <a href="/methodology">Hydrogen Studies Editorial Team</a> · Updated <time datetime="2026-09-10T12:00:00.000Z">September 10, 2026</time></p>',
+      '<p class="byline">Summary by <a href="/methodology">Hydrogen Studies Editorial Team</a> · Reviewed by <a href="/editorial-policy#our-scientific-reviewer">Sarah Taylor-Laine, M.Sc., Research Director, Echo Water</a> · Updated <time datetime="2026-09-10T12:00:00.000Z">September 10, 2026</time></p>',
     );
   });
 

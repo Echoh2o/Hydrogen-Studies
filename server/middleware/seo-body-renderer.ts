@@ -72,6 +72,7 @@ import {
 } from "../../shared/explore-hubs";
 import { studyBreadcrumbs, studyEvidence, studyHubLinks } from "../../shared/study-page";
 import { POLICY_PAGES } from "../../shared/policy-pages";
+import { STUDY_REVIEWER, reviewerBylineLabel } from "../../shared/reviewer";
 import { breadcrumbs, esc, footer, truncate } from "./html-fragments";
 import { renderJournalIndex, renderJournalPage, renderResearcherIndex, renderResearcherPage } from "./profile-pages";
 import { renderGapMapPage, renderLimitsPage, renderNullResultsHub, renderScamPage } from "./evidence-pages";
@@ -561,6 +562,7 @@ export async function renderStudy(slugOrId: string): Promise<string | null> {
     // Same copy as SEOStudyPage.tsx.
     const updated = studyUpdatedAt({ lastModified: s.last_modified, createdAt: s.created_at });
     h += `<p class="byline">Summary by <a href="/methodology">${esc(EDITORIAL_TEAM)}</a>`;
+    h += ` · Reviewed by <a href="${esc(STUDY_REVIEWER.profileHref)}">${esc(reviewerBylineLabel())}</a>`;
     if (updated) h += ` · Updated <time datetime="${isoDate(updated)}">${esc(formatLongDate(updated))}</time>`;
     h += `</p>\n`;
     if (hubLinks.length) {

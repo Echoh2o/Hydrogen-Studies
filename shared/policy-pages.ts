@@ -30,7 +30,7 @@ export interface PolicyPage {
 export const EDITORIAL_POLICY: PolicyPage = {
   path: "/editorial-policy",
   h1: "Editorial Policy",
-  lastUpdated: "2026-11-03",
+  lastUpdated: "2026-11-05",
   intro:
     "Hydrogen Studies is a research database about molecular hydrogen that is owned and funded by a company that sells hydrogen water products. This page says who runs it, what the funder can and cannot do, how pages are written and checked, and how to get something corrected.",
   sections: [
@@ -62,7 +62,12 @@ export const EDITORIAL_POLICY: PolicyPage = {
     {
       heading: "How pages are checked",
       markdown:
-        "Human review happens in two ways today. First, in audits across the whole database: in November 2026 every one of the 2,305 study headlines was checked against what the study actually measured, 674 were rewritten, and 515 extracted field values (sample sizes, durations, concentrations) were corrected or removed. Second, page by page, when a reader or a researcher reports a problem. Hub introductions and guides are written by the editorial team from the primary papers and checked against the studies they cite before they are published.\n\nA credentialed methodologist reviewer is joining the team (November 2026) to review study summaries individually. As pages are reviewed they will carry the reviewer's name and the review date. Until a page shows a named reviewer, read its summary as an AI-drafted reading of the abstract that has passed our automated and audit checks, and rely on the linked paper for anything that matters.",
+        "Every study is reviewed by a person before it is published. A newly found paper waits in a review queue after the AI drafting steps; it goes live only when our reviewer, Sarah Taylor-Laine, has checked the summary and the extracted details against the paper and approved it. She has also reviewed every study already in the database. Each study page names her as reviewer.\n\nWe also run audits across the whole database: in November 2026 every one of the 2,305 study headlines was checked against what the study actually measured, 674 were rewritten, and 515 extracted field values (sample sizes, durations, concentrations) were corrected or removed. Pages are corrected whenever a reader or a researcher reports a problem. Hub introductions and guides are written by the editorial team from the primary papers and checked against the studies they cite before they are published.\n\nWe do not yet record a review date for each study, so study pages show the date the page was last updated rather than a review date. Even a reviewed summary is a short reading of the paper; rely on the linked paper for anything that matters.",
+    },
+    {
+      heading: "Our scientific reviewer",
+      markdown:
+        "Sarah Taylor-Laine (B.Sc. and M.Sc. in Biology, California State University) is Research Director at Echo Water, the company that funds this site; she works with Echo as a contractor. She is a founding board member of the American Hydrogen Health Association (AHHA). Her career spans academic and applied research, product development, regulatory consulting and scientific communication.\n\nBecause she works for our funder, her review is not independent of Echo, and we do not describe it that way. What it does mean: a named person with a biology background has checked each study page against the paper before it is published. The [methodology](/methodology) describes what is checked.",
     },
     {
       heading: "Corrections and retractions",
@@ -85,7 +90,7 @@ export const EDITORIAL_POLICY: PolicyPage = {
 export const METHODOLOGY: PolicyPage = {
   path: "/methodology",
   h1: "Methodology",
-  lastUpdated: "2026-11-03",
+  lastUpdated: "2026-11-05",
   intro:
     "How studies get into this database, what we exclude, what a study page contains, how we label the strength of evidence, how summaries are drafted and checked, and what the database cannot tell you.",
   sections: [
@@ -117,7 +122,7 @@ export const METHODOLOGY: PolicyPage = {
     {
       heading: "How summaries are drafted and checked",
       markdown:
-        "Summaries, headlines and structured fields are drafted by large language models (currently Anthropic's Claude models, with OpenAI as a fallback) from the abstract or full text, then checked in two ways. Database-wide audits compare what the page claims with what the paper measured: in November 2026 all 2,305 headlines were audited and 674 rewritten, and extracted field values were spot-checked against the papers before being applied. Individual pages are corrected whenever a reader or researcher reports a problem. A credentialed methodologist reviewer is joining in November 2026 to review summaries one by one; reviewed pages will show the reviewer's name and the review date. The [editorial policy](/editorial-policy) describes the review process and how to request a correction.",
+        "Summaries, headlines and structured fields are drafted by large language models (currently Anthropic's Claude models, with OpenAI as a fallback) from the abstract or full text, then reviewed by a person before publication. Our reviewer, [Sarah Taylor-Laine](/editorial-policy#our-scientific-reviewer) (M.Sc. Biology; Research Director at Echo Water), checks each study's summary and extracted details against the paper and approves it from a review queue; new studies are not published until she does. Database-wide audits add a second check: in November 2026 all 2,305 headlines were audited and 674 rewritten, and extracted field values were spot-checked against the papers before being applied. Individual pages are corrected whenever a reader or researcher reports a problem. The [editorial policy](/editorial-policy) describes the review process and how to request a correction.",
     },
     {
       heading: "How hubs and guides are written",

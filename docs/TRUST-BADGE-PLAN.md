@@ -1,6 +1,6 @@
 # TRUST-BADGE-PLAN.md — Evidence Profile badges for Echo product pages (v1)
 
-**Owner:** Josh · **Date:** Nov 5, 2026 (v1.2, same day: Josh's answers folded in) · **Status:** plan only, no code yet
+**Owner:** Josh · **Date:** Nov 5, 2026 (v1.3: Josh's answers + reviewer bio folded in) · **Status:** plan only, no code yet
 **Builds on:** `docs/PLAN.md` v3 (4.3, 4.8, 5.1, 5.2, 6.4, 8.1, 8.6, Appendix E). This plan references those items and does not repeat them.
 
 **What it is:** a FrontrowMD-style badge on echowater.com product pages. It keeps two of the three things that make "Clinicians' Choice" work: **a specific number** and **proof on click**. It replaces the third, the claim of independence, with **checkable information about independent research**. The research comes from studies Echo did not fund and that did not use Echo devices, and the page says so only when the data shows it. Every number is computed from the Hydrogen Studies database by a matching rule written in plain language that anyone can re-run.
@@ -39,7 +39,7 @@
 1. **Concentration is free text** (`h2_concentration varchar`) in units like ppm, mg/L, mM, ppb and "super-saturated". There is no numeric column, no dose (mL/day), and no record of whether the figure was measured or stated.
 2. **Outcome direction is one label per paper and is about 91% "Positive"** for human studies: 308 positive, 29 neutral, 2 negative, 9 unrecorded. Of the 58 dose-matched studies, 57 are "positive". That can't support a statement like "34 studies show…". It needs re-extraction per **primary outcome**, with a `mixed` value (PLAN 4.3 `effect_direction`).
 3. **No products table.** Certified concentrations live only in Shopify copy and in `shared/products-guide.ts`.
-4. **Reviewer:** Josh confirmed on 2026-11-05 that **Sarah Taylor has reviewed every study in the system and reviews each new study before it is published**, and that she approved the schema. So `reviewedBy` (Person: Sarah Taylor) is allowed on study pages, the evidence page and the modal. **Sarah is a contractor for Echo** (Josh, 2026-11-05), so every byline and schema entry discloses that: "Reviewed by Sarah Taylor, [title], contractor for Echo Water". She is never described as independent (guardrail 2). Her bio, with title and credentials, is coming from Sarah via Josh. The credential part of the byline and `hasCredential`/`jobTitle` render only once it arrives (CLAUDE.md: empty fields never render). The name and affiliation can ship before then.
+4. **Reviewer:** Josh confirmed on 2026-11-05 that **Sarah Taylor has reviewed every study in the system and reviews each new study before it is published**, and that she approved the schema. So `reviewedBy` (Person: Sarah Taylor) is allowed on study pages, the evidence page and the modal. **Sarah is a contractor for Echo** (Josh, 2026-11-05), so every byline and schema entry discloses that: "Reviewed by Sarah Taylor-Laine, M.Sc., Research Director, Echo Water" (shared/reviewer.ts). She is never described as independent (guardrail 2). Her bio, with title and credentials, is coming from Sarah via Josh. The credential part of the byline and `hasCredential`/`jobTitle` render only once it arrives (CLAUDE.md: empty fields never render). The name and affiliation can ship before then.
 
 **Infra facts:** Express on Railway is the source of truth. Next (`web` service) server-renders public routes via `SSR_FAMILIES` (`server/middleware/web-frontdoor.ts`). Cloudflare sits in front.
 - It **caches the SVG** (`/embed/badge.svg` → `cf-cache-status: HIT`) and **rewrites its browser TTL to 4 h**.
@@ -300,8 +300,7 @@ The live Shopify theme cannot be written by the Shopify connector, and Echo's te
 - Sarah is an Echo contractor, disclosed in every byline.
 - Question logs: routed by intent, as in 3.5.
 
-**Still open:**
-1. **Sarah's bio.** Her title and credentials, which Sarah is sending to Josh. Until then, bylines show her name and "contractor for Echo Water" only.
+**Still open:** none. Sarah's bio arrived on 2026-11-05. She is Sarah Taylor-Laine, B.Sc./M.Sc. Biology (California State University), Research Director at Echo Water (contractor), and a founding board member of the AHHA. The record lives in `shared/reviewer.ts` and is used by every byline and schema entry.
 
 ## 5. Assumptions
 

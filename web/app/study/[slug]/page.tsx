@@ -1,3 +1,4 @@
+import { STUDY_REVIEWER, reviewerBylineLabel } from "@shared/reviewer";
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import {
@@ -187,6 +188,8 @@ export default async function StudyPage({ params }: { params: { slug: string } }
           )}
           <p className="byline mb-3 text-sm text-neutral-600">
             Summary by <a href="/methodology" className="underline hover:text-primary">{EDITORIAL_TEAM}</a>
+            {" "}· Reviewed by{" "}
+            <a href={STUDY_REVIEWER.profileHref} className="underline hover:text-primary">{reviewerBylineLabel()}</a>
             {updated && (
               <>
                 {" "}· Updated <time dateTime={isoDate(updated)}>{formatLongDate(updated)}</time>
