@@ -1,0 +1,1080 @@
+{
+ "generatedAt": "2026-11-05T23:57:09.502Z",
+ "route": "drinking_water",
+ "results": [
+  {
+   "id": 2037,
+   "pmcid": "PMC7850666",
+   "fill": {
+    "h2_concentration_ppm": 2.5,
+    "h2_concentration_kind": "stated",
+    "h2_concentration_raw": "2.5 ppm of dissolved hydrogen in concentration",
+    "dose_ml_per_day": 200,
+    "doses_per_day": 1,
+    "duration_days": 14,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": null,
+    "source_snippet": "Each can of H 2 water is 200 mL in volume and contains 2.5 ppm of dissolved hydrogen in concentration."
+   }
+  },
+  {
+   "id": 2062,
+   "pmcid": "PMC7402115",
+   "fill": {
+    "h2_concentration_ppm": 0.5868,
+    "h2_concentration_kind": "measured",
+    "h2_concentration_raw": "586.8 \u00b1 20.5 \u03bcg/L",
+    "dose_ml_per_day": 1500,
+    "doses_per_day": null,
+    "duration_days": 56,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": "Alkamedi Co. Ltd.",
+    "source_snippet": "the pH, ORP, dissolved hydrogen concentration, and electric conductivity of the ERW-producing apparatus were 9.39 \u00b1 7.2, \u2212111.36 \u00b1 7.39 mV, 586.8 \u00b1 20.5 \u03bcg/L"
+   }
+  },
+  {
+   "id": 2065,
+   "pmcid": "PMC7871940",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": null,
+    "doses_per_day": null,
+    "duration_days": null,
+    "funding_category": "industry",
+    "coi_declared": "none",
+    "device_maker": "Ecomo International",
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 2073,
+   "pmcid": "PMC8092150",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": 500,
+    "doses_per_day": 1,
+    "duration_days": 14,
+    "funding_category": "industry",
+    "coi_declared": "some",
+    "device_maker": "MiZ Company Limited",
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 2075,
+   "pmcid": "PMC7259729",
+   "fill": {
+    "h2_concentration_ppm": 7,
+    "h2_concentration_kind": "stated",
+    "h2_concentration_raw": "7 ppm of H2: 3.5 mg H2 in 500-mL water",
+    "dose_ml_per_day": 500,
+    "doses_per_day": 1,
+    "duration_days": 14,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": "Itamar Medical Inc.",
+    "source_snippet": "a high H2 group (n = 34) that drank high H2 water (containing 7 ppm of H2: 3.5 mg H2 in 500-mL water)"
+   }
+  },
+  {
+   "id": 2077,
+   "pmcid": "PMC7575226",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": null,
+    "doses_per_day": null,
+    "duration_days": null,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": null,
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 2097,
+   "pmcid": "PMC7102907",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": "5.5 millimoles of H2 per day",
+    "dose_ml_per_day": 750,
+    "doses_per_day": 3,
+    "duration_days": 168,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": "HRW Natural Health Products Inc.",
+    "source_snippet": "high-concentration HRW (5.5 millimoles of H2 per day) for 24 weeks"
+   }
+  },
+  {
+   "id": 2120,
+   "pmcid": "PMC7724019",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": null,
+    "doses_per_day": null,
+    "duration_days": null,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": null,
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 2129,
+   "pmcid": "PMC7376192",
+   "fill": {
+    "h2_concentration_ppm": 0.753,
+    "h2_concentration_kind": "measured",
+    "h2_concentration_raw": "0.753 \u00b1 0.012 mg/L",
+    "dose_ml_per_day": 1500,
+    "doses_per_day": 3,
+    "duration_days": 28,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": "Koreahydrogenwater Corp.",
+    "source_snippet": "The hydrogen concentration of the H2-rich water was 0.753 \u00b1 0.012 mg/L when measured using the dissolved H2 analyzer (Orbisphere 3,654 portable analyzer; Hach, Switzerland, Geneva)."
+   }
+  },
+  {
+   "id": 2136,
+   "pmcid": "PMC7885711",
+   "fill": {
+    "h2_concentration_ppm": 0.83,
+    "h2_concentration_kind": "stated",
+    "h2_concentration_raw": "830 \u03bcg/L",
+    "dose_ml_per_day": null,
+    "doses_per_day": null,
+    "duration_days": null,
+    "funding_category": "industry",
+    "coi_declared": "none",
+    "device_maker": null,
+    "source_snippet": "Hydrogen-water of 150 mL having hydrogen of 830 \u03bcg/L at 20\u00b0C was placed in each container and left to stand."
+   }
+  },
+  {
+   "id": 2217,
+   "pmcid": "PMC6425901",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": null,
+    "doses_per_day": null,
+    "duration_days": null,
+    "funding_category": "industry",
+    "coi_declared": "none",
+    "device_maker": "HRW Natural Health Products Inc.",
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 2238,
+   "pmcid": "PMC6352569",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": null,
+    "doses_per_day": null,
+    "duration_days": 60,
+    "funding_category": "public",
+    "coi_declared": "none",
+    "device_maker": null,
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 2242,
+   "pmcid": "PMC6352572",
+   "fill": {
+    "h2_concentration_ppm": 0.2,
+    "h2_concentration_kind": "stated",
+    "h2_concentration_raw": "0.2 mg/L for the AEW group for the characteristics of the de",
+    "dose_ml_per_day": 500,
+    "doses_per_day": null,
+    "duration_days": 28,
+    "funding_category": "industry",
+    "coi_declared": "some",
+    "device_maker": "Panasonic Corporation (Matsushita Electric Works)",
+    "source_snippet": "the hydrogen concentration was confirmed as 0 mg/L in the PW group and 0.2 mg/L for the AEW group for the characteristics of the device."
+   }
+  },
+  {
+   "id": 2280,
+   "pmcid": "PMC6242303",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": null,
+    "doses_per_day": null,
+    "duration_days": 21,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": null,
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 2288,
+   "pmcid": "PMC5908129",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": null,
+    "doses_per_day": null,
+    "duration_days": null,
+    "funding_category": "public",
+    "coi_declared": "none",
+    "device_maker": "Alka vitha",
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 2323,
+   "pmcid": "PMC5806445",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": null,
+    "doses_per_day": 2,
+    "duration_days": null,
+    "funding_category": "industry",
+    "coi_declared": "some",
+    "device_maker": "Melodian Corporation",
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 2329,
+   "pmcid": "PMC5872374",
+   "fill": {
+    "h2_concentration_ppm": 1.2096,
+    "h2_concentration_kind": "measured",
+    "h2_concentration_raw": "more than 0.6 mM",
+    "dose_ml_per_day": 300,
+    "doses_per_day": null,
+    "duration_days": 365,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": "Unisense",
+    "source_snippet": "The concentration of H2 was measured using a hydrogen sensor (Unisense, Aarhus N, Denmark), and used if the value was more than 0.6 mM."
+   }
+  },
+  {
+   "id": 2340,
+   "pmcid": "PMC5925025",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": 2000,
+    "doses_per_day": null,
+    "duration_days": 56,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": null,
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 2516,
+   "pmcid": "PMC5110137",
+   "fill": {
+    "h2_concentration_ppm": 1.2096,
+    "h2_concentration_kind": "stated",
+    "h2_concentration_raw": "0.6 mM",
+    "dose_ml_per_day": 1500,
+    "doses_per_day": 3,
+    "duration_days": null,
+    "funding_category": "public",
+    "coi_declared": "none",
+    "device_maker": null,
+    "source_snippet": "We added hydrogen-rich water (500 mL three times per day, 0.6 mM) which was prepared as we previously described (Qian et al., 2013)."
+   }
+  },
+  {
+   "id": 2531,
+   "pmcid": "PMC5126823",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": null,
+    "doses_per_day": 1,
+    "duration_days": 1,
+    "funding_category": "industry",
+    "coi_declared": "not_stated",
+    "device_maker": null,
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 2532,
+   "pmcid": "PMC5329859",
+   "fill": {
+    "h2_concentration_ppm": 1.2096,
+    "h2_concentration_kind": "stated",
+    "h2_concentration_raw": "approximately 0.6 mmol/L",
+    "dose_ml_per_day": null,
+    "doses_per_day": null,
+    "duration_days": null,
+    "funding_category": "public",
+    "coi_declared": "not_stated",
+    "device_maker": null,
+    "source_snippet": "The hydrogen concentration was maintained at approximately 0.6 mmol/L."
+   }
+  },
+  {
+   "id": 2534,
+   "pmcid": "PMC4865993",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": 1000,
+    "doses_per_day": null,
+    "duration_days": 504,
+    "funding_category": "not_stated",
+    "coi_declared": "some",
+    "device_maker": null,
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 2667,
+   "pmcid": "PMC4207582",
+   "fill": {
+    "h2_concentration_ppm": 7,
+    "h2_concentration_kind": "stated",
+    "h2_concentration_raw": "7 ppm H2 (3.5 mg H2 in 500 mL water)",
+    "dose_ml_per_day": null,
+    "doses_per_day": null,
+    "duration_days": null,
+    "funding_category": "not_stated",
+    "coi_declared": "none",
+    "device_maker": "Unex Co, Ltd",
+    "source_snippet": "the high-H2 group, who drank high-H2 water containing 7 ppm H2 (3.5 mg H2 in 500 mL water)"
+   }
+  },
+  {
+   "id": 2764,
+   "pmcid": "PMC3395574",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": null,
+    "doses_per_day": null,
+    "duration_days": null,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": null,
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 2775,
+   "pmcid": "PMC3563451",
+   "fill": {
+    "h2_concentration_ppm": 5,
+    "h2_concentration_kind": "stated",
+    "h2_concentration_raw": "4 to 5 ppm molecular hydrogen",
+    "dose_ml_per_day": 530,
+    "doses_per_day": 1,
+    "duration_days": 28,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": null,
+    "source_snippet": "drank 530 ml of water containing 4 to 5 ppm molecular hydrogen (high H 2 water) every day for 4 weeks"
+   }
+  },
+  {
+   "id": 2844,
+   "pmcid": "PMC3231939",
+   "fill": {
+    "h2_concentration_ppm": 0.5,
+    "h2_concentration_kind": "measured",
+    "h2_concentration_raw": "~0.5 ppm (~31% saturation)",
+    "dose_ml_per_day": 1000,
+    "doses_per_day": null,
+    "duration_days": 84,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": "Blue Mercury Inc.",
+    "source_snippet": "The hydrogen concentrations were ~0.5 ppm (~31% saturation)."
+   }
+  },
+  {
+   "id": 2849,
+   "pmcid": "PMC3231938",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": 2000,
+    "doses_per_day": 10,
+    "duration_days": 42,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": "Friendear",
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 3034,
+   "pmcid": "PMC8139351",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": null,
+    "doses_per_day": null,
+    "duration_days": null,
+    "funding_category": "mixed",
+    "coi_declared": "none",
+    "device_maker": "Tecnologias Saludables y Desarrollo Humano",
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 3042,
+   "pmcid": "PMC8374459",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": 500,
+    "doses_per_day": 2,
+    "duration_days": 14,
+    "funding_category": "industry",
+    "coi_declared": "some",
+    "device_maker": "Panasonic Corporation",
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 3073,
+   "pmcid": "PMC2716677",
+   "fill": {
+    "h2_concentration_ppm": 1.169,
+    "h2_concentration_kind": "measured",
+    "h2_concentration_raw": "ranged from 0.21 to 0.58 mM",
+    "dose_ml_per_day": null,
+    "doses_per_day": null,
+    "duration_days": null,
+    "funding_category": "public",
+    "coi_declared": "none",
+    "device_maker": null,
+    "source_snippet": "Hydrogen concentration was analyzed for each experiment and ranged from 0.21 to 0.58 mM."
+   }
+  },
+  {
+   "id": 3112,
+   "pmcid": "PMC8572338",
+   "fill": {
+    "h2_concentration_ppm": 16,
+    "h2_concentration_kind": "measured",
+    "h2_concentration_raw": "8 mM (16 mg/L)",
+    "dose_ml_per_day": null,
+    "doses_per_day": null,
+    "duration_days": null,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": "H2 Analytics",
+    "source_snippet": "estimated at 8 mM (16 mg/L) based on extrapolation from available gas chromatography data on the hydrogen tablets obtained via H 2 Analytics using gas chromatography (SRI 8610C)"
+   }
+  },
+  {
+   "id": 3121,
+   "pmcid": "PMC8544515",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": 1000,
+    "doses_per_day": null,
+    "duration_days": 180,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": "Hita Tenryo-Sui Co., Ltd.",
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 3148,
+   "pmcid": "PMC8838970",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": null,
+    "doses_per_day": null,
+    "duration_days": null,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": null,
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 3171,
+   "pmcid": "PMC9104058",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": 1000,
+    "doses_per_day": 2,
+    "duration_days": 8,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": null,
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 3231,
+   "pmcid": "PMC9712568",
+   "fill": {
+    "h2_concentration_ppm": 1.3,
+    "h2_concentration_kind": "stated",
+    "h2_concentration_raw": "100 to 1,300 ppb",
+    "dose_ml_per_day": null,
+    "doses_per_day": null,
+    "duration_days": null,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": null,
+    "source_snippet": "EHW contains abundant molecular hydrogen from 100 to 1,300 ppb and very small amounts of platinum nanoparticles with alkaline properties from pH 9.0 to 10.0"
+   }
+  },
+  {
+   "id": 3234,
+   "pmcid": "PMC7599474",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": 2000,
+    "doses_per_day": null,
+    "duration_days": 56,
+    "funding_category": "public",
+    "coi_declared": "not_stated",
+    "device_maker": "Enagic (Kangen Water Type SD501 Platinum Machine, Tokyo, Japan)",
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 3249,
+   "pmcid": "PMC9767360",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": null,
+    "doses_per_day": null,
+    "duration_days": null,
+    "funding_category": "academic",
+    "coi_declared": "not_stated",
+    "device_maker": null,
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 3305,
+   "pmcid": "PMC10295603",
+   "fill": {
+    "h2_concentration_ppm": 1.6,
+    "h2_concentration_kind": "stated",
+    "h2_concentration_raw": "hydrogen concentration of the packaging label of 1.6 mg/mL",
+    "dose_ml_per_day": null,
+    "doses_per_day": null,
+    "duration_days": 56,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": null,
+    "source_snippet": "The H2 concentrations of 5 days, 1 month, 2 months, and 4 months after HRW production were detected, all of which reached the hydrogen concentration of the packaging label of 1.6 mg/mL."
+   }
+  },
+  {
+   "id": 3314,
+   "pmcid": "PMC10408004",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": "7.5 mg of H2 per day",
+    "dose_ml_per_day": null,
+    "doses_per_day": null,
+    "duration_days": 84,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": "Natural Health Products Inc.",
+    "source_snippet": "All participants consumed 7.5 mg of H2 per day for 12 weeks, administered as hydrogen-rich water (Natural Health Products Inc., New Westminster, Canada)."
+   }
+  },
+  {
+   "id": 3328,
+   "pmcid": "PMC10582286",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": 900,
+    "doses_per_day": 2,
+    "duration_days": 28,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": null,
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 3329,
+   "pmcid": "PMC10594520",
+   "fill": {
+    "h2_concentration_ppm": 16.128,
+    "h2_concentration_kind": "measured",
+    "h2_concentration_raw": "~8 mM in 250 mL of water",
+    "dose_ml_per_day": 1250,
+    "doses_per_day": 5,
+    "duration_days": 28,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": "HRW Natural Health Products Inc.",
+    "source_snippet": "Hydrogen concentration reaches a peak of ~8 mM in 250 mL of water, as per gas chromatography (SRI 8610C; Los Angeles CA, USA) results from H2 Analytics"
+   }
+  },
+  {
+   "id": 3349,
+   "pmcid": "PMC10757640",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": null,
+    "doses_per_day": null,
+    "duration_days": null,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": null,
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 3351,
+   "pmcid": "PMC10886336",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": null,
+    "doses_per_day": null,
+    "duration_days": 90,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": null,
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 3366,
+   "pmcid": "PMC11046232",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": null,
+    "doses_per_day": null,
+    "duration_days": 1,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": null,
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 3375,
+   "pmcid": "PMC11123997",
+   "fill": {
+    "h2_concentration_ppm": 1.6,
+    "h2_concentration_kind": "stated",
+    "h2_concentration_raw": "H2 concentration: 1600 ppb",
+    "dose_ml_per_day": 500,
+    "doses_per_day": 2,
+    "duration_days": 14,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": "Zhiheng Hydrogen Health Technology Co., Ltd.",
+    "source_snippet": "The HRW used (H2 concentration: 1600 ppb; pH: 7.6; ORP: \u2212590 mv; Temperature: 22 \u00b0C) was prepared using an electrolysis device (Zhiheng Hydrogen Health Technology Co., Ltd., Fuzhou, China)"
+   }
+  },
+  {
+   "id": 3391,
+   "pmcid": "PMC12878601",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": null,
+    "doses_per_day": 2,
+    "duration_days": 42,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": "CalerieLife",
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 3410,
+   "pmcid": "PMC11313273",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": null,
+    "doses_per_day": null,
+    "duration_days": 30,
+    "funding_category": "mixed",
+    "coi_declared": "not_stated",
+    "device_maker": "Drink HRW",
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 3435,
+   "pmcid": "PMC11491356",
+   "fill": {
+    "h2_concentration_ppm": 1.6,
+    "h2_concentration_kind": "stated",
+    "h2_concentration_raw": "1,600 ppb, according to the manufacturer's instructions",
+    "dose_ml_per_day": 1920,
+    "doses_per_day": null,
+    "duration_days": 7,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": "Zhiheng Hydrogen Health Technology Co., Ltd.",
+    "source_snippet": "The concentration of H 2 in the HRW was 1,600 ppb, according to the manufacturer's instructions."
+   }
+  },
+  {
+   "id": 3521,
+   "pmcid": "PMC12076047",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": "total daily dose of H2 of around 8 mg",
+    "dose_ml_per_day": 1000,
+    "doses_per_day": 2,
+    "duration_days": 28,
+    "funding_category": "industry",
+    "coi_declared": "some",
+    "device_maker": "Natural Health Products Inc.",
+    "source_snippet": "This provided a total daily dose of H2 of around 8 mg."
+   }
+  },
+  {
+   "id": 3524,
+   "pmcid": "PMC12303785",
+   "fill": {
+    "h2_concentration_ppm": 1.3,
+    "h2_concentration_kind": "stated",
+    "h2_concentration_raw": "1.2 to 1.3 ppm",
+    "dose_ml_per_day": null,
+    "doses_per_day": 2,
+    "duration_days": null,
+    "funding_category": "not_stated",
+    "coi_declared": "none",
+    "device_maker": null,
+    "source_snippet": "The concentration of dissolved hydrogen and pH of the HEW were 1.2 to 1.3 ppm and 7.1, respectively."
+   }
+  },
+  {
+   "id": 3560,
+   "pmcid": "PMC12300684",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": 500,
+    "doses_per_day": 1,
+    "duration_days": null,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": null,
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 3563,
+   "pmcid": "PMC12326158",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": null,
+    "doses_per_day": null,
+    "duration_days": 3,
+    "funding_category": "academic",
+    "coi_declared": "none",
+    "device_maker": null,
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 3578,
+   "pmcid": "PMC12437174",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": null,
+    "doses_per_day": null,
+    "duration_days": null,
+    "funding_category": "public",
+    "coi_declared": "none",
+    "device_maker": null,
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 3662,
+   "pmcid": "PMC12943592",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": null,
+    "doses_per_day": null,
+    "duration_days": 56,
+    "funding_category": "not_stated",
+    "coi_declared": "not_stated",
+    "device_maker": null,
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 4305,
+   "pmcid": "PMC13667379",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": null,
+    "doses_per_day": null,
+    "duration_days": null,
+    "funding_category": "public",
+    "coi_declared": "none",
+    "device_maker": "Shanghai Nanobubble Nanotechnology Co., Ltd",
+    "source_snippet": null
+   }
+  },
+  {
+   "id": 4313,
+   "pmcid": "PMC9598482",
+   "fill": {
+    "h2_concentration_ppm": 4,
+    "h2_concentration_kind": "stated",
+    "h2_concentration_raw": "4 mg/L H2",
+    "dose_ml_per_day": 990,
+    "doses_per_day": 3,
+    "duration_days": 56,
+    "funding_category": "mixed",
+    "coi_declared": "none",
+    "device_maker": "Drink HRW and Natural Wellness Now Health Products Inc.",
+    "source_snippet": "All groups were instructed to dissolve one tablet in 330 mL of water, wait for dissolving and drink the produced HRW ( 4 mg/L H 2 ) immediately, three times per day for two months."
+   }
+  },
+  {
+   "id": 4319,
+   "pmcid": "PMC10964576",
+   "fill": {
+    "h2_concentration_ppm": null,
+    "h2_concentration_kind": null,
+    "h2_concentration_raw": null,
+    "dose_ml_per_day": 2000,
+    "doses_per_day": 5,
+    "duration_days": null,
+    "funding_category": "academic",
+    "coi_declared": "none",
+    "device_maker": "Novasmart",
+    "source_snippet": null
+   }
+  }
+ ],
+ "skipped": [
+  {
+   "id": 2008,
+   "why": "no PMC id"
+  },
+  {
+   "id": 2034,
+   "why": "no OA full text (500)"
+  },
+  {
+   "id": 2055,
+   "why": "no PMC id"
+  },
+  {
+   "id": 2118,
+   "why": "no PMC id"
+  },
+  {
+   "id": 2167,
+   "why": "no PMC id"
+  },
+  {
+   "id": 2213,
+   "why": "no PMC id"
+  },
+  {
+   "id": 2227,
+   "why": "no PMC id"
+  },
+  {
+   "id": 2281,
+   "why": "no PMC id"
+  },
+  {
+   "id": 2308,
+   "why": "no PMC id"
+  },
+  {
+   "id": 2359,
+   "why": "no PMC id"
+  },
+  {
+   "id": 2402,
+   "why": "no PMC id"
+  },
+  {
+   "id": 2456,
+   "why": "no OA full text (500)"
+  },
+  {
+   "id": 2542,
+   "why": "no methods text"
+  },
+  {
+   "id": 2559,
+   "why": "no PMC id"
+  },
+  {
+   "id": 2592,
+   "why": "no PMC id"
+  },
+  {
+   "id": 2663,
+   "why": "no PMC id"
+  },
+  {
+   "id": 2724,
+   "why": "no PMC id"
+  },
+  {
+   "id": 2736,
+   "why": "no OA full text (500)"
+  },
+  {
+   "id": 2745,
+   "why": "no OA full text (500)"
+  },
+  {
+   "id": 2753,
+   "why": "no PMC id"
+  },
+  {
+   "id": 2961,
+   "why": "no PMC id"
+  },
+  {
+   "id": 2974,
+   "why": "no PMC id"
+  },
+  {
+   "id": 2990,
+   "why": "no PMC id"
+  },
+  {
+   "id": 3074,
+   "why": "no PMC id"
+  },
+  {
+   "id": 3104,
+   "why": "no PMC id"
+  },
+  {
+   "id": 3106,
+   "why": "no methods text"
+  },
+  {
+   "id": 3144,
+   "why": "no OA full text (500)"
+  },
+  {
+   "id": 3185,
+   "why": "no OA full text (500)"
+  },
+  {
+   "id": 3315,
+   "why": "no PMC id"
+  },
+  {
+   "id": 3319,
+   "why": "no PMC id"
+  },
+  {
+   "id": 3531,
+   "why": "no PMC id"
+  },
+  {
+   "id": 3571,
+   "why": "no PMC id"
+  },
+  {
+   "id": 3583,
+   "why": "no PMC id"
+  },
+  {
+   "id": 3634,
+   "why": "no PMC id"
+  },
+  {
+   "id": 3650,
+   "why": "no PMC id"
+  },
+  {
+   "id": 3707,
+   "why": "no PMC id"
+  },
+  {
+   "id": 4227,
+   "why": "no PMC id"
+  },
+  {
+   "id": 4257,
+   "why": "no methods text"
+  },
+  {
+   "id": 4301,
+   "why": "no OA full text (500)"
+  },
+  {
+   "id": 4328,
+   "why": "no PMC id"
+  }
+ ]
+}
