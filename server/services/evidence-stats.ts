@@ -9,6 +9,16 @@ import { db } from "../db";
 import { studyEvidence } from "../../shared/study-page";
 import { NON_POSITIVE_OUTCOMES } from "../../shared/evidence-pages";
 
+/**
+ * The outcome direction public pages use (TRUST-BADGE-PLAN 0.9): the
+ * per-primary-outcome effect_direction when the evidence fields are approved
+ * (auto_approved or approved — never unapproved), mapped onto the old
+ * vocabulary; otherwise the legacy per-paper outcome label.
+ */
+export const OUTCOME_SQL = sql.raw(`(CASE WHEN evidence_fields_status IN ('auto_approved','approved') THEN
+  CASE effect_direction WHEN 'improved' THEN 'positive' WHEN 'no_clear_effect' THEN 'neutral' WHEN 'worsened' THEN 'negative' WHEN 'mixed' THEN 'mixed' ELSE NULL END
+  ELSE lower(nullif(outcome, '')) END)`);
+
 export interface EvidenceStats {
   asOf: Date;
   total: number;
@@ -67,12 +77,12 @@ export async function getEvidenceStats(): Promise<EvidenceStats> {
              count(*) FILTER (WHERE duration > 180)::int AS over_6m
         FROM studies WHERE is_excluded = false AND is_human_trial`),
     db.execute(sql`
-      SELECT count(*) FILTER (WHERE lower(outcome) = 'positive')::int AS positive,
-             count(*) FILTER (WHERE lower(outcome) = 'neutral')::int AS neutral,
-             count(*) FILTER (WHERE lower(outcome) = 'negative')::int AS negative,
-             count(*) FILTER (WHERE lower(outcome) = 'mixed')::int AS mixed,
-             count(*) FILTER (WHERE coalesce(outcome, '') <> '')::int AS with_outcome,
-             count(*) FILTER (WHERE is_human_trial AND lower(outcome) IN ('neutral', 'negative', 'mixed'))::int AS human_non_positive
+      SELECT count(*) FILTER (WHERE ${OUTCOME_SQL} = 'positive')::int AS positive,
+             count(*) FILTER (WHERE ${OUTCOME_SQL} = 'neutral')::int AS neutral,
+             count(*) FILTER (WHERE ${OUTCOME_SQL} = 'negative')::int AS negative,
+             count(*) FILTER (WHERE ${OUTCOME_SQL} = 'mixed')::int AS mixed,
+             count(*) FILTER (WHERE ${OUTCOME_SQL} IS NOT NULL)::int AS with_outcome,
+             count(*) FILTER (WHERE is_human_trial AND ${OUTCOME_SQL} IN ('neutral', 'negative', 'mixed'))::int AS human_non_positive
         FROM studies WHERE is_excluded = false`),
     db.execute(sql`
       SELECT country, count(*)::int AS n FROM studies
@@ -149,10 +159,10 @@ export async function getNonPositiveStudies(): Promise<NonPositiveStudy[]> {
   if (_nonPositive && Date.now() - _nonPositiveAt < TTL_MS) return _nonPositive;
   const r = await db.execute(sql`
     SELECT slug, COALESCE(plain_language_title, title) AS title, publish_year, journal, study_design, study_type,
-           is_human_trial, lower(outcome) AS outcome
+           is_human_trial, ${OUTCOME_SQL} AS outcome
       FROM studies
      WHERE is_excluded = false AND slug IS NOT NULL
-       AND lower(outcome) IN (${sql.join(NON_POSITIVE_OUTCOMES.map((o) => sql`${o}`), sql`, `)})
+       AND ${OUTCOME_SQL} IN (${sql.join(NON_POSITIVE_OUTCOMES.map((o) => sql`${o}`), sql`, `)})
      ORDER BY is_human_trial DESC, publish_year DESC NULLS LAST, id DESC`);
   _nonPositive = (r.rows as any[]).map((row) => ({
     slug: String(row.slug),
@@ -197,7 +207,7 @@ export async function getGapMatrix(minStudies: number): Promise<GapRow[]> {
   if (_gap && Date.now() - _gapAt < TTL_MS) return _gap;
   const r = await db.execute(sql`
     WITH t AS (
-      SELECT unnest(health_conditions) AS cond, study_design AS d, is_human_trial AS h, lower(outcome) AS o
+      SELECT unnest(health_conditions) AS cond, study_design AS d, is_human_trial AS h, ${OUTCOME_SQL} AS o
         FROM studies WHERE is_excluded = false
     )
     SELECT cond, count(*)::int AS total,
