@@ -24,6 +24,7 @@ import {
 } from "../middleware/seo-body-renderer";
 import { abstractExcerpt, studySourceLink, withoutPlaceholders } from "../../shared/seo-markup";
 import { studyHubLinks } from "../../shared/study-page";
+import { getStudyDoseModule } from "../services/study-dose";
 import { isContentPath, resolvePageMeta, resolveStaticPageMeta } from "../services/page-meta";
 import { renderPageBody } from "../middleware/seo-body-renderer";
 import { logger } from "../utils/logger";
@@ -71,12 +72,13 @@ router.get("/study/:slug", async (req: Request, res: Response) => {
     const study: any = withoutPlaceholders(raw as any);
     const conditions: string[] = (study.healthConditions || []).filter((c: string) => c?.trim());
     const condition = conditions[0] || study.category || null;
-    const [hubs, related, relatedBlogs, footerConditions, authorLinks] = await Promise.all([
+    const [hubs, related, relatedBlogs, footerConditions, authorLinks, doseModule] = await Promise.all([
       getConditionHubs(),
       getRelatedStudies(study.id, condition),
       getRelatedBlogs(condition || ""),
       getTopConditions(),
       authorLinksFor(study.authors), // PLAN 4.7: link authors with a profile page
+      getStudyDoseModule(study.id), // PLAN 5.1: allowed topics only, else null
     ]);
 
     const { abstract, ...rest } = study;
@@ -88,6 +90,7 @@ router.get("/study/:slug", async (req: Request, res: Response) => {
       related,
       relatedBlogs,
       footerConditions,
+      doseModule,
     });
   } catch (error) {
     logger.error("study page-data failed", error, "PageData");

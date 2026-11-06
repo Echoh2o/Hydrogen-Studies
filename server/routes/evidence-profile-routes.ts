@@ -16,6 +16,7 @@ import { getEvidenceProfile, getTopicEvidence } from "../services/evidence-profi
 import { doseMatchRuleText, topicRuleText, CLAIM_TOPICS, EVIDENCE_RULE_VERSION } from "../../shared/evidence-match";
 import { BADGE, CLAIM_WIDGET, COPY_APPROVAL, PROFILE, mixPhrase, fmt, ppmLabel } from "../../shared/evidence-badge-copy";
 import { STUDY_REVIEWER } from "../../shared/reviewer";
+import { getStudyDoseModule } from "../services/study-dose";
 import { logger } from "../utils/logger";
 
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
@@ -28,7 +29,15 @@ function headers(res: Response, maxAge: number): void {
   res.setHeader("X-Robots-Tag", "noindex");
 }
 
-const studyLink = (s: { pmid: string | null; doi: string | null }) =>
+/** PLAN 5.1: the SPA's copy of the study-page dose module (Next gets it via page-data). */
+router.get("/api/studies/:id/dose-module", async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: "bad id" });
+  res.setHeader("Cache-Control", "public, max-age=300");
+  res.json({ module: await getStudyDoseModule(id) });
+});
+
+const studyLink = (s:{ pmid: string | null; doi: string | null }) =>
   s.pmid ? `https://pubmed.ncbi.nlm.nih.gov/${s.pmid}/` : s.doi ? `https://doi.org/${s.doi.replace(/^https?:\/\/(dx\.)?doi\.org\//i, "")}` : null;
 
 router.get("/api/evidence/:product", async (req, res) => {

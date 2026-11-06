@@ -37,6 +37,8 @@ vi.mock("../middleware/seo-body-renderer", () => ({
   getTopConditions: async () => [{ slug: "kidney-health", name: "Kidney Health" }],
 }));
 vi.mock("../utils/logger", () => ({ logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn() } }));
+const dose = vi.hoisted(() => ({ module: null as any }));
+vi.mock("../services/study-dose", () => ({ getStudyDoseModule: async () => dose.module }));
 
 const { default: router } = await import("../routes/page-data-routes");
 const app = express();
@@ -99,6 +101,15 @@ describe("GET /api/page-data/study/:slug", () => {
     expect(res.body.study.sourceLink.href).toBe("https://pubmed.ncbi.nlm.nih.gov/38000001/");
     expect(res.body.hubLinks).toEqual([{ label: "Kidney Health", href: "/explore-by-condition/kidney-health" }]);
     expect(res.body.related).toHaveLength(1);
+    expect(res.body.doseModule).toBeNull(); // PLAN 5.1: disease/unknown topic → no module
+  });
+
+  it("passes the PLAN 5.1 dose module through when the study qualifies", async () => {
+    state.study = { id: 2, slug: "s2", title: "T", isExcluded: false, healthConditions: ["Muscle Fatigue"], bodySystems: [] };
+    dose.module = { topic: "exercise-recovery", line: "This study used hydrogen-rich water at 1.6 ppm.", devices: [] };
+    const res = await request(app).get("/api/page-data/study/s2");
+    expect(res.body.doseModule.topic).toBe("exercise-recovery");
+    dose.module = null;
   });
 });
 

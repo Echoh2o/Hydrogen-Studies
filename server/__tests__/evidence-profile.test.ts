@@ -74,6 +74,7 @@ vi.mock("../services/evidence-profile", () => {
   };
 });
 vi.mock("../utils/logger", () => ({ logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn() } }));
+vi.mock("../services/study-dose", () => ({ getStudyDoseModule: async (id: number) => (id === 7 ? { topic: "exercise-recovery" } : null) }));
 
 describe("public evidence API", async () => {
   const { default: routes } = await import("../routes/evidence-profile-routes");
@@ -88,6 +89,11 @@ describe("public evidence API", async () => {
     expect(ok.body.copy.echoDevice).toMatch(/None of these studies tested an Echo product/);
     expect((await request(app).get("/api/evidence/echo-off")).status).toBe(404);
     expect((await request(app).get("/api/evidence/nope")).status).toBe(404);
+  });
+  it("SPA dose-module endpoint: model or null, 400 on a bad id", async () => {
+    expect((await request(app).get("/api/studies/7/dose-module")).body).toEqual({ module: { topic: "exercise-recovery" } });
+    expect((await request(app).get("/api/studies/8/dose-module")).body).toEqual({ module: null });
+    expect((await request(app).get("/api/studies/x/dose-module")).status).toBe(400);
   });
   it("topic endpoint refuses non-Appendix-E topics", async () => {
     expect((await request(app).get("/api/evidence/echo-flask/topic/athletic-performance")).status).toBe(200);

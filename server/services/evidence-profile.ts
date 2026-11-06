@@ -34,6 +34,7 @@ let _version = "";
 
 export function invalidateEvidenceProfile(): void {
   _rows = null;
+  void import("./study-dose").then((m) => m.invalidateDoseDevices()).catch(() => {});
 }
 
 async function humanRows(): Promise<{ rows: EvidenceStudyRow[]; version: string }> {
