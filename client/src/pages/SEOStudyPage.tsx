@@ -1,4 +1,6 @@
 import { STUDY_REVIEWER, reviewerBylineLabel } from "@shared/reviewer";
+import type { StudyDoseModule as StudyDoseModuleModel } from "@shared/study-dose-module";
+import { StudyDoseModule } from "@/components/study/StudyDoseModule";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams, useLocation } from "wouter";
 import { formatAuthors, imageSrc } from "@/lib/utils";
@@ -191,6 +193,12 @@ export default function SEOStudyPage() {
   // empty/undefined list on error so the panel simply renders nothing.
   const { data: connections } = useQuery<StudyConnection[]>({
     queryKey: ["/api/explorer/study-connections", { studyId: study?.id }],
+    enabled: !!study?.id,
+  });
+  // PLAN 5.1 "studied dose" module — same model the Next page renders; null
+  // unless the study's topic is on the Appendix E allowlist.
+  const { data: dose } = useQuery<{ module: StudyDoseModuleModel | null }>({
+    queryKey: [`/api/studies/${study?.id}/dose-module`],
     enabled: !!study?.id,
   });
   const relatedStudyIds = Array.from(
@@ -593,6 +601,8 @@ export default function SEOStudyPage() {
                         )}
                       </section>
                     )}
+
+                    {dose?.module && <StudyDoseModule module={dose.module} />}
 
                     {/* Enhanced Methods, Results, Conclusion sections */}
                     {study.methods && (

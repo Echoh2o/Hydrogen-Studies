@@ -74,6 +74,26 @@ export const CLAIM_WIDGET = {
   cta: "See the studies",
 };
 
+/**
+ * PLAN 5.1 — the "studied dose" module on allowed study pages
+ * (shared/study-dose-module.ts). The dose line is built from the study's own
+ * reviewed fields; device figures are H2 Analytics measurements.
+ */
+export const DOSE_MODULE = {
+  heading: "The hydrogen dose in this study",
+  linePrefix: "This study used hydrogen-rich water at",
+  stated: "Concentration as reported by the authors.",
+  measured: "Concentration as measured by the authors.",
+  sponsorLabel: "From our sponsor, Echo Water",
+  deviceIntro: (ppm: string) =>
+    `Echo Water funds Hydrogen Studies. These Echo devices reached at least ${ppm} when H2 Analytics (Las Vegas) measured them:`,
+  echoNotUsed: "This study did not use an Echo device. The measurements above come from Echo's lab reports, not from this study.",
+  echoUsed: "This study used an Echo device. The measurements above come from Echo's lab reports, not from this study.",
+  echoUnknown: "The measurements above come from Echo's lab reports, not from this study.",
+  disclaimer:
+    "Drinking water at the same concentration does not mean you will get the same result as the people in this study. This is not medical advice, and hydrogen water is not a treatment for any disease.",
+};
+
 /** Words the copy may never contain (checked by tests against rendered output). */
 export const FORBIDDEN_COPY = [
   /\bverified\b/i, /\bindependent(ly)?\b/i, /clinician[- ]approved/i, /doctor[- ]recommended/i, /\bproven\b/i,

@@ -19,6 +19,8 @@ import { LAST_CRUMB_MAX, truncateLabel } from "@shared/breadcrumbs";
 import { PageDataError, SITE_URL, pageData, type FooterCondition } from "@web/lib/page-data";
 import { SiteHeader } from "@web/components/SiteHeader";
 import { SiteFooter } from "@web/components/SiteFooter";
+import { StudyDoseModule } from "@/components/study/StudyDoseModule";
+import type { StudyDoseModule as StudyDoseModuleModel } from "@shared/study-dose-module";
 
 /** Studies change rarely: page data is cached for a day; the page itself
  *  renders per request for a fresh CSP nonce. */
@@ -38,6 +40,8 @@ interface StudyPageData {
   related: { slug: string; title: string; year: number | null }[];
   relatedBlogs: { slug: string; title: string }[];
   footerConditions: FooterCondition[];
+  /** PLAN 5.1 "studied dose" module (shared/study-dose-module.ts) — null unless the topic is allowed. */
+  doseModule?: StudyDoseModuleModel | null;
 }
 
 async function load(slug: string): Promise<StudyPageData> {
@@ -92,7 +96,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export default async function StudyPage({ params }: { params: { slug: string } }) {
-  const { study, hubLinks, authorLinks, related, relatedBlogs, footerConditions } = await load(params.slug);
+  const { study, hubLinks, authorLinks, related, relatedBlogs, footerConditions, doseModule } = await load(params.slug);
   const input = helperInput(study);
   const plainTitle = realContent(study.plainLanguageTitle);
   const pageTitle = plainTitle || study.title;
@@ -253,6 +257,7 @@ export default async function StudyPage({ params }: { params: { slug: string } }
               )}
             </Section>
           )}
+          {doseModule && <StudyDoseModule module={doseModule} />}
         </article>
 
         {related.length > 0 && (

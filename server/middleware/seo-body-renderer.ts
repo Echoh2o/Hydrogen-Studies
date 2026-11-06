@@ -34,6 +34,8 @@ import {
   type BlogByline,
 } from "../../shared/seo-markup";
 import { isBridgeAllowed } from "../../shared/bridge-policy";
+import { renderStudyDoseModuleHtml } from "../../shared/study-dose-module";
+import { getStudyDoseModule } from "../services/study-dose";
 import { getHydrogenForTopic } from "../../shared/hydrogen-for-topics";
 import {
   CONDITION_HUB_FAQ_HEADING,
@@ -618,6 +620,10 @@ export async function renderStudy(slugOrId: string): Promise<string | null> {
       if (source) h += `<p><a href="${esc(source.href)}" rel="noopener">${esc(source.label)}</a></p>`;
       h += `</section>\n`;
     }
+    // PLAN 5.1: studied dose vs. lab-measured devices — allowed topics only
+    // (shared/study-dose-module.ts decides; null on disease studies).
+    const doseModule = await getStudyDoseModule(s.id);
+    if (doseModule) h += `${renderStudyDoseModuleHtml(doseModule)}\n`;
     h += `</article>\n`;
 
     // Related studies
