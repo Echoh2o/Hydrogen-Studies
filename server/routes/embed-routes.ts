@@ -15,6 +15,7 @@
 import { Router, type Response } from "express";
 import { getPublicStudyStats, type PublicStudyStats } from "../services/public-study-stats";
 import { logger } from "../utils/logger";
+import { buildEvidenceModalScript } from "../services/evidence-modal-script";
 
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
 
@@ -98,6 +99,14 @@ export function buildStudyCountScript(siteUrl: string): string {
 }
 
 const STUDY_COUNT_SCRIPT = buildStudyCountScript(SITE_URL);
+
+const EVIDENCE_MODAL_SCRIPT = buildEvidenceModalScript(SITE_URL);
+
+/** TRUST-BADGE-PLAN 2.4: the click-to-open evidence modal for echowater.com. */
+router.get("/evidence-modal.js", (_req, res) => {
+  setEmbedHeaders(res, 3600);
+  res.type("application/javascript").send(EVIDENCE_MODAL_SCRIPT);
+});
 
 router.get("/study-count.js", (_req, res) => {
   setEmbedHeaders(res, 3600);
