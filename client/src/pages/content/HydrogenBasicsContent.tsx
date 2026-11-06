@@ -4,7 +4,7 @@
 import React from "react";
 import { Link } from "wouter";
 import { Byline } from "@/components/blog/Byline";
-import { learnByline } from "@shared/learn-pages";
+import { LEARN_GUIDES_UPDATED, learnByline } from "@shared/learn-pages";
 import {
   ArrowLeft,
   Atom,
@@ -122,7 +122,7 @@ export function HydrogenBasicsContent() {
               What molecular hydrogen is, how it's taken, and what research
               does — and doesn't — show
             </p>
-            <Byline byline={learnByline()} className="byline text-sm text-gray-600 mb-6" />
+            <Byline byline={learnByline(LEARN_GUIDES_UPDATED)} className="byline text-sm text-gray-600 mb-6" />
             <Badge className="bg-teal-100 text-teal-800 px-4 py-2">
               From a database of {siteStats?.totalStudies ? `${siteStats.totalStudies.toLocaleString("en-US")}+` : "2,000+"} studies — most in animals or cells
             </Badge>
@@ -184,9 +184,19 @@ export function HydrogenBasicsContent() {
         {/* Key Mechanisms */}
         <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
           <div className="max-w-7xl mx-auto">
-            <h2 className="text-3xl font-bold text-gray-900 mb-12 text-center">
-              What Researchers Are Studying
+            <h2 className="text-3xl font-bold text-gray-900 mb-4 text-center">
+              What are researchers studying about hydrogen?
             </h2>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto mb-12 text-center">
+              Mostly whether hydrogen acts as a mild antioxidant and changes
+              inflammation signals. Most of that work is in cells and animals;
+              human trials are small, and their results are mixed. See what
+              the trials found on 
+              <Link href="/explore-by-condition/oxidative-stress" className="text-teal-700 underline hover:text-teal-800">
+                oxidative stress
+              </Link>
+              .
+            </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {keyMechanisms.map((mechanism) => (
@@ -207,9 +217,19 @@ export function HydrogenBasicsContent() {
         {/* Delivery Methods */}
         <section className="py-16 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
-            <h2 className="text-3xl font-bold text-gray-900 mb-12 text-center">
-              Ways Hydrogen Is Taken
+            <h2 className="text-3xl font-bold text-gray-900 mb-4 text-center">
+              How is hydrogen taken?
             </h2>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto mb-12 text-center">
+              In three main ways: drinking hydrogen water, breathing hydrogen
+              gas and bathing in hydrogen-rich water. Most human trials tested
+              drinking water; inhalation was studied mostly in animals and
+              hospitals. Our 
+              <Link href="/products" className="text-teal-700 underline hover:text-teal-800">
+                device guide
+              </Link> 
+              explains what to check before buying anything.
+            </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {deliveryMethods.map((method) => (
@@ -262,9 +282,18 @@ export function HydrogenBasicsContent() {
         {/* Safety Information */}
         <section className="py-16 px-4 sm:px-6 lg:px-8 bg-teal-50">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
-              Safety & Considerations
+            <h2 className="text-3xl font-bold text-gray-900 mb-4 text-center">
+              Is hydrogen safe?
             </h2>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto mb-8 text-center">
+              It was well tolerated in short human trials, and the side effects
+              reported were mild, mostly with magnesium tablets. Safety beyond a
+              few months hasn't been studied. More detail: 
+              <Link href="/blog/hydrogen-water-side-effects" className="text-teal-700 underline hover:text-teal-800">
+                hydrogen water side effects
+              </Link>
+              .
+            </p>
 
             <Alert className="mb-8">
               <AlertCircle className="h-4 w-4" />
@@ -325,7 +354,7 @@ export function HydrogenBasicsContent() {
         <section className="py-16 px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl font-bold text-gray-900 mb-8">
-              Ready to Learn More?
+              Where can you learn more?
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

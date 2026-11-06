@@ -70,6 +70,7 @@ const SITE = "https://hydrogenstudies.com";
 const SLUGS = [
   "kidney-health", "chronic-fatigue", "exercise-recovery", "skin-aging", "sleep-quality",
   "cholesterol", "type-2-diabetes", "fatty-liver-nafld", "weight-loss-metabolism", "gut-health",
+  "athletic-performance", "oxidative-stress",
 ];
 
 /** What the seed (007_seed_health_conditions) stores — must never render on these hubs. */
@@ -113,6 +114,14 @@ const OLD_DESCRIPTIONS: Record<string, { name: string; description: string }> = 
   "gut-health": {
     name: "Gut Health",
     description: "The function and balance of the gastrointestinal tract and its microbiome. Hydrogen water may positively influence gut barrier function and microbial diversity.",
+  },
+  "athletic-performance": {
+    name: "Athletic Performance",
+    description: "Physical capabilities during sport and exercise. Hydrogen may enhance performance through improved mitochondrial function and reduced fatigue.",
+  },
+  "oxidative-stress": {
+    name: "Oxidative Stress",
+    description: "An imbalance between free radicals and antioxidants in the body. Hydrogen acts as a selective antioxidant targeting the most harmful hydroxyl radicals.",
   },
 };
 

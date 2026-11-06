@@ -5,7 +5,7 @@
 import React from "react";
 import { Link } from "wouter";
 import { Byline } from "@/components/blog/Byline";
-import { learnByline } from "@shared/learn-pages";
+import { LEARN_GUIDES_UPDATED, learnByline } from "@shared/learn-pages";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -56,6 +56,7 @@ export function HealthBenefitsContent() {
       description: "Heart health, circulation, and vascular function",
       studyCount: getStudyCount("Heart Disease & Hypertension"),
       evidence: "low",
+      hub: { href: "/explore-by-condition/cholesterol", label: "Cholesterol evidence review" },
       benefits: [
         "Blood vessel function (small trials)",
         "Blood lipid markers (small trials, mixed)",
@@ -90,6 +91,7 @@ export function HealthBenefitsContent() {
       description: "Exercise performance, recovery, and fatigue reduction",
       studyCount: getStudyCount("Musculoskeletal System"),
       evidence: "low",
+      hub: { href: "/explore-by-condition/athletic-performance", label: "Athletic performance evidence review" },
       benefits: [
         "Perceived fatigue after exercise",
         "Blood lactate after hard exercise",
@@ -124,6 +126,7 @@ export function HealthBenefitsContent() {
       description: "Blood sugar, blood lipids and body weight",
       studyCount: getStudyCount("Diabetes & Metabolic Health"),
       evidence: "very-low",
+      hub: { href: "/explore-by-condition/type-2-diabetes", label: "Type 2 diabetes evidence review" },
       benefits: [
         "Blood sugar and insulin markers",
         "Blood lipids",
@@ -141,6 +144,7 @@ export function HealthBenefitsContent() {
       description: "Skin appearance and UV exposure",
       studyCount: getStudyCount("Integumentary System"),
       evidence: "very-low",
+      hub: { href: "/explore-by-condition/skin-aging", label: "Skin aging evidence review" },
       benefits: [
         "UV-related skin damage (lab and animal studies)",
         "Skin hydration",
@@ -191,7 +195,7 @@ export function HealthBenefitsContent() {
               What researchers have studied, and how strong the evidence is in
               people. Most of it is early-stage.
             </p>
-            <Byline byline={learnByline()} className="byline text-sm text-gray-600 mb-6" />
+            <Byline byline={learnByline(LEARN_GUIDES_UPDATED)} className="byline text-sm text-gray-600 mb-6" />
             <Badge className="bg-red-100 text-red-800 px-4 py-2">
               {healthCategories.reduce((sum, c) => sum + c.studyCount, 0) > 0
                 ? `${healthCategories.reduce((sum, c) => sum + c.studyCount, 0).toLocaleString("en-US")} studies in these areas`
@@ -205,10 +209,12 @@ export function HealthBenefitsContent() {
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Health Areas
+                How strong is the evidence in each health area?
               </h2>
-              <p className="text-lg text-gray-600">
-                What has been measured in each area — not proven benefits
+              <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+                Low or very low in every area so far: no area has more than
+                low-certainty human evidence yet. Each card shows what has been
+                measured, not proven benefits.
               </p>
             </div>
 
@@ -271,6 +277,13 @@ export function HealthBenefitsContent() {
                       <p className="text-sm text-gray-600">
                         {category.keyFindings}
                       </p>
+                      {"hub" in category && category.hub ? (
+                        <p className="text-sm mt-2">
+                          <Link href={category.hub.href} className="text-teal-700 underline hover:text-teal-800">
+                            {category.hub.label}
+                          </Link>
+                        </p>
+                      ) : null}
                     </div>
 
                     <div className="flex items-center justify-between pt-4 border-t">

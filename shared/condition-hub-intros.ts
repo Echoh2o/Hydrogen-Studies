@@ -93,25 +93,31 @@ This page maps the research on molecular hydrogen and the kidneys. For the plain
 
 Of the roughly 95 studies in our database with the kidneys in the title, about two-thirds were in rats, mice or other animals. Only 16 involved people, and 15 of those were about dialysis.
 
-## What the human studies tested
+## What have human studies tested?
+
+Mostly hydrogen added to dialysis fluid, which is a medical treatment, not a drink. We found no controlled trial of drinking hydrogen water for chronic kidney disease.
 
 - **Hydrogen in dialysis fluid.** Researchers dissolved about 30–80 parts per billion of hydrogen into hemodialysis fluid. In a [6-month study of 21 patients](/study/a-novel-bioactive-haemodialysis-system-using-dissolved-dihydrogen-h2-produced-by-water-electrolysis-a-clinical-trial-pmid-20388631) with no comparison group, blood pressure and two inflammation markers fell. In a [non-randomized study of 309 patients](/study/novel-haemodialysis-hd-treatment-employing-molecular-hydrogen-h-2-enriched-dialysis-solution-improves-prognosis-of-chronic-dialysis-patients-a-prospective-observational-study-pmid-29321509) followed for about 3.3 years, the hydrogen group had a 41% lower adjusted risk of death or major heart, stroke or amputation events. A [12-month study of 81 patients](/study/hemodialysis-employing-molecular-hydrogen-h2-enriched-dialysis-solution-may-improve-dialysis-related-fatigue-through-impact-on-energy-metabolism-pmid-39934143) reported less fatigue in the most fatigued patients, again with no control group. This is a medical treatment delivered through a dialysis machine, not a drink.
 - **Drinking hydrogen for chronic kidney disease (CKD).** We found no controlled trial. The human evidence is a [single case report](/study/molecular-hydrogen-as-a-potential-adjunctive-therapy-to-improve-renal-function-and-reduce-fatigue-in-an-elderly-patient-with-chronic-comorbidities-a-case-report-pmid-39740897) of an 89-year-old woman whose creatinine fell after she started hydrogen capsules. A [2025 scoping review of 69 publications](/study/molecular-hydrogen-and-kidney-diseases-a-scoping-review-based-on-scientometry-and-data-analytics-pmid-40826940) called for more robust clinical trials.
 - **Kidney stones.** In a [2026 randomized trial](https://pubmed.ncbi.nlm.nih.gov/42734448/) of 100 people, 32% of those who added hydrogen-rich water to standard care for 12 weeks responded, versus 28% on standard care alone (and 76% with a Chinese herbal formula).
 - **Contrast dye injury and kidney transplants.** We found no human trials.
 
-## What animal studies suggest (not human evidence)
+## What do animal studies suggest (not human evidence)?
 
-In rats, [inhaled hydrogen gas reduced kidney injury from contrast dye](/study/inhalation-of-hydrogen-gas-is-beneficial-for-preventing-contrast-induced-acute-kidney-injury-in-rats-pmid-25592271), and [hydrogen water given for 150 days after a kidney transplant](/study/oral-hydrogen-water-prevents-chronic-allograft-nephropathy-in-rats-pmid-19907413) slowed chronic graft damage. In mice given the chemotherapy drug cisplatin, [drinking water with about 1.6 ppm hydrogen](/study/molecular-hydrogen-alleviates-nephrotoxicity-induced-by-anti-cancer-drug-cisplatin-without-compromising-anti-tumor-activity-in-mice-pmid-19148645) reduced kidney damage. Not every result is positive: in pig kidneys reconnected to blood outside the body, [2% hydrogen gas did not improve function](/study/hydrogen-gas-does-not-ameliorate-renal-ischemia-reperfusion-injury-in-a-preclinical-model-pmid-29611214). Lab injuries are sudden; CKD develops over years.
+In rats and mice, hydrogen reduced sudden kidney injuries caused by contrast dye, a transplant and a chemotherapy drug, though not every experiment was positive. Lab injuries happen fast, while chronic kidney disease develops over years, so these results don't show what hydrogen does in people.
 
-## What we don't know
+In rats, [inhaled hydrogen gas reduced kidney injury from contrast dye](/study/inhalation-of-hydrogen-gas-is-beneficial-for-preventing-contrast-induced-acute-kidney-injury-in-rats-pmid-25592271), and [hydrogen water given for 150 days after a kidney transplant](/study/oral-hydrogen-water-prevents-chronic-allograft-nephropathy-in-rats-pmid-19907413) slowed chronic graft damage. In mice given the chemotherapy drug cisplatin, [drinking water with about 1.6 ppm hydrogen](/study/molecular-hydrogen-alleviates-nephrotoxicity-induced-by-anti-cancer-drug-cisplatin-without-compromising-anti-tumor-activity-in-mice-pmid-19148645) reduced kidney damage. Not every result is positive: in pig kidneys reconnected to blood outside the body, [2% hydrogen gas did not improve function](/study/hydrogen-gas-does-not-ameliorate-renal-ischemia-reperfusion-injury-in-a-preclinical-model-pmid-29611214).
+
+## What don't we know yet?
+
+Almost everything that matters for people with kidney disease is still untested, from kidney-function results to long-term safety.
 
 - Whether drinking hydrogen water changes eGFR, creatinine or urine protein in people with kidney disease
 - Whether the dialysis results hold up in randomized trials by independent groups
 - What dose, concentration or duration would matter
 - Long-term safety of hydrogen water in people with reduced kidney function
 
-## If you have kidney disease
+## What should you do if you have kidney disease?
 
 Talk to your nephrologist before trying hydrogen water, and don't change any treatment. It counts toward any fluid limit. Magnesium-based hydrogen tablets leave [magnesium in the drink](/blog/h2-tabs-side-effects#how-much-magnesium-is-in-a-hydrogen-tablet-drink), which matters when the kidneys can't clear it well.
 
@@ -152,7 +158,7 @@ Talk to your nephrologist before trying hydrogen water, and don't change any tre
     ],
     ownerLink: { href: "/blog/is-hydrogen-water-good-for-kidneys", label: "Is hydrogen water good for your kidneys? Our full, evidence-graded guide" },
     bridgeTopic: null,
-    lastReviewed: "2026-09-29",
+    lastReviewed: "2026-11-05",
   },
   "chronic-fatigue": {
     slug: "chronic-fatigue",
@@ -167,29 +173,39 @@ Talk to your nephrologist before trying hydrogen water, and don't change any tre
 
 "Fatigue" means two different things in hydrogen research, and the evidence for each is very different. About 40 human studies in our database mention fatigue. Roughly 16 tested exercise in healthy adults or athletes. About 20 involved people with a diagnosed illness, and most of those were single-patient case reports or small pilot studies.
 
-## Fatigue during exercise in healthy adults
+## Does hydrogen reduce fatigue during exercise?
+
+Slightly, in healthy adults. Pooled trials found that hydrogen made exercise feel a little easier and lowered blood lactate a little, but it didn't improve VO2max or endurance.
 
 Most of the controlled trials are here. A [2023 meta-analysis](/study/effects-of-molecular-hydrogen-supplementation-on-fatigue-and-aerobic-capacity-in-healthy-adults-a-systematic-review-and-meta-analysis-pmid-36819697) pooled 19 randomized studies with 402 healthy adults. Hydrogen slightly lowered ratings of perceived effort and blood lactate, but it didn't change VO2max or endurance. A [2024 meta-analysis](/study/can-molecular-hydrogen-supplementation-enhance-physical-performance-in-healthy-adults-a-systematic-review-and-meta-analysis-pmid-38903627) of 27 publications and 597 adults found the same pattern, with no gain in strength. In one of the largest single studies, [99 untrained and 60 trained adults](/study/drinking-hydrogen-water-enhances-endurance-and-relieves-psychometric-fatigue-a-randomized-double-blind-placebo-controlled-study-pmid-31251888) drank 500 mL of hydrogen water (0.8–1.0 ppm) shortly before cycling and reported less fatigue. It drew a [published critique](/study/discussion-drinking-hydrogen-water-enhances-endurance-and-relieves-psychometric-fatigue-a-randomized-double-blind-placebo-controlled-study-pmid-34585956) from other researchers.
 
 **Doses studied:** drinking water with 0.5–5.9 ppm hydrogen, or inhaled gas at 1–68% hydrogen, given as a single dose or daily for 2–14 days. In the 2023 analysis, perceived effort dropped after a single pre-exercise dose but not in the two studies that used several days of intake. The effect is on how tired people felt, not on how far or fast they went. See the [exercise fatigue section of our benefits guide](/blog/molecular-hydrogen-benefits-guide-pillar#does-hydrogen-water-reduce-exercise-fatigue) and our [exercise recovery hub](/explore-by-condition/exercise-recovery).
 
-## ME/CFS (chronic fatigue syndrome)
+## Does hydrogen help ME/CFS (chronic fatigue syndrome)?
+
+It hasn't been shown to. The only placebo-controlled pilot trial found no benefit, and the positive reports are case reports without a comparison group.
 
 There is no large trial. A [2026 review](/study/molecular-hydrogen-as-a-treatment-for-mecfs-a-mini-review-of-clinical-evidence-and-mechanistic-rationale-pmid-41930109), written in part by the team that ran them, describes three small pilot trials of hydrogen-rich water made from tablets. The only one with a placebo group (4 weeks, about 12 mg of hydrogen a day) found no benefit, and about half of participants had temporary moderate-to-severe side effects such as headaches and stomach upset. Two later trials without a placebo group, lasting 8 and 16 weeks, reported improvements in self-rated fatigue and physical function. We couldn't find those trials indexed in PubMed.
 
 Separately, [four case reports](/study/successful-treatment-of-myalgic-encephalomyelitischronic-fatigue-syndrome-using-hydrogen-gas-four-case-reports-pmid-37929512) described symptom relief in people with ME/CFS who inhaled hydrogen gas for 3–6 hours a day over 8–20 weeks. There was no comparison group, and four of the five authors work for the company that makes the inhaler used.
 
-## Long COVID, cancer and dialysis fatigue
+## Does hydrogen help fatigue from long COVID, cancer or dialysis?
+
+Not clearly. In the two randomized trials, fatigue on the main measure didn't differ from placebo or plain water; the more positive reports had no comparison group.
 
 - **Long COVID.** In a [single-blind trial](/study/the-effect-of-14-day-consumption-of-hydrogen-rich-water-alleviates-fatigue-but-does-not-ameliorate-dyspnea-in-long-covid-patients-a-pilot-single-blind-and-randomized-controlled-trial-pmid-38794767), 32 adults still fatigued and breathless about a month after COVID-19 drank 1 liter a day of 1.6 ppm hydrogen-rich water or plain water for 14 days. The main analysis found no significant difference in fatigue between groups; a secondary analysis of percentage change favored hydrogen. Breathlessness didn't improve.
 - **Cancer.** In a [randomized trial of 49 patients](/study/effects-of-drinking-hydrogen-rich-water-on-the-quality-of-life-of-patients-treated-with-radiotherapy-for-liver-tumors-pmid-22146004) having radiotherapy for liver tumors, 6 weeks of hydrogen-rich water (about 1.1–1.3 ppm, 1.5–2 liters a day) improved overall quality-of-life scores, but fatigue scores didn't differ from placebo. An [uncontrolled report of 82 people with advanced cancer](/study/real-world-survey-of-hydrogen-controlled-cancer-a-follow-up-report-of-82-advanced-cancer-patients-pmid-31552873) who inhaled hydrogen described less fatigue, with no comparison group.
 - **Dialysis.** In [81 hemodialysis patients](/study/hemodialysis-employing-molecular-hydrogen-h2-enriched-dialysis-solution-may-improve-dialysis-related-fatigue-through-impact-on-energy-metabolism-pmid-39934143), fatigue fell among the most fatigued after 12 months of hydrogen-enriched dialysis fluid, with no control group. See our [kidney health hub](/explore-by-condition/kidney-health).
 
-## What animal studies suggest (not human evidence)
+## What do animal studies suggest (not human evidence)?
+
+Only that mice given hydrogen water coped better with repeated exhausting exercise.
 
 [Mice forced to swim every day for 4 weeks](/study/hydrogen-water-drinking-exerts-antifatigue-effects-in-chronic-forced-swimming-mice-via-antioxidative-and-anti-inflammatory-activities-pmid-29850492) swam longer and had lower lactate and inflammation markers when they drank hydrogen water. That models repeated exhausting exercise, not the illness-related fatigue of ME/CFS.
 
-## What we don't know
+## What don't we know yet?
+
+Whether hydrogen helps any illness-related fatigue is still open, because no large, double-blind, placebo-controlled trial has been done. So is whether the small effect on exercise effort matters outside the lab.
 
 - Whether hydrogen helps ME/CFS in a large, double-blind, placebo-controlled trial
 - Whether the small drop in exercise effort lasts, or matters outside the lab
@@ -236,7 +252,7 @@ Fatigue that lasts for weeks deserves a medical checkup. If you have ME/CFS, lon
     ],
     ownerLink: { href: "/blog/molecular-hydrogen-benefits-guide-pillar#does-hydrogen-water-reduce-exercise-fatigue", label: "Does hydrogen water reduce exercise fatigue? From our evidence-graded benefits guide" },
     bridgeTopic: null,
-    lastReviewed: "2026-09-29",
+    lastReviewed: "2026-11-05",
   },
   "exercise-recovery": {
     slug: "exercise-recovery",
@@ -251,7 +267,9 @@ Fatigue that lasts for weeks deserves a medical checkup. If you have ME/CFS, lon
 
 This page is about recovery: how muscles feel, and what blood markers show, in the hours and days after hard exercise. For speed, endurance and strength during exercise, see [hydrogen for athletic performance](/hydrogen-for/athletic-performance).
 
-## What human trials found
+## What have human trials found?
+
+Mixed results from small, short trials. Some found less soreness or lower muscle-damage markers after hard exercise with hydrogen water, a hydrogen bath or inhaled hydrogen; others found no difference.
 
 Most recovery trials were crossover studies, in which the same people tried hydrogen and a look-alike placebo on different occasions.
 
@@ -273,19 +291,23 @@ Most recovery trials were crossover studies, in which the same people tried hydr
 
 **Pooled results.** A 2024 meta-analysis of six studies (76 people) found hydrogen didn't lower a standard blood marker of oxidative stress after exercise, though antioxidant capacity rose slightly [[2]](/study/can-molecular-hydrogen-supplementation-reduce-exercise-induced-oxidative-stress-in-healthy-adults-a-systematic-review-and-meta-analysis-pmid-38590828). Another pooled 27 publications (597 healthy adults): exercise felt slightly easier and blood lactate was slightly lower, but endurance and strength didn't improve [[1]](/study/can-molecular-hydrogen-supplementation-enhance-physical-performance-in-healthy-adults-a-systematic-review-and-meta-analysis-pmid-38903627). We found no meta-analysis pooling soreness or creatine kinase.
 
-## What animal studies suggest (not human evidence)
+## What do animal studies suggest (not human evidence)?
 
-Rats that inhaled hydrogen while running to exhaustion had lower muscle markers of oxidative stress, inflammation and cell death [[10]](/study/molecular-hydrogen-downregulates-acute-exhaustive-exercise-induced-skeletal-muscle-damage-pmid-33356867). Mice that drank hydrogen water for four weeks or more ran farther and had fewer signs of muscle damage [[11]](/study/hydrogen-rich-water-improves-endurance-by-reducing-skeletal-muscle-oxidative-stress-and-inflammatory-responses-pmid-41641160). These point to possible mechanisms; they don't show the same happens in people.
+In rats and mice, hydrogen reduced muscle damage and oxidative stress from exhausting exercise. These point to possible mechanisms; they don't show the same happens in people.
 
-## Doses and durations studied
+Rats that inhaled hydrogen while running to exhaustion had lower muscle markers of oxidative stress, inflammation and cell death [[10]](/study/molecular-hydrogen-downregulates-acute-exhaustive-exercise-induced-skeletal-muscle-damage-pmid-33356867). Mice that drank hydrogen water for four weeks or more ran farther and had fewer signs of muscle damage [[11]](/study/hydrogen-rich-water-improves-endurance-by-reducing-skeletal-muscle-oxidative-stress-and-inflammatory-responses-pmid-41641160).
+
+## What doses and durations were studied?
+
+No standard dose exists, and no trial compared doses or timing. Drinking trials used water with 0.5 to 5.9 ppm hydrogen, for one day to six weeks.
 
 - **Drinking:** 0.5 to 5.9 ppm in the pooled trials [1]; about 1.3 to 2.5 L on test days [3][4]; from one day to six weeks.
 - **Bathing:** one 30-minute bath [6] to a week of daily 20-minute baths [7].
 - **Inhaling:** 1% to 68% hydrogen across trials [1]; one hour after exercise in the recovery trial [8].
 
-No standard dose exists, and no trial compared doses or timing.
+## What don't we know yet?
 
-## What we don't know
+Whether the small effects matter, whether they apply beyond young and middle-aged men, and whether they hold up in larger, independent trials.
 
 - **Whether the effect matters.** Soreness differences were about 8 to 15 points on a 100-point scale [3][4].
 - **Who it applies to.** Most participants were young or middle-aged men [1].
@@ -331,7 +353,185 @@ No standard dose exists, and no trial compared doses or timing.
     ],
     ownerLink: { href: "/blog/molecular-hydrogen-benefits-guide-pillar", label: "Hydrogen water benefits, graded by evidence" },
     bridgeTopic: null,
-    lastReviewed: "2026-09-29",
+    lastReviewed: "2026-11-05",
+  },
+  "athletic-performance": {
+    slug: "athletic-performance",
+    h1: "Hydrogen Water and Athletic Performance: What the Studies Show",
+    metaTitle: "Hydrogen Water and Athletic Performance | Hydrogen Studies",
+    metaDescription:
+      "Does hydrogen water improve speed, power or endurance? Pooled trials found exercise felt slightly easier, not better endurance. Graded, with doses studied.",
+    evidenceGrade: "low",
+    introMarkdown: `*Hydrogen Studies is funded by Echo Technologies LLC, which sells hydrogen water products. Echo doesn't decide which studies we cover or how we describe them — see our [editorial policy](/editorial-policy).*
+
+**Evidence at a glance: Low.** Two meta-analyses of small randomized trials in healthy adults found that hydrogen made exercise feel slightly easier and lowered blood lactate a little, but didn't improve VO2max, endurance or strength. Individual trials disagree: some found small gains in sprint or race performance, and others in trained runners found none. Most lasted from a single session to two weeks.
+
+This page is about performance during exercise: speed, power and endurance. For soreness and muscle damage afterwards, see our [exercise recovery hub](/explore-by-condition/exercise-recovery). Of the 23 human studies in our database tagged athletic or exercise performance, 13 reported an improvement in their main outcome, 7 had mixed results and 3 found no clear effect. Most were small, and an improvement in one small trial isn't the same as a confirmed effect.
+
+## What have pooled trials found?
+
+Small effects on how hard exercise feels, not on how far or fast people go.
+
+- **2024: 27 publications, 597 healthy adults.** Compared with placebo, hydrogen, whether drunk, inhaled, bathed in or swallowed as a powder, slightly lowered ratings of perceived effort and blood lactate. VO2max, endurance and muscle strength didn't improve; the one performance gain was small, in jumping power [[1]](/study/can-molecular-hydrogen-supplementation-enhance-physical-performance-in-healthy-adults-a-systematic-review-and-meta-analysis-pmid-38903627).
+- **2023: 19 randomized studies, 402 healthy adults.** Hydrogen slightly lowered perceived effort and blood lactate but didn't change VO2max or endurance. Perceived effort dropped after a single dose before exercise, but not in the two studies that used several days of intake [[2]](/study/effects-of-molecular-hydrogen-supplementation-on-fatigue-and-aerobic-capacity-in-healthy-adults-a-systematic-review-and-meta-analysis-pmid-36819697).
+
+## What have individual trials found?
+
+Some small trials found modest gains, mostly late in repeated sprints or in particular groups of athletes; others found none. The trials below had 8 to 37 participants each.
+
+**Trials reporting a gain**
+
+- In 8 trained male cyclists, two weeks of 2 liters a day of hydrogen-rich water (about 0.45 ppm, and alkaline) stopped peak sprint power from falling late in a 30-minute intermittent cycling test, as it did with placebo water. Mean power, fatigue and total work didn't differ. The trial was single-blind [[3]](/study/effects-of-hydrogen-rich-water-on-prolonged-intermittent-exercise-pmid-28474871).
+- In 16 professional soccer players, hydrogen-rich water before 15 repeated 30 m sprints made the last sprints 2% to 3% faster than placebo water. Blood lactate and perceived effort didn't differ [[4]](/study/molecular-hydrogen-mitigates-performance-decrement-during-repeated-sprints-in-professional-soccer-players-pmid-35276867).
+- In 37 adults, a week of hydrogen-rich water (1.9 ppm) raised peak and mean power in a short all-out cycling test in trained cyclists, but not in untrained people [[5]](/study/effects-of-7-day-intake-of-hydrogen-rich-water-on-physical-performance-of-trained-and-untrained-subjects-pmid-34079172).
+- In 12 national-level finswimmers, 4 days of hydrogen-rich water (0.9 ppm, about 1.3 to 1.7 liters a day) improved a 400 m time trial by 0.6%, but not 50 m sprint times. Lactate, perceived effort and an oxidative-stress marker didn't differ [[6]](/study/hydrogen-rich-water-as-a-performance-enhancing-aid-in-national-level-finswimmers-a-randomized-double-blind-placebo-controlled-crossover-study-pmid-41991147).
+- In 20 young adults, breathing 4% hydrogen for 20 minutes a day for 7 days raised peak running speed by up to 4.2% compared with air, at the edge of statistical significance (p = 0.05) [[7]](/study/short-term-h2-inhalation-improves-running-performance-and-torso-strength-in-healthy-adults-pmid-31938004).
+- In healthy adults, 500 mL of hydrogen water on each weekday for two weeks raised peak oxygen uptake in a cycling test; a single drink didn't. The trial was single-blind, and two authors work for a company that makes hydrogen generators [[8]](/study/two-week-continuous-supplementation-of-hydrogen-rich-water-increases-peak-oxygen-uptake-during-an-incremental-cycling-exercise-test-in-healthy-humans-a-randomized-single-blinded-placebo-controlled-study-pmid-33380582).
+
+**Trials finding no clear effect**
+
+- In 14 endurance-trained runners, two 290 mL drinks of hydrogen-rich water before a treadmill test didn't change time to exhaustion, VO2max, heart rate or perceived effort [[9]](/study/acute-ingestion-of-hydrogen-rich-water-does-not-improve-incremental-treadmill-running-performance-in-endurance-trained-athletes-pmid-31675478).
+- In 24 trained track and field runners, 1,260 mL over the 2 hours before a run at maximal aerobic speed didn't change time to exhaustion or blood lactate [[10]](/study/acute-pre-exercise-hydrogen-rich-water-intake-does-not-improve-running-performance-at-maximal-aerobic-speed-in-trained-track-and-field-runners-a-randomized-double-blind-placebo-controlled-crossover-study-pmid-36538554).
+- In 16 runners, hydrogen-rich water before a 4.2 km uphill race had an unclear effect on race time overall. The 4 slowest runners appeared to benefit; the 4 fastest didn't [[11]](/study/hydrogen-rich-water-supplementation-and-up-hill-running-performance-effect-of-athlete-performance-level-pmid-32045879).
+
+## What do animal studies suggest (not human evidence)?
+
+In rodents, hydrogen reduced muscle damage from exhausting exercise, and mice that drank it for weeks ran farther. Animal results like these don't show the same happens in people.
+
+Rats that inhaled hydrogen while running to exhaustion had lower muscle markers of oxidative stress, inflammation and cell death [[12]](/study/molecular-hydrogen-downregulates-acute-exhaustive-exercise-induced-skeletal-muscle-damage-pmid-33356867). Mice that drank hydrogen water for four weeks or more ran farther and had fewer signs of muscle damage [[13]](/study/hydrogen-rich-water-improves-endurance-by-reducing-skeletal-muscle-oxidative-stress-and-inflammatory-responses-pmid-41641160).
+
+## What doses and durations were studied?
+
+No trial compared doses, so there is no evidence-based amount. Most trials gave hydrogen once before exercise or daily for up to two weeks.
+
+- **Drinking:** 0.5 to 5.9 ppm in the pooled trials [1]; from two 290 mL drinks [9] to 2 liters a day [3].
+- **Inhaling:** 1% to 68% hydrogen across trials [1]; 4% for 20 minutes a day for a week [7].
+- **Timing:** single-dose trials gave the water in the 2 hours before exercise [9][10].
+
+## What don't we know yet?
+
+Whether the small effects make a difference in real competition, and whether they hold up in larger, independent trials.
+
+- **Real-world size.** The gains reported were about 0.6% to 4%, often only late in a test [4][6][7].
+- **Who it applies to.** Most participants were young men. Two trials suggest the effect may depend on fitness, in opposite directions [5][11].
+- **Longer use.** Most trials lasted from one session to two weeks [1].
+- **Independence.** Four of the trials above come from one university group in Olomouc, Czechia [4][6][10][11], and one had authors from a hydrogen-generator company [8].
+
+*Drafted with AI assistance and checked against each linked source by our editorial team. General information, not medical advice.*`,
+    faqs: [
+      {
+        question: "Does hydrogen water make you run faster or longer?",
+        answer:
+          "Not reliably. Pooled trials in healthy adults found no improvement in endurance or VO2max. A few small trials reported gains, such as a 0.6% faster 400 m swim or faster late sprints, but two trials in trained runners found no change in time to exhaustion. Most trials were small and lasted from one session to two weeks.",
+      },
+      {
+        question: "Does hydrogen water improve sprint or power performance?",
+        answer:
+          "Possibly a little, in some trials. In 16 soccer players the last of 15 sprints were 2% to 3% faster, and in 8 trained cyclists peak power held up better late in repeated sprints. A pooled analysis found a small gain in jumping power but no change in muscle strength. These were small, short trials.",
+      },
+      {
+        question: "Is inhaled hydrogen better than hydrogen water for performance?",
+        answer:
+          "No trial has compared them directly. In one 7-day trial of 20 young adults, breathing 4% hydrogen for 20 minutes a day raised peak running speed by up to 4%, at the edge of statistical significance. The pooled analyses included both routes and found small effects on perceived effort, not on endurance.",
+      },
+    ],
+    sources: [
+      { n: 1, citation: "Zhou K, et al. Can molecular hydrogen supplementation enhance physical performance in healthy adults? A systematic review and meta-analysis. Front Nutr. 2024;11:1387657.", pmid: "38903627", doi: "10.3389/fnut.2024.1387657", ourStudyPath: "/study/can-molecular-hydrogen-supplementation-enhance-physical-performance-in-healthy-adults-a-systematic-review-and-meta-analysis-pmid-38903627" },
+      { n: 2, citation: "Zhou K, et al. Effects of molecular hydrogen supplementation on fatigue and aerobic capacity in healthy adults: a systematic review and meta-analysis. Front Nutr. 2023;10:1094767.", pmid: "36819697", doi: "10.3389/fnut.2023.1094767", ourStudyPath: "/study/effects-of-molecular-hydrogen-supplementation-on-fatigue-and-aerobic-capacity-in-healthy-adults-a-systematic-review-and-meta-analysis-pmid-36819697" },
+      { n: 3, citation: "Da Ponte A, et al. Effects of hydrogen rich water on prolonged intermittent exercise. J Sports Med Phys Fitness. 2018;58(5):612-621.", pmid: "28474871", doi: "10.23736/S0022-4707.17.06883-9", ourStudyPath: "/study/effects-of-hydrogen-rich-water-on-prolonged-intermittent-exercise-pmid-28474871" },
+      { n: 4, citation: "Botek M, et al. Molecular hydrogen mitigates performance decrement during repeated sprints in professional soccer players. Nutrients. 2022;14(3):508.", pmid: "35276867", doi: "10.3390/nu14030508", ourStudyPath: "/study/molecular-hydrogen-mitigates-performance-decrement-during-repeated-sprints-in-professional-soccer-players-pmid-35276867" },
+      { n: 5, citation: "Timón R, et al. Effects of 7-day intake of hydrogen-rich water on physical performance of trained and untrained subjects. Biol Sport. 2021;38(2):269-275.", pmid: "34079172", doi: "10.5114/biolsport.2020.98625", ourStudyPath: "/study/effects-of-7-day-intake-of-hydrogen-rich-water-on-physical-performance-of-trained-and-untrained-subjects-pmid-34079172" },
+      { n: 6, citation: "Sládečková B, et al. Hydrogen-rich water as a performance-enhancing aid in national-level finswimmers: a randomized, double-blind, placebo-controlled crossover study. Int J Sports Physiol Perform. 2026;21(7):824-830.", pmid: "41991147", doi: "10.1123/ijspp.2025-0492", ourStudyPath: "/study/hydrogen-rich-water-as-a-performance-enhancing-aid-in-national-level-finswimmers-a-randomized-double-blind-placebo-controlled-crossover-study-pmid-41991147" },
+      { n: 7, citation: "Javorac D, et al. Short-term H2 inhalation improves running performance and torso strength in healthy adults. Biol Sport. 2019;36(4):333-339.", pmid: "31938004", doi: "10.5114/biolsport.2019.88756", ourStudyPath: "/study/short-term-h2-inhalation-improves-running-performance-and-torso-strength-in-healthy-adults-pmid-31938004" },
+      { n: 8, citation: "Hori A, et al. Two-week continuous supplementation of hydrogen-rich water increases peak oxygen uptake during an incremental cycling exercise test in healthy humans: a randomized, single-blinded, placebo-controlled study. Med Gas Res. 2020;10(4):163-169.", pmid: "33380582", doi: "10.4103/2045-9912.304223", ourStudyPath: "/study/two-week-continuous-supplementation-of-hydrogen-rich-water-increases-peak-oxygen-uptake-during-an-incremental-cycling-exercise-test-in-healthy-humans-a-randomized-single-blinded-placebo-controlled-study-pmid-33380582" },
+      { n: 9, citation: "Ooi CH, et al. Acute ingestion of hydrogen-rich water does not improve incremental treadmill running performance in endurance-trained athletes. Appl Physiol Nutr Metab. 2020;45(5):513-519.", pmid: "31675478", doi: "10.1139/apnm-2019-0553", ourStudyPath: "/study/acute-ingestion-of-hydrogen-rich-water-does-not-improve-incremental-treadmill-running-performance-in-endurance-trained-athletes-pmid-31675478" },
+      { n: 10, citation: "Valenta M, et al. Acute pre-exercise hydrogen rich water intake does not improve running performance at maximal aerobic speed in trained track and field runners: a randomized, double-blind, placebo-controlled crossover study. PLoS One. 2022;17(12):e0279307.", pmid: "36538554", doi: "10.1371/journal.pone.0279307", ourStudyPath: "/study/acute-pre-exercise-hydrogen-rich-water-intake-does-not-improve-running-performance-at-maximal-aerobic-speed-in-trained-track-and-field-runners-a-randomized-double-blind-placebo-controlled-crossover-study-pmid-36538554" },
+      { n: 11, citation: "Botek M, et al. Hydrogen-rich water supplementation and up-hill running performance: effect of athlete performance level. Int J Sports Physiol Perform. 2020;15(8):1193-1196.", pmid: "32045879", doi: "10.1123/ijspp.2019-0507", ourStudyPath: "/study/hydrogen-rich-water-supplementation-and-up-hill-running-performance-effect-of-athlete-performance-level-pmid-32045879" },
+      { n: 12, citation: "Nogueira JE, et al. Molecular hydrogen downregulates acute exhaustive exercise-induced skeletal muscle damage. Can J Physiol Pharmacol. 2021;99(8):812-820.", pmid: "33356867", doi: "10.1139/cjpp-2020-0297", ourStudyPath: "/study/molecular-hydrogen-downregulates-acute-exhaustive-exercise-induced-skeletal-muscle-damage-pmid-33356867" },
+      { n: 13, citation: "Mizuno E, et al. Hydrogen-rich water improves endurance by reducing skeletal muscle oxidative stress and inflammatory responses. Front Nutr. 2026;13:1722091.", pmid: "41641160", doi: "10.3389/fnut.2026.1722091", ourStudyPath: "/study/hydrogen-rich-water-improves-endurance-by-reducing-skeletal-muscle-oxidative-stress-and-inflammatory-responses-pmid-41641160" },
+    ],
+    ownerLink: { href: "/blog/molecular-hydrogen-benefits-guide-pillar#does-hydrogen-water-reduce-exercise-fatigue", label: "Does hydrogen water reduce exercise fatigue? From our evidence-graded benefits guide" },
+    bridgeTopic: null,
+    lastReviewed: "2026-11-05",
+  },
+  "oxidative-stress": {
+    slug: "oxidative-stress",
+    h1: "Hydrogen Water and Oxidative Stress: What the Studies Show",
+    metaTitle: "Hydrogen Water and Oxidative Stress | Hydrogen Studies",
+    metaDescription:
+      "Is hydrogen water an antioxidant in people? Human trials of oxidative-stress markers are mixed, and one found more damage. Graded, with the doses studied.",
+    evidenceGrade: "very low",
+    introMarkdown: `*Hydrogen Studies is funded by Echo Technologies LLC, which sells hydrogen water products. Echo doesn't decide which studies we cover or how we describe them — see our [editorial policy](/editorial-policy).*
+
+**Evidence at a glance: Very low.** "Antioxidant" is the most-marketed benefit of hydrogen, and one of the least consistent in human trials. In a double-blind trial in healthy adults, the main blood markers of oxidative stress didn't differ from plain water. In a trial in people with chronic mountain sickness, hydrogen water raised a marker of oxidative damage. A meta-analysis of exercise studies found no drop in a standard oxidative-stress marker.
+
+This page covers oxidative stress: the balance between reactive oxygen molecules and the body's antioxidant defenses, as measured by markers in blood and urine. Those markers aren't health outcomes in themselves. Of the 232 studies in our database tagged oxidative stress, 41 were in people. Of those 41, 25 reported an improvement in their main outcome, 8 had mixed results, 2 found no clear effect and the rest didn't report one; many were small, short or had no comparison group.
+
+## Where does the antioxidant idea come from?
+
+From a 2007 study in cells and rats. It reported that hydrogen reacted with the most damaging oxygen radicals, such as the hydroxyl radical, but not with the milder ones the body uses as signals, and that breathing hydrogen reduced brain damage in rats after a stroke-like injury [[7]](/study/hydrogen-acts-as-a-therapeutic-antioxidant-by-selectively-reducing-cytotoxic-oxygen-radicals-pmid-17486089).
+
+That "selective antioxidant" idea underlies most hydrogen research since; a 2012 review traces how hydrogen went from being considered biologically inert to being studied as an antioxidant [[8]](/study/hydrogen-from-a-biologically-inert-gas-to-a-unique-antioxidant-doi-10-5772-34908). It hasn't been confirmed as the way hydrogen acts in people.
+
+## What have human trials found?
+
+Mixed results. Blood markers improved in some trials and not in others, and in one trial a marker of oxidative damage went up.
+
+- **38 healthy adults, 4 weeks (double-blind).** 1.5 liters a day of hydrogen water didn't change the main blood markers of oxidative stress or antioxidant capacity compared with plain water. Antioxidant capacity rose more in participants aged 30 and over, and their blood immune cells showed less cell death and lower activity in inflammation-related genes [[2]](/study/hydrogen-rich-water-reduces-inflammatory-responses-and-prevents-apoptosis-of-peripheral-blood-cells-in-healthy-adults-a-randomized-double-blind-controlled-trial-pmid-32699287).
+- **61 healthy workers, 8 weeks (double-blind).** 1.5 liters a day of electrolyzed reduced water lowered a blood marker of oxidative stress (d-ROMs) more than mineral water did [[3]](/study/outcomes-assessment-of-sustainable-and-innovatively-simple-lifestyle-modification-at-the-workplace-drinking-electrolyzed-reduced-water-oasis-erw-a-randomized-double-blind-placebo-controlled-trial-pmid-32605142).
+- **59 adults with chronic mountain sickness, 8 weeks (blinded).** About 1 liter a day of hydrogen-rich water raised total antioxidant capacity but also raised malondialdehyde, a marker of oxidative damage, more so in people with a higher body mass index. The authors concluded it didn't reduce oxidative damage. Side effects, mostly dizziness, were reported by 50% of the hydrogen group and 37% of the placebo group [[4]](/study/does-hydrogen-rich-water-reduce-oxidative-stress-in-patients-with-chronic-mountain-sickness-a-randomized-blinded-controlled-trial-pmid-41371770).
+- **40 physically active adults, 8 weeks.** After alkaline hydrogen-enriched water, an inflammation marker (IL-6) after a maximal exercise test was lower than in the control group. The groups differed at the start, which the authors said limits what the result means [[5]](/study/redox-water-consumption-attenuates-exercise-induced-inflammation-and-oxidative-stress-in-physically-active-adults-a-randomized-controlled-trial-pmid-41754211).
+- **534 adults, observational.** People who had drunk electrolyzed hydrogen water for more than 6 months had lower d-ROMs than matched people who hadn't. People who choose a habit can differ in other ways, and two authors had funding from or worked for an electrolyzed-water device maker [[6]](/study/antioxidant-effects-of-continuous-intake-of-electrolyzed-hydrogen-water-in-healthy-adults-pmid-36468139).
+- **After exercise (pooled).** A 2024 meta-analysis of 6 studies with 76 healthy adults found hydrogen didn't lower a standard blood marker of oxidative stress after exercise, though antioxidant capacity rose slightly [[1]](/study/can-molecular-hydrogen-supplementation-reduce-exercise-induced-oxidative-stress-in-healthy-adults-a-systematic-review-and-meta-analysis-pmid-38590828).
+
+## What do cell and animal studies suggest (not human evidence)?
+
+Most of the oxidative-stress studies we index were done in cells or animals, often after sudden, severe injuries, and hydrogen often reduced markers of oxidative damage in them. Those models don't show that drinking hydrogen water changes oxidative stress in healthy people, and an antioxidant effect in a lab dish doesn't guarantee one in a person [7].
+
+## What doses and durations were studied?
+
+No trial compared doses. The drinking trials gave about 1 to 1.5 liters a day for 4 to 8 weeks [2][3][4][5].
+
+## What don't we know yet?
+
+Whether changes in these markers mean anything for health, and why the trials disagree.
+
+- **Markers versus outcomes.** None of the trials above linked a change in an oxidative-stress marker to a health outcome.
+- **Hydrogen or alkalinity?** Two trials used alkaline electrolyzed water, which differs from plain water in pH as well as hydrogen [3][5].
+- **Possible harm.** In one trial, a marker of oxidative damage rose with hydrogen water [4].
+- **Independence.** One study's authors had funding from or worked for a device maker [6].
+
+*Drafted with AI assistance and checked against each linked source by our editorial team. General information, not medical advice.*`,
+    faqs: [
+      {
+        question: "Is hydrogen water an antioxidant?",
+        answer:
+          "In cells and animals it acts like one, but human trials are inconsistent. In 38 healthy adults, 4 weeks of hydrogen water didn't change the main blood markers of oxidative stress. In 61 healthy workers, 8 weeks of electrolyzed reduced water lowered one marker. In 59 people with chronic mountain sickness, a marker of oxidative damage rose. No trial has shown a health benefit from these changes.",
+      },
+      {
+        question: "Does hydrogen water reduce oxidative stress from exercise?",
+        answer:
+          "Not clearly. A 2024 meta-analysis of 6 studies with 76 healthy adults found that hydrogen didn't lower a standard blood marker of oxidative stress after exercise, though antioxidant capacity rose slightly. Some small trials found lower markers after hard exercise, but many had no proper comparison group.",
+      },
+      {
+        question: "What is a selective antioxidant?",
+        answer:
+          "It's the idea, from a 2007 study in cells and rats, that hydrogen reacts with the most damaging oxygen radicals, such as the hydroxyl radical, but leaves alone the milder ones the body uses as signals. The idea explains why hydrogen has been studied so much, but it hasn't been confirmed as the way hydrogen acts in people.",
+      },
+    ],
+    sources: [
+      { n: 1, citation: "Li Y, et al. Can molecular hydrogen supplementation reduce exercise-induced oxidative stress in healthy adults? A systematic review and meta-analysis. Front Nutr. 2024;11:1328705.", pmid: "38590828", doi: "10.3389/fnut.2024.1328705", ourStudyPath: "/study/can-molecular-hydrogen-supplementation-reduce-exercise-induced-oxidative-stress-in-healthy-adults-a-systematic-review-and-meta-analysis-pmid-38590828" },
+      { n: 2, citation: "Sim M, et al. Hydrogen-rich water reduces inflammatory responses and prevents apoptosis of peripheral blood cells in healthy adults: a randomized, double-blind, controlled trial. Sci Rep. 2020;10(1):12130.", pmid: "32699287", doi: "10.1038/s41598-020-68930-2", ourStudyPath: "/study/hydrogen-rich-water-reduces-inflammatory-responses-and-prevents-apoptosis-of-peripheral-blood-cells-in-healthy-adults-a-randomized-double-blind-controlled-trial-pmid-32699287" },
+      { n: 3, citation: "Choi YA, et al. Outcomes assessment of sustainable and innovatively simple lifestyle modification at the workplace — drinking electrolyzed-reduced water (OASIS-ERW): a randomized, double-blind, placebo-controlled trial. Antioxidants (Basel). 2020;9(7):564.", pmid: "32605142", doi: "10.3390/antiox9070564", ourStudyPath: "/study/outcomes-assessment-of-sustainable-and-innovatively-simple-lifestyle-modification-at-the-workplace-drinking-electrolyzed-reduced-water-oasis-erw-a-randomized-double-blind-placebo-controlled-trial-pmid-32605142" },
+      { n: 4, citation: "Zhang F, et al. Does hydrogen-rich water reduce oxidative stress in patients with chronic mountain sickness? A randomized, blinded, controlled trial. High Alt Med Biol. 2026;27(3):133-142.", pmid: "41371770", doi: "10.1177/15578682251401137", ourStudyPath: "/study/does-hydrogen-rich-water-reduce-oxidative-stress-in-patients-with-chronic-mountain-sickness-a-randomized-blinded-controlled-trial-pmid-41371770" },
+      { n: 5, citation: "Stolecka-Warzecha A, et al. Redox water consumption attenuates exercise-induced inflammation and oxidative stress in physically active adults: a randomized controlled trial. Nutrients. 2026;18(4):694.", pmid: "41754211", doi: "10.3390/nu18040694", ourStudyPath: "/study/redox-water-consumption-attenuates-exercise-induced-inflammation-and-oxidative-stress-in-physically-active-adults-a-randomized-controlled-trial-pmid-41754211" },
+      { n: 6, citation: "Mizuno K, et al. Antioxidant effects of continuous intake of electrolyzed hydrogen water in healthy adults. Heliyon. 2022;8(11):e11853.", pmid: "36468139", doi: "10.1016/j.heliyon.2022.e11853", ourStudyPath: "/study/antioxidant-effects-of-continuous-intake-of-electrolyzed-hydrogen-water-in-healthy-adults-pmid-36468139" },
+      { n: 7, citation: "Ohsawa I, et al. Hydrogen acts as a therapeutic antioxidant by selectively reducing cytotoxic oxygen radicals. Nat Med. 2007;13(6):688-694.", pmid: "17486089", doi: "10.1038/nm1577", ourStudyPath: "/study/hydrogen-acts-as-a-therapeutic-antioxidant-by-selectively-reducing-cytotoxic-oxygen-radicals-pmid-17486089" },
+      { n: 8, citation: "Liu SL, Sun XJ, Tao HY. Hydrogen: from a biologically inert gas to a unique antioxidant. In: Oxidative Stress — Molecular Mechanisms and Biological Effects. InTech; 2012.", pmid: null, doi: "10.5772/34908", ourStudyPath: "/study/hydrogen-from-a-biologically-inert-gas-to-a-unique-antioxidant-doi-10-5772-34908" },
+    ],
+    ownerLink: { href: "/blog/molecular-hydrogen-benefits-guide-pillar#is-hydrogen-water-an-antioxidant-in-people", label: "Is hydrogen water an antioxidant in people? From our evidence-graded benefits guide" },
+    bridgeTopic: null,
+    lastReviewed: "2026-11-05",
   },
   "skin-aging": {
     slug: "skin-aging",
@@ -346,13 +546,15 @@ No standard dose exists, and no trial compared doses or timing.
 
 This page covers skin appearance and aging: wrinkles, spots, skin density and sun-related aging (photoaging). For the broader topic, see [hydrogen and skin health](/hydrogen-for/skin-health).
 
-## Drinking hydrogen water
+## Does drinking hydrogen water improve skin?
+
+Not in the one randomized controlled trial that measured facial skin.
 
 In the only randomized controlled trial we found that measured facial skin, 40 adults aged 70 and older drank 0.5 L a day of hydrogen-rich water (15 ppm) or plain water for six months. Facial skin features didn't differ between groups. The trial's positive findings were elsewhere, such as telomere length and a chair-stand test [[1]](/study/the-effects-of-6-month-hydrogen-rich-water-intake-on-molecular-and-phenotypic-biomarkers-of-aging-in-older-adults-aged-70-years-and-over-a-randomized-controlled-pilot-trial-pmid-34601077).
 
-## Hydrogen baths
+## Do hydrogen baths improve skin?
 
-Hydrogen baths are widely searched, but the skin evidence is thin:
+The evidence is too thin to say. Two tiny bath studies without a comparison group reported fewer neck wrinkles or fainter spots, and a third, often-cited study didn't test skin aging.
 
 - Six Japanese adults bathed daily in warm hydrogen-rich water (0.2 to 0.4 ppm) for three months. Wrinkles on the back of the neck improved in four of them. There was no comparison group, and most of the paper was cell experiments [[2]](/study/hydrogen-rich-electrolyzed-warm-water-represses-wrinkle-formation-against-uva-ray-together-with-type-i-collagen-production-and-oxidative-stress-diminishment-in-fibroblasts-and-cell-injury-prevention-in-keratinocytes-pmid-22070900).
 - Four adults aged 41 to 48 took a 10-minute hydrogen bath (about 0.3 ppm) daily for one to six months. Their skin spots looked smaller and fainter. Again, there was no comparison group [[3]](/study/effects-of-hydrogen-rich-water-bath-on-visceral-fat-and-skin-blotch-with-boiling-resistant-hydrogen-bubbles-pmid-31249254).
@@ -360,31 +562,39 @@ Hydrogen baths are widely searched, but the skin evidence is thin:
 
 All three bath papers share a senior author from one Japanese research group.
 
-## Topical hydrogen: water, masks and devices
+## Does putting hydrogen on the skin help?
+
+Two small studies reported changes, such as fewer visible pores or higher skin density, but neither was a blinded, placebo-controlled trial, and wrinkle severity didn't change significantly in the one that measured it.
 
 - Fifteen adults aged 21 to 72 had four weekly facial treatments with hydrogen-rich water (about 2 ppm, strongly alkaline) from an electrolysis device. Visible pores and some pigmentation measures improved, but wrinkle severity didn't change significantly. All participants got the treatment; there was no control group [[5]](/study/topically-applied-molecular-hydrogen-normalizes-skin-parameters-associated-with-oxidative-stress-a-pilot-study-pmid-40563361).
 - Twenty people used a hydrogen-generating gel mask on one side of the face and a commercial mask on the other for four weeks. Skin density, measured by ultrasound, rose 18% on the hydrogen side and 10% on the other. The report doesn't describe blinding, and one author is affiliated with a company, BoyazEnergy [[4]](/study/antioxidant-activity-of-hydrogen-water-mask-pack-composed-of-gel-type-emulsion-and-hydrogen-generation-powder-pmid-33419292).
 
-## What cell and animal studies suggest (not human evidence)
+## What do cell and animal studies suggest (not human evidence)?
+
+That hydrogen may reduce oxidative damage from UV light. They don't show that drinking, bathing in or applying hydrogen changes how human skin ages.
 
 - In lab-grown human skin cells, dissolved hydrogen protected against several kinds of oxidative damage [[9]](/study/protective-effects-of-dissolved-molecular-hydrogen-against-hydrogen-peroxide-hydroperoxide-and-glyoxal-induced-injuries-to-human-skin-keratinocytes-pmid-34028646), and hydrogen-rich warm water roughly doubled type I collagen production in lab-grown fibroblasts, the cells that make collagen [2].
 - Mice exposed to UVA light for six weeks while breathing 1.3% hydrogen gas 16 hours a day showed fewer signs of photoaging, including less skin thickening, pigment and collagen breakdown [[7]](/study/intermittent-environmental-exposure-to-hydrogen-prevents-skin-photoaging-through-reduction-of-oxidative-stress-pmid-36807963).
 - In lab-grown artificial skin, 1.3% hydrogen gas dampened UVA-triggered gene activity linked to skin aging. One author works for Panasonic [[8]](/study/transcriptome-based-evaluation-of-hydrogen-gas-effects-for-preventing-uva-induced-photoaging-using-an-artificial-skin-model-pmid-41749059).
 
-These suggest hydrogen may reduce oxidative stress from UV light. They don't show that drinking, bathing in or applying hydrogen changes how human skin ages.
+## Has hydrogen been tested in skin diseases?
 
-## Skin disease research
+Only in early studies.
 
 Hydrogen has also been tested in skin diseases, including a hydrogen-water bathing study in 75 people with psoriasis [[10]](/study/positive-effects-of-hydrogen-water-bathing-in-patients-of-psoriasis-and-parapsoriasis-en-plaques-pmid-29795283) and a 21-person pilot trial in people awaiting keloid scar surgery [[11]](/study/exploratory-evaluation-of-hydrogen-rich-water-therapy-for-keloid-management-a-double-blinded-randomized-pilot-trial-pmid-41545661). These are early studies of diseases, separate from cosmetic aging, and don't establish hydrogen as a treatment. If you have a skin condition, talk to a dermatologist.
 
-## Doses and delivery studied
+## What doses and delivery methods were studied?
+
+No standard dose exists. The human studies used drinking water, baths and topical products at very different concentrations, and none compared one route with another.
 
 - **Drinking:** 0.5 L a day at 15 ppm for six months [1].
 - **Bathing:** 0.2 to 0.4 ppm, daily, for one to six months [2][3].
 - **Topical:** about 2 ppm water in four weekly sessions [5]; a hydrogen-generating mask for four weeks [4].
 - **Cells and animals:** 1.3% hydrogen gas [7][8].
 
-## What we don't know
+## What don't we know yet?
+
+The main questions are still open: whether any form of hydrogen changes how human skin ages, and what else explains the small positive results.
 
 - **Whether hydrogen changes wrinkles, elasticity or sun damage in people.** We found no placebo-controlled trial showing it.
 - **Whether the route matters.** We found no study comparing drinking, bathing and applying hydrogen.
@@ -423,7 +633,7 @@ Hydrogen has also been tested in skin diseases, including a hydrogen-water bathi
     ],
     ownerLink: { href: "/blog/molecular-hydrogen-benefits-guide-pillar", label: "Hydrogen water benefits, graded by evidence" },
     bridgeTopic: null,
-    lastReviewed: "2026-09-29",
+    lastReviewed: "2026-11-05",
   },
 
   "sleep-quality": {
@@ -439,7 +649,9 @@ Hydrogen has also been tested in skin diseases, including a hydrogen-water bathi
 
 This page covers sleep quality in adults. Insomnia and sleep apnea are medical conditions: if you often can't fall or stay asleep, snore loudly, or someone has noticed pauses in your breathing at night, see a clinician. For the short answer, see the [sleep section of our benefits guide](/blog/molecular-hydrogen-benefits-guide-pillar#can-hydrogen-water-help-with-sleep-mood-or-stress).
 
-## What human trials found
+## What have human trials found?
+
+Mostly no difference from placebo. The best-blinded trial, in healthy adults with poor sleep, found none; the most positive result, with inhaled hydrogen in insomnia, came from a 7-day single-blind trial.
 
 **Drinking hydrogen water**
 
@@ -457,18 +669,24 @@ This page covers sleep quality in adults. Insomnia and sleep apnea are medical c
 
 - In the only double-blind, placebo-controlled trial we found with sleep as its main outcome, 44 healthy adults with poor sleep ate hydrogen-rich jelly (0.9 mg of hydrogen a day) or identical placebo jelly for 8 weeks. Both groups reported better sleep, with no difference between them. An exploratory analysis found more improvement in people with fewer hydrogen-producing gut bacteria, an idea that still needs testing [[9]](/study/individual-variability-in-hydrogen-producing-microbes-influences-the-response-to-hydrogen-supplementation-on-sleep-quality-a-randomized-double-blind-placebo-controlled-parallel-study-pmid-42509250).
 
-## What animal studies suggest (not human evidence)
+## What do animal studies suggest (not human evidence)?
+
+One mouse study found more consolidated sleep after 7 days of hydrogen-rich water. That isn't evidence for people.
 
 - Mice given hydrogen-rich water for 7 days had more consolidated sleep on brain-wave recordings, and after being kept awake they slept more. One author works for a hydrogen products company [[10]](/study/hydrogen-rich-water-improves-sleep-consolidation-and-enhances-forebrain-neuronal-activation-in-mice-pmid-38264142).
 
-## Doses and durations studied
+## What doses and durations were studied?
+
+No dose has been shown to improve sleep, and no trial compared bedtime with other times. Drinking trials used about 0.5 to 24 mg of hydrogen a day for 2 weeks to 6 months.
 
 - **Drinking:** about 0.5 mg to 24 mg of hydrogen a day, usually in 0.5 to 1 liter of water, for 2 weeks to 6 months [1]–[5]. See [how much hydrogen water per day](/blog/how-much-hydrogen-water-per-day).
 - **Jelly:** 0.9 mg a day for 8 weeks [9].
 - **Inhaling:** two-thirds hydrogen, one-third oxygen, 2 hours a day for 7 days [6].
 - **Timing:** No trial compared bedtime with other times. Drinking trials spread servings through the day or served them with meals [1][4]; the insomnia trial's sessions ended 2 hours before bed [6].
 
-## What we don't know
+## What don't we know yet?
+
+Whether hydrogen helps sleep at all, in healthy sleepers or in sleep disorders, measured objectively and for longer than a week.
 
 - **Whether hydrogen helps healthy sleepers.** The best-blinded trial found no difference, and in two trials the placebo group improved as well [1][9].
 - **Objective and longer-term sleep.** Only two trials used a sleep-tracking device [6][7], none used an overnight sleep-lab study, and the insomnia trial lasted 7 days [6].
@@ -513,7 +731,7 @@ This page covers sleep quality in adults. Insomnia and sleep apnea are medical c
     ],
     ownerLink: { href: "/blog/molecular-hydrogen-benefits-guide-pillar#can-hydrogen-water-help-with-sleep-mood-or-stress", label: "Can hydrogen water help with sleep, mood or stress? From our evidence-graded benefits guide" },
     bridgeTopic: null,
-    lastReviewed: "2026-09-29",
+    lastReviewed: "2026-11-05",
   },
 
   // ── Wave 5 (2026-11): metabolic and digestive hubs. Each absorbs the
@@ -533,7 +751,9 @@ This page covers sleep quality in adults. Insomnia and sleep apnea are medical c
 
 This page covers blood cholesterol and triglycerides. If your cholesterol is high, talk to your doctor before trying hydrogen water, and don't stop or change a statin or any other prescribed medicine. For the short answer, see the [cholesterol and blood sugar section of our benefits guide](/blog/molecular-hydrogen-benefits-guide-pillar#does-hydrogen-water-lower-cholesterol-or-blood-sugar).
 
-## What pooled trials found
+## What have pooled trials found?
+
+Small drops in total and LDL cholesterol. In the largest analysis, the changes were too small to lower heart risk.
 
 - **2026: 13 trials, 757 adults with overweight or obesity.** Compared with plain or placebo water, hydrogen-rich water lowered total cholesterol by 6.7 mg/dL and LDL ("bad") cholesterol by 3.2 mg/dL. HDL ("good") cholesterol fell slightly, by 1.2 mg/dL, and triglycerides didn't change significantly. The authors concluded that the results don't justify using hydrogen water to lower cholesterol outside research [[1]](/study/the-effect-of-hydrogen-rich-water-interventions-on-lipid-profiles-in-adults-with-overweight-or-obesity-and-associated-metabolic-disorders-a-systematic-review-and-meta-analysis-of-randomized-controlled-trials-pmid-41888952).
 - **2024: 8 trials, 357 people with metabolic disorders.** Triglycerides, total cholesterol and LDL dropped slightly; HDL results were inconsistent across trials [[2]](/study/the-effects-of-hydrogen-rich-water-on-blood-lipid-profiles-in-metabolic-disorders-clinical-trials-a-systematic-review-and-meta-analysis-pmid-39839806).
@@ -541,7 +761,9 @@ This page covers blood cholesterol and triglycerides. If your cholesterol is hig
 
 The three analyses pool many of the same small trials, so they aren't independent confirmations of each other.
 
-## What individual human trials found
+## What have individual trials found?
+
+Several small randomized trials found larger cholesterol drops with hydrogen water than with placebo water. Most were small, and two used products from hydrogen companies.
 
 **Randomized, placebo-controlled trials**
 
@@ -554,19 +776,23 @@ The three analyses pool many of the same small trials, so they aren't independen
 
 - In 20 people with signs of metabolic syndrome, 10 weeks of hydrogen-rich water (0.9 to 1 liter a day) was followed by lower total and LDL cholesterol [[8]](/study/hydrogen-rich-water-decreases-serum-ldl-cholesterol-levels-and-improves-hdl-function-in-patients-with-potential-metabolic-syndrome-pmid-23610159). In another 20, 1.5 to 2 liters a day was followed by 8% higher HDL at week 4 [[9]](/study/effectiveness-of-hydrogen-rich-water-on-antioxidant-status-of-subjects-with-potential-metabolic-syndrome-an-open-label-pilot-study-pmid-20216947). Without a control group, these changes can't be credited to hydrogen.
 
-## What animal studies suggest (not human evidence)
+## What do animal studies suggest (not human evidence)?
+
+In mice, hydrogen water slowed artery plaque, and a hydrogen-releasing compound boosted a statin's effect, which hints at a possible drug interaction. Neither shows what happens in people.
 
 - Mice bred to develop clogged arteries (apolipoprotein E knockout mice) that drank hydrogen water from 2 to 6 months of age had smaller artery plaques and less oxidative stress in the aorta [[10]](/study/consumption-of-hydrogen-water-prevents-atherosclerosis-in-apolipoprotein-e-knockout-mice-pmid-18996093).
 - In mice and cells, magnesium hydride, a compound that releases hydrogen, added to the lipid-lowering effect of the statin atorvastatin. The authors proposed that it slows the liver enzyme that breaks statins down, raising statin levels in the blood [[11]](/study/the-augment-effects-of-magnesium-hydride-on-the-lipid-lowering-effect-of-atorvastatin-an-in-vivo-and-in-vitro-investigation-pmid-39436189). That points to a possible drug interaction to test in people, not a reason to combine the two.
 
-## Doses and durations studied
+## What doses and durations were studied?
+
+No trial compared doses. Trials gave 0.9 to 2 liters a day, or about 11 to 15 mg of hydrogen a day, for 8 to 24 weeks.
 
 - **Drinking:** 0.9 to 2 liters a day [4][7][8][9], or about 11 to 15 mg of hydrogen a day [5][6].
 - **Duration:** 8 to 24 weeks in the placebo-controlled trials [5][6][7].
 
-No trial compared doses.
+## What don't we know yet?
 
-## What we don't know
+Whether the small changes matter for heart health: no trial has measured heart attacks or strokes.
 
 - **Whether the changes matter.** The largest pooled analysis judged them below the level that lowers heart risk [1].
 - **Heart attacks and strokes.** No trial has measured them.
@@ -612,7 +838,7 @@ No trial compared doses.
     ],
     ownerLink: { href: "/blog/molecular-hydrogen-benefits-guide-pillar#does-hydrogen-water-lower-cholesterol-or-blood-sugar", label: "Does hydrogen water lower cholesterol or blood sugar? From our evidence-graded benefits guide" },
     bridgeTopic: null,
-    lastReviewed: "2026-11-01",
+    lastReviewed: "2026-11-05",
   },
 
   "type-2-diabetes": {
@@ -628,7 +854,9 @@ No trial compared doses.
 
 This page covers type 2 diabetes and prediabetes. Hydrogen is not a treatment for diabetes. Don't change your medicine, and if you use insulin or other glucose-lowering drugs, check your levels and tell your doctor before adding anything new. See also our [diabetes research overview](/hydrogen-for/diabetes) and our [cholesterol hub](/explore-by-condition/cholesterol).
 
-## What human trials found
+## What have human trials found?
+
+Mixed results, and no clear benefit in diabetes itself. The main double-blind trial in type 2 diabetes found no change in insulin resistance; lower blood sugar results come from metabolic syndrome trials and medical-record studies of inhaled hydrogen.
 
 **Drinking hydrogen water: randomized trials**
 
@@ -643,18 +871,23 @@ This page covers type 2 diabetes and prediabetes. Hydrogen is not a treatment fo
 - In the records of 1,088 Chinese adults with type 2 diabetes on usual medicine, those who also inhaled hydrogen for 6 months had a larger drop in HbA1c than matched patients who didn't (0.94 vs 0.46 percentage points) [[6]](/study/effectiveness-and-safety-of-hydrogen-inhalation-as-an-adjunct-treatment-in-chinese-type-2-diabetes-patients-a-retrospective-observational-double-arm-real-life-clinical-study-pmid-36743938). People who choose an add-on therapy can differ in ways records don't capture.
 - In a single-group record review of 431 adults, HbA1c fell from 9.0% to 8.0% over 6 months of inhalation, with no comparison group. Low blood sugar was the most common side effect [[7]](/study/real-world-effectiveness-and-safety-of-hydrogen-inhalation-in-chinese-patients-with-type-2-diabetes-a-single-arm-retrospective-study-pmid-37431394).
 
-## What animal studies suggest (not human evidence)
+## What do animal studies suggest (not human evidence)?
+
+In obese, diabetic mice, long-term hydrogen water lowered blood glucose and insulin, and in diabetic rats hydrogen protected nerve function. Animal results like these don't show the same in people.
 
 - Obese, diabetic mice (db/db mice) that drank hydrogen water long term had lower blood glucose, insulin and triglycerides, less fatty liver and lower body weight, without eating more. The effect on blood sugar was similar to restricting their food [[8]](/study/molecular-hydrogen-improves-obesity-and-diabetes-by-inducing-hepatic-fgf21-and-stimulating-energy-metabolism-in-dbdb-mice-pmid-21293445).
+- In rats with chemically induced diabetes, breathing hydrogen gas for 8 weeks lowered blood glucose more than hydrogen-rich saline injections did, and hydrogen slowed the loss of nerve signal speed, a sign of diabetic nerve damage (neuropathy). It also lowered markers of oxidative stress in the nerves [[9]](/study/hydrogen-exerts-neuroprotective-effects-by-inhibiting-oxidative-stress-in-experimental-diabetic-peripheral-neuropathy-rats-pmid-36204786). No human trial has tested hydrogen for diabetic neuropathy.
 
-## Doses and durations studied
+## What doses and durations were studied?
+
+No trial compared doses. Drinking trials ran from 8 to 24 weeks, and the inhalation records covered 6 months.
 
 - **Drinking:** 900 mL to 1 liter a day for 8 weeks [2][3]; tablets supplying more than 5.5 millimoles (about 11 mg) of hydrogen a day for 24 weeks [4]; electrolyzed water for 3 months [5].
 - **Inhaling:** daily, for 6 months, in the record reviews [6][7].
 
-No trial compared doses.
+## What don't we know yet?
 
-## What we don't know
+Whether hydrogen improves blood sugar control or prevents complications in people with diabetes: neither has been shown.
 
 - **Blood sugar control in diabetes.** The main type 2 diabetes trial found no change in insulin resistance [1]; the lower HbA1c results come from a metabolic syndrome trial [4] and non-randomized inhalation records [6][7].
 - **Complications.** No human trial has measured kidney, eye, nerve or heart complications.
@@ -694,10 +927,11 @@ No trial compared doses.
       { n: 6, citation: "Zhao Z, et al. Effectiveness and safety of hydrogen inhalation as an adjunct treatment in Chinese type 2 diabetes patients: a retrospective, observational, double-arm, real-life clinical study. Front Endocrinol (Lausanne). 2023;13:1114221.", pmid: "36743938", doi: "10.3389/fendo.2022.1114221", ourStudyPath: "/study/effectiveness-and-safety-of-hydrogen-inhalation-as-an-adjunct-treatment-in-chinese-type-2-diabetes-patients-a-retrospective-observational-double-arm-real-life-clinical-study-pmid-36743938" },
       { n: 7, citation: "Ji H, et al. Real-world effectiveness and safety of hydrogen inhalation in Chinese patients with type 2 diabetes: a single-arm, retrospective study. Diabetes Metab Syndr Obes. 2023;16:2039-2050.", pmid: "37431394", doi: "10.2147/DMSO.S412898", ourStudyPath: "/study/real-world-effectiveness-and-safety-of-hydrogen-inhalation-in-chinese-patients-with-type-2-diabetes-a-single-arm-retrospective-study-pmid-37431394" },
       { n: 8, citation: "Kamimura N, et al. Molecular hydrogen improves obesity and diabetes by inducing hepatic FGF21 and stimulating energy metabolism in db/db mice. Obesity (Silver Spring). 2011;19(7):1396-403.", pmid: "21293445", doi: "10.1038/oby.2011.6", ourStudyPath: "/study/molecular-hydrogen-improves-obesity-and-diabetes-by-inducing-hepatic-fgf21-and-stimulating-energy-metabolism-in-dbdb-mice-pmid-21293445" },
+      { n: 9, citation: "Han XC, et al. Hydrogen exerts neuroprotective effects by inhibiting oxidative stress in experimental diabetic peripheral neuropathy rats. Med Gas Res. 2023;13(2):72-77.", pmid: "36204786", doi: "10.4103/2045-9912.345171", ourStudyPath: "/study/hydrogen-exerts-neuroprotective-effects-by-inhibiting-oxidative-stress-in-experimental-diabetic-peripheral-neuropathy-rats-pmid-36204786" },
     ],
     ownerLink: { href: "/blog/molecular-hydrogen-benefits-guide-pillar#does-hydrogen-water-lower-cholesterol-or-blood-sugar", label: "Does hydrogen water lower cholesterol or blood sugar? From our evidence-graded benefits guide" },
     bridgeTopic: null,
-    lastReviewed: "2026-11-01",
+    lastReviewed: "2026-11-05",
   },
 
   "fatty-liver-nafld": {
@@ -713,7 +947,9 @@ No trial compared doses.
 
 This page covers non-alcoholic fatty liver disease (NAFLD), now often called metabolic dysfunction-associated steatotic liver disease (MASLD). Gradual weight loss, physical activity and treating diabetes and high cholesterol are the approaches with the strongest evidence. Talk to your doctor before adding anything, and don't replace your care. For blood fats, including a mouse study of a hydrogen compound taken with a statin, see our [cholesterol hub](/explore-by-condition/cholesterol).
 
-## What human trials found
+## What have human trials found?
+
+A few small, short trials found slightly less liver fat or small changes in lab measures, but liver enzymes didn't change consistently. None lasted longer than 13 weeks.
 
 **Drinking hydrogen water**
 
@@ -730,19 +966,24 @@ This page covers non-alcoholic fatty liver disease (NAFLD), now often called met
 
 - A 2024 meta-analysis of 8 randomized trials with 433 people who had various liver problems, not only fatty liver, found slight drops in the liver enzymes ALT, AST and ALP with hydrogen-rich water [[6]](https://pubmed.ncbi.nlm.nih.gov/40406427/).
 
-## What animal studies suggest (not human evidence)
+## What do animal studies suggest (not human evidence)?
+
+In mice, hydrogen water reduced fatty liver and liver inflammation. These results don't show the same happens in people.
 
 - In mice fed a diet that causes fatty liver with inflammation (NASH), 8 weeks of hydrogen-rich water lowered liver inflammation, oxidative stress and liver-cell death, much like the diabetes drug pioglitazone. In a mouse model in which NASH leads to liver cancer, mice given hydrogen water had fewer liver tumors [[7]](/study/hydrogen-rich-water-prevents-progression-of-nonalcoholic-steatohepatitis-and-accompanying-hepatocarcinogenesis-in-mice-pmid-22505328).
 - Obese, diabetic mice and mice on a high-fat diet that drank hydrogen water had less fatty liver [[8]](/study/molecular-hydrogen-improves-obesity-and-diabetes-by-inducing-hepatic-fgf21-and-stimulating-energy-metabolism-in-dbdb-mice-pmid-21293445).
+- In rats given a chemical that causes liver failure and the brain complication of advanced liver disease (hepatic encephalopathy), hydrogen-rich water lowered blood ammonia and reduced damage to the liver and brain [[9]](/study/treatment-with-hydrogen-rich-water-protects-against-thioacetamide-induced-hepatic-encephalopathy-in-rats-through-stabilizing-liver-brain-disturbance-pmid-40410340). That is a model of severe, sudden liver injury, not of fatty liver.
 
-## Doses and durations studied
+## What doses and durations were studied?
+
+No trial compared doses. Drinking trials used about 1 liter a day for 4 to 8 weeks, and the inhalation trial lasted 13 weeks.
 
 - **Drinking:** 1 liter a day for 4 to 8 weeks [1][4]; hydrogen tablets in three 330 mL servings a day for 8 weeks [3].
 - **Inhaling:** a hydrogen-oxygen gas for 13 weeks [5].
 
-No trial compared doses.
+## What don't we know yet?
 
-## What we don't know
+Whether hydrogen changes liver scarring or long-term outcomes, and how it compares with weight loss, the approach with the strongest evidence.
 
 - **Liver scarring and long-term outcomes.** None of the trials above reported liver biopsy results or followed people for longer than 13 weeks [1]–[5].
 - **Whether less liver fat lasts.** The MRI trial lasted 4 weeks per treatment [1].
@@ -781,10 +1022,11 @@ No trial compared doses.
       { n: 6, citation: "Khalili-Tanha G, et al. The impact of hydrogen-rich water on liver enzyme levels in clinical populations: a comprehensive review and meta-analysis. Gastroenterol Hepatol Bed Bench. 2024;17(4):338-348.", pmid: "40406427", doi: "10.22037/ghfbb.v17i4.2990", ourStudyPath: null },
       { n: 7, citation: "Kawai D, et al. Hydrogen-rich water prevents progression of nonalcoholic steatohepatitis and accompanying hepatocarcinogenesis in mice. Hepatology. 2012;56(3):912-21.", pmid: "22505328", doi: "10.1002/hep.25782", ourStudyPath: "/study/hydrogen-rich-water-prevents-progression-of-nonalcoholic-steatohepatitis-and-accompanying-hepatocarcinogenesis-in-mice-pmid-22505328" },
       { n: 8, citation: "Kamimura N, et al. Molecular hydrogen improves obesity and diabetes by inducing hepatic FGF21 and stimulating energy metabolism in db/db mice. Obesity (Silver Spring). 2011;19(7):1396-403.", pmid: "21293445", doi: "10.1038/oby.2011.6", ourStudyPath: "/study/molecular-hydrogen-improves-obesity-and-diabetes-by-inducing-hepatic-fgf21-and-stimulating-energy-metabolism-in-dbdb-mice-pmid-21293445" },
+      { n: 9, citation: "Wang X, et al. Treatment with hydrogen-rich water protects against thioacetamide-induced hepatic encephalopathy in rats through stabilizing liver-brain disturbance. Sci Rep. 2025;15(1):17901.", pmid: "40410340", doi: "10.1038/s41598-025-02891-2", ourStudyPath: "/study/treatment-with-hydrogen-rich-water-protects-against-thioacetamide-induced-hepatic-encephalopathy-in-rats-through-stabilizing-liver-brain-disturbance-pmid-40410340" },
     ],
     ownerLink: { href: "/blog/molecular-hydrogen-benefits-guide-pillar#does-molecular-hydrogen-therapy-treat-any-disease", label: "Does molecular hydrogen therapy treat any disease? From our evidence-graded benefits guide" },
     bridgeTopic: null,
-    lastReviewed: "2026-11-01",
+    lastReviewed: "2026-11-05",
   },
 
   "weight-loss-metabolism": {
@@ -800,7 +1042,9 @@ No trial compared doses.
 
 This page covers body weight, body fat, appetite and metabolism. Lasting weight loss comes from changes in eating and activity and, for some people, medicine or surgery; talk to your doctor about what fits you. For blood fats in people with overweight, see our [cholesterol hub](/explore-by-condition/cholesterol); for liver fat, see our [fatty liver hub](/explore-by-condition/fatty-liver-nafld).
 
-## What human trials found
+## What have human trials found?
+
+No trial has shown meaningful weight loss. Body weight didn't differ from placebo in the placebo-controlled trials; a few small trials reported slightly less body fat or fewer food cravings, mostly as secondary findings.
 
 **Drinking hydrogen water**
 
@@ -819,18 +1063,22 @@ This page covers body weight, body fat, appetite and metabolism. Lasting weight 
 
 - We found no meta-analysis of body weight. A 2026 analysis of 13 trials in adults with overweight or obesity pooled blood fats only, and found small drops in total and LDL cholesterol [[8]](/study/the-effect-of-hydrogen-rich-water-interventions-on-lipid-profiles-in-adults-with-overweight-or-obesity-and-associated-metabolic-disorders-a-systematic-review-and-meta-analysis-of-randomized-controlled-trials-pmid-41888952).
 
-## What animal studies suggest (not human evidence)
+## What do animal studies suggest (not human evidence)?
+
+Obese, diabetic mice gained less weight on hydrogen water. That isn't evidence for people.
 
 - Obese, diabetic mice (db/db mice) that drank hydrogen water long term gained less fat and body weight without eating or drinking more, and used more oxygen, a sign of higher energy use [[9]](/study/molecular-hydrogen-improves-obesity-and-diabetes-by-inducing-hepatic-fgf21-and-stimulating-energy-metabolism-in-dbdb-mice-pmid-21293445).
 
-## Doses and durations studied
+## What doses and durations were studied?
+
+No trial compared doses. Trials used 1 to 1.5 liters a day, or about 11 to 15 mg of hydrogen a day, for 4 to 24 weeks.
 
 - **Drinking:** 1 to 1.5 liters a day [1][5]; about 11 to 15 mg of hydrogen a day [1][3]; from 4 weeks to 24 weeks [2][3].
 - **Inhaling:** a single 60-minute session at rest [7].
 
-No trial compared doses.
+## What don't we know yet?
 
-## What we don't know
+Whether hydrogen has any effect on body weight at all, and for whom.
 
 - **Whether there is any effect on weight.** The two trials built around body composition found no weight difference from placebo [1][2].
 - **Who it applies to.** The trials were small and mostly in adults with obesity, overweight or metabolic syndrome.
@@ -873,7 +1121,7 @@ No trial compared doses.
     ],
     ownerLink: { href: "/blog/molecular-hydrogen-benefits-guide-pillar", label: "Hydrogen water benefits, graded by evidence" },
     bridgeTopic: null,
-    lastReviewed: "2026-11-01",
+    lastReviewed: "2026-11-05",
   },
 
   "gut-health": {
@@ -889,12 +1137,15 @@ No trial compared doses.
 
 This page covers digestion, bowel habits and the gut microbiome (the bacteria living in the intestine). Diarrhea or constipation that lasts, belly pain, blood in the stool or unexplained weight loss deserve a medical checkup. If you have IBS or inflammatory bowel disease, talk to your doctor before trying hydrogen, and don't change your treatment. See also our [digestive health research overview](/hydrogen-for/gut-health).
 
-## What human trials found
+## What have human trials found?
+
+Small, short trials, mostly of alkaline electrolyzed water, found more normal stools or shifts in gut bacteria. One trial in acid reflux reported better symptom scores when electrolyzed water was added to standard medicine, but none showed that hydrogen treats a digestive disease.
 
 **Alkaline electrolyzed water that contains hydrogen**
 
 - **20 healthy men, 2 weeks.** In a double-blind trial in Japan, 500 mL a day of alkaline electrolyzed water (0.3 mg of hydrogen per liter, pH 9.5) shifted stool consistency toward "normal" on a standard stool chart and raised Bifidobacterium, a common gut bacterium, compared with purified water. Overall gut bacterial diversity didn't change. The lead author works for Panasonic, which made the water device [[1]](/study/the-effects-of-ingestion-of-hydrogen-dissolved-alkaline-electrolyzed-water-on-stool-consistency-and-gut-microbiota-a-double-blind-randomized-trial-pmid-34213495).
 - **60 healthy adults, 4 weeks.** In a double-blind trial, 500 mL or more a day of alkaline electrolyzed water (0.2 mg of hydrogen per liter, pH 9.2) didn't clearly change stomach or bowel symptoms compared with purified water, though stools became slightly more normal in the electrolyzed water group. Two authors work for Panasonic [[2]](/study/daily-ingestion-of-alkaline-electrolyzed-water-containing-hydrogen-influences-human-health-including-gastrointestinal-symptoms-pmid-30713669).
+- **84 adults with acid reflux (GERD), 3 months.** Everyone took a standard acid-reducing medicine (a proton pump inhibitor) and drank either electrolyzed reduced water or tap water. Heartburn and regurgitation scores improved more, and blood markers of oxidative stress were better, with the electrolyzed water. The abstract doesn't say whether patients were randomized or blinded, or how much hydrogen the water contained [[8]](/study/modulation-of-the-oxidative-plasmatic-state-in-gastroesophageal-reflux-disease-with-the-addition-of-rich-water-molecular-hydrogen-a-new-biological-vision-pmid-29512923).
 - **27 adults with diarrhea-predominant IBS, 8 weeks.** At least 2 liters a day of alkaline-reduced water improved IBS quality-of-life scores more than placebo water, but abdominal pain, and the share of people reporting relief for most weeks (62% vs 43%), didn't differ significantly. The abstract doesn't report the water's hydrogen content [[3]](/study/effects-of-alkaline-reduced-drinking-water-on-irritable-bowel-syndrome-with-diarrhea-a-randomized-double-blind-placebo-controlled-pilot-study-pmid-29849734).
 
 **Hydrogen-rich water**
@@ -906,21 +1157,25 @@ This page covers digestion, bowel habits and the gut microbiome (the bacteria li
 
 - **10 adults with active ulcerative colitis, 8 weeks.** In a double-blind trial in Japan, 5 people inhaled 5–6% hydrogen and 5 inhaled air, 4 hours a day. Gut bacteria changed more in the hydrogen group and endoscopy scores improved more, but symptom scores didn't differ, and the authors saw no clear treatment effect. The inhalers came from a hydrogen device company [[6]](/study/hydrogen-gas-inhalation-improved-intestinal-microbiota-in-ulcerative-colitis-a-randomised-double-blind-placebo-controlled-trial-pmid-40868053).
 
-## What animal studies suggest (not human evidence)
+## What do animal studies suggest (not human evidence)?
 
-- In mice given a chemical in their drinking water that inflames the colon, a common model of inflammatory bowel disease, adding hydrogen to the water for the same 7 days limited weight loss, colon shortening and colon inflammation [[7]](/study/hydrogen-mediates-suppression-of-colon-inflammation-induced-by-dextran-sodium-sulfate-pmid-19486890). Chemically induced colitis in mice develops in days; human inflammatory bowel disease lasts for years.
+In mice with chemically induced colitis, hydrogen water limited colon inflammation. That colitis develops in days, unlike human inflammatory bowel disease, so this isn't human evidence.
 
-## Doses and durations studied
+- In mice given a chemical in their drinking water that inflames the colon, a common model of inflammatory bowel disease, adding hydrogen to the water for the same 7 days limited weight loss, colon shortening and colon inflammation [[7]](/study/hydrogen-mediates-suppression-of-colon-inflammation-induced-by-dextran-sodium-sulfate-pmid-19486890).
 
-- **Alkaline electrolyzed water:** about 500 mL a day, with 0.2 to 0.3 mg of hydrogen per liter, for 2 to 4 weeks [1][2]; at least 2 liters a day of alkaline-reduced water for 8 weeks [3].
+## What doses and durations were studied?
+
+No trial compared doses. Most drinking trials used about 500 mL a day of alkaline electrolyzed water for 2 to 4 weeks.
+
+- **Alkaline electrolyzed water:** about 500 mL a day, with 0.2 to 0.3 mg of hydrogen per liter, for 2 to 4 weeks [1][2]; at least 2 liters a day of alkaline-reduced water for 8 weeks [3]; electrolyzed reduced water alongside a proton pump inhibitor for 3 months [8].
 - **Hydrogen-rich water:** 1 liter a day for 8 weeks [4].
 - **Inhaling:** 5–6% hydrogen, 4 hours a day for 8 weeks [6].
 
-No trial compared doses.
+## What don't we know yet?
 
-## What we don't know
+Whether any benefit comes from hydrogen rather than alkalinity, and whether hydrogen helps any digestive disease.
 
-- **Hydrogen or alkalinity?** Most drinking trials used alkaline electrolyzed or reduced water, so their results can't be credited to hydrogen alone [1][2][3].
+- **Hydrogen or alkalinity?** Most drinking trials used alkaline electrolyzed or reduced water, so their results can't be credited to hydrogen alone [1][2][3][8].
 - **Digestive diseases.** We found no trial in Crohn's disease, and the only ulcerative colitis trial had 10 patients [6].
 - **What gut bacteria shifts mean.** The changes seen [1][4][5] haven't been linked to better digestion or health.
 - **Independence.** Three trials list authors or devices from companies that make hydrogen water or inhalers [1][2][6].
@@ -956,10 +1211,11 @@ No trial compared doses.
       { n: 5, citation: "Sha JB, et al. Effects of the long-term consumption of hydrogen-rich water on the antioxidant activity and the gut flora in female juvenile soccer players from Suzhou, China. Med Gas Res. 2018;8(4):135-143.", pmid: "30713665", doi: "10.4103/2045-9912.248263", ourStudyPath: "/study/effects-of-the-long-term-consumption-of-hydrogen-rich-water-on-the-antioxidant-activity-and-the-gut-flora-in-female-juvenile-soccer-players-from-suzhou-china-pmid-30713665" },
       { n: 6, citation: "Maruyama T, et al. Hydrogen gas inhalation improved intestinal microbiota in ulcerative colitis: a randomised double-blind placebo-controlled trial. Biomedicines. 2025;13(8):1799.", pmid: "40868053", doi: "10.3390/biomedicines13081799", ourStudyPath: "/study/hydrogen-gas-inhalation-improved-intestinal-microbiota-in-ulcerative-colitis-a-randomised-double-blind-placebo-controlled-trial-pmid-40868053" },
       { n: 7, citation: "Kajiya M, et al. Hydrogen mediates suppression of colon inflammation induced by dextran sodium sulfate. Biochem Biophys Res Commun. 2009;386(1):11-5.", pmid: "19486890", doi: "10.1016/j.bbrc.2009.05.117", ourStudyPath: "/study/hydrogen-mediates-suppression-of-colon-inflammation-induced-by-dextran-sodium-sulfate-pmid-19486890" },
+      { n: 8, citation: "Franceschelli S, et al. Modulation of the oxidative plasmatic state in gastroesophageal reflux disease with the addition of rich water molecular hydrogen: a new biological vision. J Cell Mol Med. 2018;22(5):2750-2759.", pmid: "29512923", doi: "10.1111/jcmm.13569", ourStudyPath: "/study/modulation-of-the-oxidative-plasmatic-state-in-gastroesophageal-reflux-disease-with-the-addition-of-rich-water-molecular-hydrogen-a-new-biological-vision-pmid-29512923" },
     ],
     ownerLink: { href: "/hydrogen-for/gut-health", label: "Hydrogen and digestive health: what the research tested" },
     bridgeTopic: null,
-    lastReviewed: "2026-11-01",
+    lastReviewed: "2026-11-05",
   },
 };
 

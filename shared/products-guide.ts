@@ -12,7 +12,7 @@ import { blogByline, type BlogByline } from "./seo-markup";
 
 export const PRODUCTS_PATH = "/products";
 export const PRODUCTS_H1 = "Hydrogen water devices: how they work and what to check";
-export const PRODUCTS_LAST_REVIEWED = "2026-11-04";
+export const PRODUCTS_LAST_REVIEWED = "2026-11-05";
 
 export function productsByline(): BlogByline {
   return blogByline({ authorName: null, reviewerName: null, updatedAt: PRODUCTS_LAST_REVIEWED });
@@ -117,7 +117,7 @@ export const ECHO_DEVICE_FACTS: EchoDeviceFact[] = [
 ];
 
 export const ECHO_TESTING_NOTE =
-  "Echo has its devices tested by H2 Analytics, a third-party hydrogen testing lab in Las Vegas, and publishes the Flask report linked above. That report gives the concentration at the end of a cycle. It does not show how quickly the hydrogen escapes once the bottle is opened. Our own device measurement dataset will add that outgassing curve and will cover other brands as well.";
+  "Echo has its devices tested by H2 Analytics, a third-party hydrogen testing lab in Las Vegas, and publishes the Flask report linked above. That report gives the concentration at the end of a cycle. It does not show how quickly the hydrogen escapes once the bottle is opened.";
 
 export const PRODUCTS_FAQS: { question: string; answer: string }[] = [
   {

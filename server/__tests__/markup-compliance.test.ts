@@ -653,8 +653,8 @@ describe("/hydrogen-for topic records", () => {
 describe("condition hub intro records (/explore-by-condition, waves 3–5)", () => {
   it("meta title ≤ 60 incl. suffix, description 140–160, no product bridge", () => {
     expect(Object.keys(CONDITION_HUB_INTROS).sort()).toEqual([
-      "cholesterol", "chronic-fatigue", "exercise-recovery", "fatty-liver-nafld", "gut-health",
-      "kidney-health", "skin-aging", "sleep-quality", "type-2-diabetes", "weight-loss-metabolism",
+      "athletic-performance", "cholesterol", "chronic-fatigue", "exercise-recovery", "fatty-liver-nafld", "gut-health",
+      "kidney-health", "oxidative-stress", "skin-aging", "sleep-quality", "type-2-diabetes", "weight-loss-metabolism",
     ]);
     for (const r of Object.values(CONDITION_HUB_INTROS)) {
       expect(r.metaTitle.length, r.slug).toBeLessThanOrEqual(60);
@@ -679,7 +679,9 @@ describe("condition hub intro records (/explore-by-condition, waves 3–5)", () 
 
   it("no overclaim phrases in any hub intro or FAQ answer", () => {
     for (const r of Object.values(CONDITION_HUB_INTROS)) {
-      const texts = [r.introMarkdown, ...r.faqs.map((f) => f.answer)];
+      // Link targets are permanent study URLs (paper titles), not our prose.
+      const prose = r.introMarkdown.replace(/\]\([^)]*\)/g, "]");
+      const texts = [prose, ...r.faqs.map((f) => f.answer)];
       for (const t of texts) for (const re of OVERCLAIMS) expect(t, `${r.slug}: ${re}`).not.toMatch(re);
     }
   });
