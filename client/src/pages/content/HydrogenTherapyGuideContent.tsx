@@ -5,7 +5,7 @@
 import React from "react";
 import { Link } from "wouter";
 import { Byline } from "@/components/blog/Byline";
-import { learnByline } from "@shared/learn-pages";
+import { LEARN_GUIDES_UPDATED, learnByline } from "@shared/learn-pages";
 import { Separator } from "@/components/ui/separator";
 import {
   Card,
@@ -48,7 +48,7 @@ export function HydrogenTherapyGuideContent() {
                 A plain-English guide to how hydrogen is studied, how it&apos;s
                 given, and what the evidence does — and doesn&apos;t — show.
               </p>
-              <Byline byline={learnByline()} className="byline text-sm text-gray-600 mb-6" />
+              <Byline byline={learnByline(LEARN_GUIDES_UPDATED)} className="byline text-sm text-gray-600 mb-6" />
               <div className="flex flex-wrap gap-4">
                 <Link href="/studies">
                   <Button size="lg" className="shadow-lg">
@@ -79,7 +79,7 @@ export function HydrogenTherapyGuideContent() {
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              What Researchers Call Hydrogen Therapy
+              What is hydrogen therapy?
             </h2>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
               &quot;Hydrogen therapy&quot; is the research term for giving people
@@ -147,10 +147,11 @@ export function HydrogenTherapyGuideContent() {
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              How Hydrogen Is Given
+              How is hydrogen given in studies?
             </h2>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Studies have given hydrogen in several ways. Each delivers a
+              In four main ways: drinking hydrogen water, breathing hydrogen
+              gas, bathing and applying it to the skin. Each delivers a
               different amount, and few studies compare methods directly.
             </p>
           </div>
@@ -364,7 +365,7 @@ export function HydrogenTherapyGuideContent() {
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              What Researchers Are Studying
+              What are researchers studying?
             </h2>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
               These are the areas studied most. Much of the work is in animals
@@ -540,11 +541,11 @@ export function HydrogenTherapyGuideContent() {
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              The Scientific Evidence
+              How strong is the evidence?
             </h2>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Molecular hydrogen research has grown since 2007, but most of it
-              is early-stage.
+              Mostly early-stage. Molecular hydrogen research has grown since
+              2007, but most of it is in cells and animals.
             </p>
           </div>
 
@@ -555,7 +556,13 @@ export function HydrogenTherapyGuideContent() {
                 Research Background
               </h3>
               <p className="text-gray-600 mb-4">
-                Interest in hydrogen grew after a 2007 study in Nature Medicine
+                Interest in hydrogen grew after a 
+                <Link
+                  href="/study/hydrogen-acts-as-a-therapeutic-antioxidant-by-selectively-reducing-cytotoxic-oxygen-radicals-pmid-17486089"
+                  className="text-teal-700 underline hover:text-teal-800"
+                >
+                  2007 study in Nature Medicine
+                </Link> 
                 reported antioxidant effects in cells and rats. Since then,
                 research has included:
               </p>

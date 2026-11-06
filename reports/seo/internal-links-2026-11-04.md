@@ -177,3 +177,40 @@ Suggested links to this page from: `/blog/hydrogen-water-filter-guide-pillar`
 - Two targets carry most of the opportunity: the filter guide (`/blog/hydrogen-water-filter-guide-pillar`, 556 striking impressions on "hydrogen water filter"-type queries at positions 5–13) and the tablets review (`/blog/h2-tabs-review-pillar`). Both are legacy commercial-intent guides whose bodies the accuracy pass has not yet reviewed (meta only); linking into them is worth doing after that review.
 - Study pages appear as targets because single papers rank for their own terms; study pages already link to hubs and related studies automatically, so no manual action there.
 - Re-run monthly from `gsc_query_metrics` (28-day aggregate, branded queries removed); previous runs stay in `reports/seo/`.
+
+---
+
+## Applied 2026-11-05 (Josh: "build the stuff you can do without me", 7.2 reviewed targets)
+
+**Rule used:** link only from reviewed pages (the evidence-graded hubs and the /learn guides, which went through the 2026-11-02 accuracy review) to targets that return 200, are `index, follow` and are reviewed themselves (study pages, hubs, guides). Every target was re-checked live today. Since this report was written, the stable-URL change (#150) and consolidation have moved several targets, so links point at their final URLs.
+
+### Links added (13)
+
+| From | To | Query it serves |
+|---|---|---|
+| `/explore-by-condition/gut-health` (human trials) | `/study/modulation-of-the-oxidative-plasmatic-state-in-gastroesophageal-reflux-disease-…-pmid-29512923` | is hydrogen water good for acid reflux |
+| `/explore-by-condition/type-2-diabetes` (animal studies) | `/study/hydrogen-exerts-neuroprotective-effects-…-diabetic-peripheral-neuropathy-rats-pmid-36204786` | do hydrogen tablets help with neuropathy |
+| `/explore-by-condition/fatty-liver-nafld` (animal studies) | `/study/treatment-with-hydrogen-rich-water-protects-against-thioacetamide-induced-hepatic-encephalopathy-…-pmid-40410340` | hydrogen water liver cirrhosis |
+| `/explore-by-condition/oxidative-stress` (new intro) | `/study/hydrogen-from-a-biologically-inert-gas-to-a-unique-antioxidant-doi-10-5772-34908` | hydrogen antioxidant therapy; hydrogen-based therapeutics for oxidative stress |
+| `/explore-by-condition/oxidative-stress` (new intro) | `/study/hydrogen-acts-as-a-therapeutic-antioxidant-…-pmid-17486089` | same cluster |
+| `/learn/therapy-guide` (evidence section) | `/study/hydrogen-acts-as-a-therapeutic-antioxidant-…-pmid-17486089` | same cluster |
+| `/learn/basics` (what researchers study) | `/explore-by-condition/oxidative-stress` | same cluster |
+| `/learn/basics` (how hydrogen is taken) | `/products` | device guide |
+| `/learn/basics` (is hydrogen safe) | `/blog/hydrogen-water-side-effects` | h2 tablets side effects cluster |
+| `/learn/health-benefits` (athletic card) | `/explore-by-condition/athletic-performance` | hub (new intro) |
+| `/learn/health-benefits` (cardiovascular card) | `/explore-by-condition/cholesterol` | hydrogen water for cholesterol (the old blog target now 301s here) |
+| `/learn/health-benefits` (metabolic card) | `/explore-by-condition/type-2-diabetes` | hub |
+| `/learn/health-benefits` (skin card) | `/explore-by-condition/skin-aging` | hub |
+
+### Targets not linked, and why
+
+| Target (as listed above) | Status today | Why not |
+|---|---|---|
+| `/blog/hydrogen-water-filter-guide-pillar`, `/blog/best-hydrogen-water-filters` | 200 | Unreviewed commercial copy ("therapeutic hydrogen", "proven", "treats"; about 20 instances). Needs an accuracy pass first. This is the single biggest opportunity: 556 striking-distance impressions. |
+| `/blog/h2-tabs-review-pillar` | 301 → `/blog/h2-tabs-side-effects` | Review-post disposition (PLAN 5.5) is still open. `/learn/basics` now links the general side-effects guide instead. |
+| `/blog/how-to-use-hydrogen-water-for-cholesterol-…` | 301 → `/explore-by-condition/cholesterol` | Already consolidated; linked to the hub instead. |
+| `/blog/how-to-use-hydrogen-water-for-heart-health-…`, `/study/functional-microorganisms-…` | 410 | Gone. |
+| `/blog/hydrogen-water-health-benefits-how-it-travels-…` | 301 → benefits guide | Already consolidated. |
+| COPD-like, pulmonary hypertension, spinal cord, SIBO breath-test, Nordenau and serum-alkalinization study pages | 200 | No reviewed source page on those topics. Study pages already cross-link related studies automatically. |
+
+**Found while checking:** `/blog/molecular-hydrogen-benefits-guide-pillar` links 21 studies by their pre-#150 URLs, so each link goes through a 301. Rewriting the legacy `/study/…-<timestamp>` hrefs to their permanent URLs, site-wide in blog bodies, is a mechanical follow-up (back up first).

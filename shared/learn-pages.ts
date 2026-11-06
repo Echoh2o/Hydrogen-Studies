@@ -14,6 +14,9 @@ export const LEARN_PATHS = ["/learn", "/learn/basics", "/learn/health-benefits",
 /** Date of the last editorial accuracy review of the /learn guides (#129, #130). */
 export const LEARN_LAST_REVIEWED = "2026-11-02";
 
-export function learnByline(): BlogByline {
-  return blogByline({ authorName: null, reviewerName: null, updatedAt: LEARN_LAST_REVIEWED });
+/** /learn/basics, /learn/health-benefits and /learn/therapy-guide: direct-answer headings (PLAN 6.5). */
+export const LEARN_GUIDES_UPDATED = "2026-11-05";
+
+export function learnByline(updatedAt: string = LEARN_LAST_REVIEWED): BlogByline {
+  return blogByline({ authorName: null, reviewerName: null, updatedAt });
 }
