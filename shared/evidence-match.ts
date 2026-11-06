@@ -43,7 +43,18 @@ export interface ProductForMatch {
   certifiedConcentrationPpm: number | null;
   /** Inhalation devices: the highest H2 flow the lab measured (mL/min). */
   certifiedH2FlowMlMin?: number | null;
+  /** The lab figure was measured in a sealed vial (drink mix), not in an open glass. */
+  sealedVial?: boolean;
 }
+
+/**
+ * The most hydrogen water holds in an open glass at normal air pressure and
+ * room temperature (~0.8 mM). A sealed-vial figure above this is capped here:
+ * we never compare studies with a level an open glass cannot hold. An
+ * open-glass measurement, once it exists, replaces the cap automatically
+ * (it is entered as the product's figure without the sealed-vial note).
+ */
+export const OPEN_GLASS_LIMIT_MG_L = 1.6;
 
 /** Delivery routes a product can be dose-matched on, and what is compared. */
 export type DoseRoute = "drinking_water" | "bath" | "inhaled_gas";
@@ -57,7 +68,13 @@ export function isDoseRoute(route: string | null | undefined): route is DoseRout
 export function productCeiling(p: ProductForMatch): number | null {
   if (!isDoseRoute(p.deliveryRoute)) return null;
   const v = p.deliveryRoute === "inhaled_gas" ? p.certifiedH2FlowMlMin : p.certifiedConcentrationPpm;
-  return v == null || !isFinite(Number(v)) ? null : Number(v);
+  if (v == null || !isFinite(Number(v))) return null;
+  return isCapped(p) ? OPEN_GLASS_LIMIT_MG_L : Number(v);
+}
+
+/** True when a sealed-vial drinking figure is above what an open glass holds. */
+export function isCapped(p: ProductForMatch): boolean {
+  return p.deliveryRoute === "drinking_water" && !!p.sealedVial && Number(p.certifiedConcentrationPpm) > OPEN_GLASS_LIMIT_MG_L;
 }
 
 /** A study's comparable dose on a route; null = not reported in a comparable form. */
@@ -93,11 +110,16 @@ export function doseMatchRuleText(p: ProductForMatch): string {
   if (p.deliveryRoute === "inhaled_gas") {
     return `Human studies in the Hydrogen Studies database in which people breathed hydrogen gas at normal air pressure, and the paper reports a hydrogen flow at or below ${(v ?? 0).toLocaleString("en-US")} mL per minute (the highest hydrogen flow H2 Analytics measured from the ${p.name}). A flow counts when the authors state it, or when they state both the hydrogen percentage and the total gas flow (hydrogen flow = percentage × total flow). Studies that give only a percentage, such as 2% hydrogen in a mask, describe the air breathed rather than a device's output, so they are counted separately and never matched; so are diving and pressure-chamber studies. Animal and cell studies, and drinking, bathing and saline studies are excluded. ${result}`;
   }
+  if (isCapped(p)) {
+    return `Human studies in the Hydrogen Studies database in which people drank hydrogen water, and the paper reports a hydrogen concentration at or below ${v} mg/L. That is the most hydrogen an open glass of water holds at normal air pressure. H2 Analytics measured ${p.certifiedConcentrationPpm} mg/L for the ${p.name}, but in a sealed lab vial, so we use the lower, open-glass figure. Animal and cell studies, inhaled gas, saline and bathing studies are excluded. Studies that do not report a concentration are counted separately, never matched. ${result}`;
+  }
   return `Human studies in the Hydrogen Studies database in which people drank hydrogen water, and the paper reports a hydrogen concentration at or below ${v} mg/L (the concentration H2 Analytics measured for the ${p.name}). Animal and cell studies, inhaled gas, saline and bathing studies are excluded. Studies that do not report a concentration are counted separately, never matched. ${result}`;
 }
 
 export interface DoseMatch {
   route: DoseRoute;
+  /** "open_glass_limit" when a sealed-vial figure was capped (OPEN_GLASS_LIMIT_MG_L). */
+  ceilingBasis: "measured" | "open_glass_limit";
   humanStudies: number;
   /** Human studies on the product's route (drinking, bathing or inhalation). */
   routeStudies: number;
@@ -122,6 +144,7 @@ export function doseMatch(humanRows: readonly EvidenceStudyRow[], p: ProductForM
   const matched = withDose.filter((r) => (studyDose(r, route) as number) <= ceiling + 1e-9);
   return {
     route,
+    ceilingBasis: isCapped(p) ? "open_glass_limit" : "measured",
     humanStudies: humanRows.length,
     routeStudies: onRoute.length,
     withDose: withDose.length,

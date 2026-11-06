@@ -103,3 +103,27 @@ describe("store list (echowater.com modal)", () => {
     expect(r.notListed).toBe(3);
   });
 });
+
+describe("drink mix (sealed-vial figure)", () => {
+  const sticks = { slug: "echo-prebiotic-sticks", name: "Echo Hydrogen Prebiotic Stick Packs", deliveryRoute: "drinking_water", certifiedConcentrationPpm: 16.15, sealedVial: true };
+  const r = [row({ id: 1, concentrationPpm: 1.5 }), row({ id: 2, concentrationPpm: 1.6 }), row({ id: 3, concentrationPpm: 5 })];
+  it("is capped at the open-glass limit, never matched at 16.15", () => {
+    const d = doseMatch(r, sticks);
+    expect(d.ceilingBasis).toBe("open_glass_limit");
+    expect(d.matched.map((s) => s.id)).toEqual([1, 2]);
+    expect(measureLabel(sticks)).toBe("1.6 ppm");
+  });
+  it("says why, in the rule and the summary, with no forbidden words", () => {
+    const rule = doseMatchRuleText(sticks);
+    const sum = PROFILE.summary(doseMatch(r, sticks), sticks.name, "1.6 ppm");
+    expect(rule).toMatch(/sealed lab vial/);
+    expect(sum).toMatch(/open glass of water holds/);
+    for (const t of [rule, sum, PROFILE.echoDevice(doseMatch(r, sticks))]) for (const re of FORBIDDEN_COPY) expect(re.test(t)).toBe(false);
+  });
+  it("an open-glass figure (no sealed flag) is used as measured; the Flask is unaffected", () => {
+    expect(doseMatch(r, { ...sticks, sealedVial: false, certifiedConcentrationPpm: 3 }).matched).toHaveLength(2);
+    expect(doseMatch(r, { ...sticks, sealedVial: false, certifiedConcentrationPpm: 3 }).ceilingBasis).toBe("measured");
+    expect(doseMatch(r, flask).ceilingBasis).toBe("measured");
+    expect(doseMatch(r, flask).matched).toHaveLength(3);
+  });
+});
