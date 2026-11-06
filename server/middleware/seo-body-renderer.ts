@@ -76,6 +76,7 @@ import { STUDY_REVIEWER, reviewerBylineLabel } from "../../shared/reviewer";
 import { breadcrumbs, esc, footer, truncate } from "./html-fragments";
 import { renderJournalIndex, renderJournalPage, renderResearcherIndex, renderResearcherPage } from "./profile-pages";
 import { renderGapMapPage, renderLimitsPage, renderNullResultsHub, renderScamPage } from "./evidence-pages";
+import { renderEvidenceProfilePage } from "./evidence-profile-page";
 import { renderDatasetPage, renderReportPage } from "./report-pages";
 import { DATASET_PATH, REPORT_PATH } from "../../shared/dataset";
 import { GAP_MAP_PATH, LIMITS_PATH, NULL_RESULTS_PATH, SCAM_PATH } from "../../shared/evidence-pages";
@@ -1342,6 +1343,8 @@ async function dispatchPageBody(pathname: string): Promise<string | null> {
   if (h4Match) return renderHydrogenForPage(h4Match[1]);
 
   // Radical-honesty pages (PLAN 4.6)
+  const evidenceProfile = pathname.match(/^\/evidence\/([a-z0-9-]+)$/);
+  if (evidenceProfile) return renderEvidenceProfilePage(evidenceProfile[1]);
   if (pathname === LIMITS_PATH) return renderLimitsPage();
   if (pathname === NULL_RESULTS_PATH) return renderNullResultsHub();
   if (pathname === SCAM_PATH) return renderScamPage();
