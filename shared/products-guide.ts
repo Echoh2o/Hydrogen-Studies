@@ -138,6 +138,6 @@ export const PRODUCTS_FAQS: { question: string; answer: string }[] = [
   {
     question: "Why does this page list Echo's devices?",
     answer:
-      "Echo Technologies LLC, which makes Echo hydrogen water devices, funds Hydrogen Studies. We list its devices with the figures Echo states, label them as our funder's, and do not rank them against other brands until our own measurement dataset is published.",
+      "Echo Technologies LLC, which makes Echo hydrogen water devices, funds Hydrogen Studies. We list its devices with the figures Echo states, label them as our funder's, and do not rank them against other brands, because we haven't measured other brands ourselves.",
   },
 ];
