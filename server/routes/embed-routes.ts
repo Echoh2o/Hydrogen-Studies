@@ -16,6 +16,7 @@ import { Router, type Response } from "express";
 import { getPublicStudyStats, type PublicStudyStats } from "../services/public-study-stats";
 import { logger } from "../utils/logger";
 import { buildEvidenceModalScript } from "../services/evidence-modal-script";
+import { buildAskWidgetScript } from "../services/ask-widget-script";
 
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
 
@@ -106,6 +107,14 @@ const EVIDENCE_MODAL_SCRIPT = buildEvidenceModalScript(SITE_URL);
 router.get("/evidence-modal.js", (_req, res) => {
   setEmbedHeaders(res, 3600);
   res.type("application/javascript").send(EVIDENCE_MODAL_SCRIPT);
+});
+
+const ASK_WIDGET_SCRIPT = buildAskWidgetScript(SITE_URL);
+
+/** TRUST-BADGE-PLAN 3.8: the "Ask the research" widget. */
+router.get("/ask.js", (_req, res) => {
+  setEmbedHeaders(res, 3600);
+  res.type("application/javascript").send(ASK_WIDGET_SCRIPT);
 });
 
 router.get("/study-count.js", (_req, res) => {
