@@ -36,6 +36,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import authRoutes from "./routes/auth-routes";
 import { requireAdmin } from "./auth";
 import studiesRouter from "./routes/studies-router";
+import { stripSentinels } from "./middleware/strip-sentinels";
 import researchUnifiedRoutes from "./routes/research-unified-routes";
 import keywordMonitorRoutes from "./routes/keyword-monitor-routes";
 import keywordMonitorScheduleRoutes from "./routes/keyword-monitor-schedule-routes";
@@ -590,7 +591,7 @@ app.use((req, res, next) => {
 app.use("/api/auth", authRoutes);
 
 // Core Entities
-app.use("/api/studies", studiesRouter);
+app.use("/api/studies", stripSentinels, studiesRouter);
 app.use("/api/categories", categoriesController.router);
 app.use("/api/blogs", blogRoutes);
 

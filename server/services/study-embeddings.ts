@@ -19,6 +19,7 @@ import { createHash } from "crypto";
 import { sql } from "drizzle-orm";
 import { db } from "../db";
 import { logger } from "../utils/logger";
+import { realContent } from "@shared/seo-markup";
 
 export const EMBED_MODEL = "Xenova/bge-small-en-v1.5";
 export const EMBED_DIMS = 384;
@@ -38,7 +39,7 @@ export function embeddingText(s: {
   return [
     s.plain_language_title,
     s.title,
-    s.key_finding,
+    realContent(s.key_finding),
     s.health_conditions?.length ? `Conditions: ${s.health_conditions.join(", ")}` : null,
     s.abstract?.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 2000),
   ]
