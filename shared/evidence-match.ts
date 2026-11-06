@@ -23,6 +23,9 @@ export interface EvidenceStudyRow {
   deliveryRoute: string | null;
   concentrationPpm: number | null;
   concentrationKind: string | null;
+  /** Inhaled H2 flow in mL/min (stated, or % × total flow); migration 034. */
+  h2FlowMlMin?: number | null;
+  hyperbaric?: boolean;
   populationKind: string | null;
   effectDirection: string;
   fundingCategory: string | null;
@@ -36,6 +39,29 @@ export interface ProductForMatch {
   name: string;
   deliveryRoute: string;
   certifiedConcentrationPpm: number | null;
+  /** Inhalation devices: the highest H2 flow the lab measured (mL/min). */
+  certifiedH2FlowMlMin?: number | null;
+}
+
+/** Delivery routes a product can be dose-matched on, and what is compared. */
+export type DoseRoute = "drinking_water" | "bath" | "inhaled_gas";
+export const DOSE_ROUTES: readonly DoseRoute[] = ["drinking_water", "bath", "inhaled_gas"];
+
+export function isDoseRoute(route: string | null | undefined): route is DoseRoute {
+  return (DOSE_ROUTES as readonly string[]).includes(String(route));
+}
+
+/** The product's lab figure for its route: mg/L for water and baths, mL/min of H2 for gas. */
+export function productCeiling(p: ProductForMatch): number | null {
+  if (!isDoseRoute(p.deliveryRoute)) return null;
+  const v = p.deliveryRoute === "inhaled_gas" ? p.certifiedH2FlowMlMin : p.certifiedConcentrationPpm;
+  return v == null || !isFinite(Number(v)) ? null : Number(v);
+}
+
+/** A study's comparable dose on a route; null = not reported in a comparable form. */
+export function studyDose(r: EvidenceStudyRow, route: DoseRoute): number | null {
+  if (route === "inhaled_gas") return r.hyperbaric ? null : r.h2FlowMlMin ?? null;
+  return r.concentrationPpm;
 }
 
 export interface OutcomeMix {
@@ -55,14 +81,27 @@ export function outcomeMix(rows: readonly EvidenceStudyRow[]): OutcomeMix {
   return m;
 }
 
-/** Dose match, rule v1. */
+/** Dose match, rule v1 (drinking water); bath and inhaled gas added 2026-11-06. */
 export function doseMatchRuleText(p: ProductForMatch): string {
-  const ppm = p.certifiedConcentrationPpm;
-  return `Human studies in the Hydrogen Studies database in which people drank hydrogen water, and the paper reports a hydrogen concentration at or below ${ppm} mg/L (the concentration H2 Analytics measured for the ${p.name}). Animal and cell studies, inhaled gas, saline and bathing studies are excluded. Studies that do not report a concentration are counted separately, never matched. A study's result is the direction of its primary outcome as recorded from the abstract and reviewed by our reviewer.`;
+  const v = productCeiling(p);
+  const result = "A study's result is the direction of its primary outcome as recorded from the abstract and reviewed by our reviewer.";
+  if (p.deliveryRoute === "bath") {
+    return `Human studies in the Hydrogen Studies database in which people bathed in hydrogen-rich water, and the paper reports the hydrogen concentration of the bath water at or below ${v} mg/L (the concentration H2 Analytics measured in the tub water after running the ${p.name} for 60 minutes in warm water). Animal and cell studies, and drinking, inhaled-gas, saline and topical studies are excluded. Studies that do not report a bath-water concentration are counted separately, never matched. ${result}`;
+  }
+  if (p.deliveryRoute === "inhaled_gas") {
+    return `Human studies in the Hydrogen Studies database in which people breathed hydrogen gas at normal air pressure, and the paper reports a hydrogen flow at or below ${(v ?? 0).toLocaleString("en-US")} mL per minute (the highest hydrogen flow H2 Analytics measured from the ${p.name}). A flow counts when the authors state it, or when they state both the hydrogen percentage and the total gas flow (hydrogen flow = percentage × total flow). Studies that give only a percentage, such as 2% hydrogen in a mask, describe the air breathed rather than a device's output, so they are counted separately and never matched; so are diving and pressure-chamber studies. Animal and cell studies, and drinking, bathing and saline studies are excluded. ${result}`;
+  }
+  return `Human studies in the Hydrogen Studies database in which people drank hydrogen water, and the paper reports a hydrogen concentration at or below ${v} mg/L (the concentration H2 Analytics measured for the ${p.name}). Animal and cell studies, inhaled gas, saline and bathing studies are excluded. Studies that do not report a concentration are counted separately, never matched. ${result}`;
 }
 
 export interface DoseMatch {
+  route: DoseRoute;
   humanStudies: number;
+  /** Human studies on the product's route (drinking, bathing or inhalation). */
+  routeStudies: number;
+  /** Of those, how many report a comparable dose. */
+  withDose: number;
+  /** Drinking-route names, kept for API compatibility (= routeStudies / withDose). */
   drinkingStudies: number;
   withConcentration: number;
   notReported: number;
@@ -74,15 +113,19 @@ export interface DoseMatch {
 }
 
 export function doseMatch(humanRows: readonly EvidenceStudyRow[], p: ProductForMatch): DoseMatch {
-  const drinking = humanRows.filter((r) => r.deliveryRoute === "drinking_water");
-  const withConc = drinking.filter((r) => r.concentrationPpm != null);
-  const ceiling = p.certifiedConcentrationPpm ?? -1;
-  const matched = withConc.filter((r) => (r.concentrationPpm as number) <= ceiling + 1e-9);
+  const route: DoseRoute = isDoseRoute(p.deliveryRoute) ? p.deliveryRoute : "drinking_water";
+  const onRoute = humanRows.filter((r) => r.deliveryRoute === route);
+  const withDose = onRoute.filter((r) => studyDose(r, route) != null);
+  const ceiling = productCeiling(p) ?? -1;
+  const matched = withDose.filter((r) => (studyDose(r, route) as number) <= ceiling + 1e-9);
   return {
+    route,
     humanStudies: humanRows.length,
-    drinkingStudies: drinking.length,
-    withConcentration: withConc.length,
-    notReported: drinking.length - withConc.length,
+    routeStudies: onRoute.length,
+    withDose: withDose.length,
+    drinkingStudies: onRoute.length,
+    withConcentration: withDose.length,
+    notReported: onRoute.length - withDose.length,
     matched,
     mix: outcomeMix(matched),
     fundedByEcho: matched.filter((r) => r.fundedByEcho).length,
@@ -106,14 +149,23 @@ export function isClaimTopic(topic: string): boolean {
   return !!t && isBridgeAllowed(t.bridgeKey);
 }
 
-export function topicRuleText(topic: string): string {
+const ROUTE_PHRASE: Record<DoseRoute, string> = {
+  drinking_water: "of drinking hydrogen water",
+  bath: "of hydrogen baths",
+  inhaled_gas: "of breathing hydrogen gas",
+};
+
+export function topicRuleText(topic: string, route?: DoseRoute): string {
   const t = CLAIM_TOPICS[topic];
-  return `Human studies in the Hydrogen Studies database tagged ${t.tags.map((x) => `"${x}"`).join(", ")}, in healthy people or athletes (studies in patients with a diagnosed condition are excluded). A study's result is the direction of its primary outcome as recorded from the abstract and reviewed by our reviewer.`;
+  return `Human studies${route ? ` ${ROUTE_PHRASE[route]}` : ""} in the Hydrogen Studies database tagged ${t.tags.map((x) => `"${x}"`).join(", ")}, in healthy people or athletes (studies in patients with a diagnosed condition are excluded). A study's result is the direction of its primary outcome as recorded from the abstract and reviewed by our reviewer.`;
 }
 
-export function topicMatch(humanRows: readonly EvidenceStudyRow[], topic: string): { studies: EvidenceStudyRow[]; mix: OutcomeMix } {
+/** Topic studies; with a route, only studies of that delivery route (a product's claim widget). */
+export function topicMatch(humanRows: readonly EvidenceStudyRow[], topic: string, route?: DoseRoute): { studies: EvidenceStudyRow[]; mix: OutcomeMix } {
   const t = CLAIM_TOPICS[topic];
   const tags = new Set(t.tags.map((x) => x.toLowerCase()));
-  const studies = humanRows.filter((r) => r.populationKind !== "patients" && r.healthConditions.some((c) => tags.has(c.toLowerCase())));
+  const studies = humanRows.filter(
+    (r) => (!route || r.deliveryRoute === route) && r.populationKind !== "patients" && r.healthConditions.some((c) => tags.has(c.toLowerCase())),
+  );
   return { studies, mix: outcomeMix(studies) };
 }

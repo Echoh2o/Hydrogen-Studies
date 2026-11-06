@@ -7,7 +7,7 @@
 import crypto from "crypto";
 import { sql } from "drizzle-orm";
 import { db } from "../db";
-import { doseMatch, topicMatch, isClaimTopic, EVIDENCE_RULE_VERSION, type EvidenceStudyRow, type DoseMatch } from "../../shared/evidence-match";
+import { doseMatch, topicMatch, isClaimTopic, isDoseRoute, productCeiling, EVIDENCE_RULE_VERSION, type DoseRoute, type EvidenceStudyRow, type DoseMatch } from "../../shared/evidence-match";
 
 const TTL_MS = 30 * 60 * 1000;
 
@@ -18,6 +18,7 @@ export interface ProductRow {
   deliveryRoute: string;
   certifiedConcentrationPpm: number | null;
   certifiedAtMinutes: number | null;
+  certifiedH2FlowMlMin: number | null;
   measuredSummary: string | null;
   lab: string | null;
   reportId: string | null;
@@ -41,7 +42,7 @@ async function humanRows(): Promise<{ rows: EvidenceStudyRow[]; version: string 
   if (_rows && Date.now() - _rowsAt < TTL_MS) return { rows: _rows, version: _version };
   const r = await db.execute(sql`
     SELECT id, slug, COALESCE(plain_language_title, title) AS title, publish_year, pmid, doi, study_design, sample_size,
-           duration_days, delivery_route, h2_concentration_ppm, h2_concentration_kind, population_kind, effect_direction,
+           duration_days, delivery_route, h2_concentration_ppm, h2_concentration_kind, h2_flow_ml_min, hyperbaric, population_kind, effect_direction,
            funding_category, funded_by_echo, used_echo_device, health_conditions, evidence_fields_reviewed_at
       FROM studies
      WHERE is_excluded = false AND is_human_trial = true AND slug IS NOT NULL
@@ -60,6 +61,8 @@ async function humanRows(): Promise<{ rows: EvidenceStudyRow[]; version: string 
     deliveryRoute: x.delivery_route ?? null,
     concentrationPpm: x.h2_concentration_ppm != null ? Number(x.h2_concentration_ppm) : null,
     concentrationKind: x.h2_concentration_kind ?? null,
+    h2FlowMlMin: x.h2_flow_ml_min != null ? Number(x.h2_flow_ml_min) : null,
+    hyperbaric: x.hyperbaric === true,
     populationKind: x.population_kind ?? null,
     effectDirection: String(x.effect_direction ?? "not_reported"),
     fundingCategory: x.funding_category ?? null,
@@ -68,7 +71,7 @@ async function humanRows(): Promise<{ rows: EvidenceStudyRow[]; version: string 
     healthConditions: Array.isArray(x.health_conditions) ? x.health_conditions.map(String) : [],
   }));
   const latest = (r.rows as any[]).reduce((m, x) => Math.max(m, x.evidence_fields_reviewed_at ? new Date(x.evidence_fields_reviewed_at).getTime() : 0), 0);
-  _version = crypto.createHash("sha1").update(`${EVIDENCE_RULE_VERSION}:${rows.length}:${latest}:${rows.map((x) => `${x.id}${x.effectDirection}${x.concentrationPpm}`).join(",")}`).digest("hex").slice(0, 10);
+  _version = crypto.createHash("sha1").update(`${EVIDENCE_RULE_VERSION}:${rows.length}:${latest}:${rows.map((x) => `${x.id}${x.effectDirection}${x.concentrationPpm}${x.h2FlowMlMin ?? ""}`).join(",")}`).digest("hex").slice(0, 10);
   _rows = rows;
   _rowsAt = rows.length ? Date.now() : 0;
   return { rows, version: _version };
@@ -83,6 +86,7 @@ export async function getProduct(slug: string): Promise<ProductRow | null> {
     slug: x.slug, shopifyHandle: x.shopify_handle, name: x.name, deliveryRoute: x.delivery_route,
     certifiedConcentrationPpm: x.certified_concentration_ppm != null ? Number(x.certified_concentration_ppm) : null,
     certifiedAtMinutes: x.certified_at_minutes != null ? Number(x.certified_at_minutes) : null,
+    certifiedH2FlowMlMin: x.certified_h2_flow_ml_min != null ? Number(x.certified_h2_flow_ml_min) : null,
     measuredSummary: x.measured_summary, lab: x.lab, reportId: x.report_id,
     testDate: x.test_date ? new Date(x.test_date).toISOString().slice(0, 10) : null,
     reportUrl: x.report_url, status: x.status, badgeEnabled: x.badge_enabled === true, measurementNote: x.measurement_note ?? null,
@@ -96,25 +100,29 @@ export interface EvidenceProfile {
   generatedAt: string;
 }
 
-/** Profile for a product that has a lab-measured drinking-water concentration; null otherwise. */
+/**
+ * Profile for a product with a lab figure on a matchable route: drinking-water
+ * or bath-water concentration (mg/L), or inhaled hydrogen flow (mL/min).
+ */
 export async function getEvidenceProfile(slug: string): Promise<EvidenceProfile | null> {
   const product = await getProduct(slug);
-  if (!product || product.deliveryRoute !== "drinking_water" || product.certifiedConcentrationPpm == null || !product.reportId) return null;
+  if (!product || !isDoseRoute(product.deliveryRoute) || !product.reportId) return null;
+  if (productCeiling(product) == null) return null;
   // A figure measured in a sealed lab vial is not a drinkable concentration (prebiotic sticks):
   // no dose-match badge until an open-glass measurement exists.
   if (/sealed|closed lab vial|headspace vial/i.test(`${product.measurementNote ?? ""} ${product.measuredSummary ?? ""}`)) return null;
   const { rows, version } = await humanRows();
   return {
     product,
-    match: doseMatch(rows, { slug: product.slug, name: product.name, deliveryRoute: product.deliveryRoute, certifiedConcentrationPpm: product.certifiedConcentrationPpm }),
+    match: doseMatch(rows, product),
     version: `${version}-${product.reportId}`,
     generatedAt: new Date().toISOString(),
   };
 }
 
-export async function getTopicEvidence(topic: string): Promise<{ topic: string; count: number; mix: ReturnType<typeof topicMatch>["mix"]; studies: EvidenceStudyRow[]; version: string } | null> {
+export async function getTopicEvidence(topic: string, route?: DoseRoute): Promise<{ topic: string; count: number; mix: ReturnType<typeof topicMatch>["mix"]; studies: EvidenceStudyRow[]; version: string } | null> {
   if (!isClaimTopic(topic)) return null;
   const { rows, version } = await humanRows();
-  const t = topicMatch(rows, topic);
+  const t = topicMatch(rows, topic, route);
   return { topic, count: t.studies.length, mix: t.mix, studies: t.studies, version };
 }

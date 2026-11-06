@@ -1098,6 +1098,7 @@ pool.query("SELECT 1").then(async () => {
     const { addStudyApprovals } = await import("./migrations/add-study-approvals");
     const { addEvidenceFieldsAndProducts } = await import("./migrations/add-evidence-fields-and-products");
     const { addAskLog } = await import("./migrations/add-ask-log");
+    const { addGasDoseFields } = await import("./migrations/add-gas-dose-fields");
 
     await runMigrations([
       { name: "001_add_fulltext_search", up: addFullTextSearch },
@@ -1133,6 +1134,7 @@ pool.query("SELECT 1").then(async () => {
       { name: "031_add_study_approvals", up: addStudyApprovals },
       { name: "032_add_evidence_fields_and_products", up: addEvidenceFieldsAndProducts },
       { name: "033_add_ask_log", up: addAskLog },
+      { name: "034_add_gas_dose_fields", up: addGasDoseFields },
     ]);
 
     // Hub lists cached by a prewarm that ran mid-migration would hide hub rows

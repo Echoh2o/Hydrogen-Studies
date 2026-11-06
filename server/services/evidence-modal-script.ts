@@ -59,7 +59,7 @@ export function buildEvidenceModalScript(siteUrl: string): string {
     }
     if (data.product && data.product.reportId) {
       var p = el("p", null, { "class": "m" });
-      p.appendChild(document.createTextNode("Concentration measured by " + data.product.lab + ", report " + data.product.reportId + " (" + data.product.testDate + "). "));
+      p.appendChild(document.createTextNode((data.copy.measuredBy || "Concentration measured by") + " " + data.product.lab + ", report " + data.product.reportId + " (" + data.product.testDate + "). "));
       if (data.product.reportUrl) p.appendChild(link("Read the lab report", data.product.reportUrl));
       b.appendChild(p);
     }
