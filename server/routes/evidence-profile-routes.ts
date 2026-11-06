@@ -13,8 +13,8 @@
  */
 import { Router, type Response } from "express";
 import { getEvidenceProfile, getTopicEvidence } from "../services/evidence-profile";
-import { doseMatchRuleText, topicRuleText, CLAIM_TOPICS, EVIDENCE_RULE_VERSION } from "../../shared/evidence-match";
-import { BADGE, CLAIM_WIDGET, COPY_APPROVAL, PROFILE, ROUTE_COPY, mixPhrase, fmt, measureLabel } from "../../shared/evidence-badge-copy";
+import { doseMatchRuleText, topicRuleText, storeList, CLAIM_TOPICS, EVIDENCE_RULE_VERSION } from "../../shared/evidence-match";
+import { BADGE, CLAIM_WIDGET, COPY_APPROVAL, PROFILE, ROUTE_COPY, STORE_LIST, mixPhrase, fmt, measureLabel } from "../../shared/evidence-badge-copy";
 import { STUDY_REVIEWER } from "../../shared/reviewer";
 import { getStudyDoseModule } from "../services/study-dose";
 import { logger } from "../utils/logger";
@@ -50,6 +50,7 @@ router.get("/api/evidence/:product", async (req, res) => {
     const { product, match: d } = p;
     const label = measureLabel(product);
     const rc = ROUTE_COPY[d.route];
+    const store = storeList(d.matched);
     headers(res, 300);
     res.json({
       product: {
@@ -67,10 +68,13 @@ router.get("/api/evidence/:product", async (req, res) => {
       copy: {
         badgeLine1: BADGE.line1(d), badgeLine2: BADGE.line2(d, label), cta: BADGE.cta, source: BADGE.source,
         summary: PROFILE.summary(d, product.name, label), echoDevice: PROFILE.echoDevice(d), echoFunding: PROFILE.echoFunding(d),
-        measuredBy: rc.measuredBy, disclosure: PROFILE.disclosure, notAdvice: rc.notAdvice, approved: COPY_APPROVAL,
+        measuredBy: rc.measuredBy, moreNote: store.notListed ? STORE_LIST.more(store.notListed) : null, fullProfile: STORE_LIST.fullProfile, disclosure: PROFILE.disclosure, notAdvice: rc.notAdvice, approved: COPY_APPROVAL,
       },
-      matched: d.matched.map((s) => ({
-        id: s.id, title: s.title, year: s.publishYear, design: s.studyDesign, participants: s.sampleSize, durationDays: s.durationDays,
+      // Named studies are store-safe only (healthy populations, no condition in the paper title);
+      // the rest are counted in matchedNotListed and listed in full at evidencePage.
+      matchedNotListed: store.notListed,
+      matched: store.listed.map((s) => ({
+        id: s.id, title: s.paperTitle || s.title, year: s.publishYear, design: s.studyDesign, participants: s.sampleSize, durationDays: s.durationDays,
         ...(d.route === "inhaled_gas" ? { h2FlowMlMin: s.h2FlowMlMin ?? null } : { concentrationMgL: s.concentrationPpm }), result: s.effectDirection, url: `${SITE_URL}/study/${s.slug}`, source: studyLink(s),
       })),
       reviewer: { name: STUDY_REVIEWER.name, title: `${STUDY_REVIEWER.jobTitle}, ${STUDY_REVIEWER.employer}`, credentials: STUDY_REVIEWER.credentials, profile: `${SITE_URL}${STUDY_REVIEWER.profileHref}` },
@@ -101,9 +105,10 @@ router.get("/api/evidence/:product/topic/:topic", async (req, res) => {
       count: t.count,
       outcomes: t.mix,
       line: CLAIM_WIDGET.line(t.count, t.mix),
+      moreNote: storeList(t.studies).notListed ? STORE_LIST.more(storeList(t.studies).notListed) : null,
       cta: CLAIM_WIDGET.cta,
       rule: topicRuleText(t.topic, p.match.route),
-      studies: t.studies.map((s) => ({ title: s.title, year: s.publishYear, result: s.effectDirection, url: `${SITE_URL}/study/${s.slug}`, source: studyLink(s) })),
+      studies: storeList(t.studies).listed.map((s) => ({ title: s.paperTitle || s.title, year: s.publishYear, result: s.effectDirection, url: `${SITE_URL}/study/${s.slug}`, source: studyLink(s) })),
       version: t.version,
     });
   } catch (err) {

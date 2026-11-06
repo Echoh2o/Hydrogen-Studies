@@ -6,7 +6,7 @@
  * Inputs are study rows whose evidence fields are approved (auto_approved or
  * approved — never unapproved); the server query enforces that.
  */
-import { isBridgeAllowed } from "./bridge-policy";
+import { isBridgeAllowed, BRIDGE_PROHIBITED_TERMS } from "./bridge-policy";
 
 export const EVIDENCE_RULE_VERSION = "1";
 
@@ -14,6 +14,8 @@ export interface EvidenceStudyRow {
   id: number;
   slug: string;
   title: string;
+  /** The paper's own title (title is our plain-language title when we have one). */
+  paperTitle?: string;
   publishYear: number | null;
   pmid: string | null;
   doi: string | null;
@@ -168,4 +170,23 @@ export function topicMatch(humanRows: readonly EvidenceStudyRow[], topic: string
     (r) => (!route || r.deliveryRoute === route) && r.populationKind !== "patients" && r.healthConditions.some((c) => tags.has(c.toLowerCase())),
   );
   return { studies, mix: outcomeMix(studies) };
+}
+
+/**
+ * Studies that may be listed by name next to a product (echowater.com modal):
+ * healthy people, athletes or older adults, and a paper title that names no
+ * condition (Appendix E prohibited terms). Everything else is counted, not
+ * named, and listed in full on hydrogenstudies.com. Josh approved 2026-11-06.
+ */
+const STORE_POPULATIONS = new Set(["healthy", "athletes", "older_adults"]);
+
+export function isStoreListable(r: EvidenceStudyRow): boolean {
+  if (!STORE_POPULATIONS.has(String(r.populationKind))) return false;
+  const t = (r.paperTitle || r.title).toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  return !BRIDGE_PROHIBITED_TERMS.some((term) => t.includes(term));
+}
+
+export function storeList(rows: readonly EvidenceStudyRow[]): { listed: EvidenceStudyRow[]; notListed: number } {
+  const listed = rows.filter(isStoreListable);
+  return { listed, notListed: rows.length - listed.length };
 }

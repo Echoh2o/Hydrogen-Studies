@@ -83,6 +83,12 @@ export function buildEvidenceModalScript(siteUrl: string): string {
       tb.appendChild(tr);
     });
     t.appendChild(tb); b.appendChild(t);
+    var more = topicData ? topicData.moreNote : data.copy.moreNote;
+    if (more) {
+      var mp = el("p", more + " ", { "class": "m" });
+      mp.appendChild(link(data.copy.fullProfile || "See all studies", utm(data.evidencePage, slug)));
+      b.appendChild(mp);
+    }
     var foot = el("p", null, { "class": "m" });
     foot.appendChild(document.createTextNode("Reviewed by " + data.reviewer.name + ", " + data.reviewer.title + ". " + data.copy.notAdvice + " "));
     foot.appendChild(link("Methodology", utm(data.methodology, slug)));
