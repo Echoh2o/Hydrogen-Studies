@@ -16,8 +16,8 @@
 import type { DoseMatch, OutcomeMix } from "./evidence-match";
 
 export const COPY_APPROVAL: { approvedBy: string | null; approvedOn: string | null } = {
-  approvedBy: null,
-  approvedOn: null,
+  approvedBy: "Josh Carr",
+  approvedOn: "2026-11-05",
 };
 
 /** The lab's figure as measured (8.25 → "8.25 ppm"), never rounded to a marketing number. */
