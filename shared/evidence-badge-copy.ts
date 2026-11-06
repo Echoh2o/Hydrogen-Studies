@@ -13,7 +13,7 @@
  *  - never says or implies the studies tested Echo products unless a study
  *    actually used an Echo device (usedEchoDevice > 0).
  */
-import type { DoseMatch, OutcomeMix } from "./evidence-match";
+import type { DoseMatch, DoseRoute, OutcomeMix } from "./evidence-match";
 
 export const COPY_APPROVAL: { approvedBy: string | null; approvedOn: string | null } = {
   approvedBy: "Josh Carr",
@@ -29,6 +29,62 @@ export function fmt(n: number): string {
   return n.toLocaleString("en-US");
 }
 
+/**
+ * The product's lab figure as shown: "8.25 ppm" (drinking), "2.22 ppm"
+ * (bath water), "1,280 mL/min" (hydrogen gas flow).
+ */
+export function measureLabel(p: { deliveryRoute: string; certifiedConcentrationPpm: number | null; certifiedH2FlowMlMin?: number | null }): string {
+  if (p.deliveryRoute === "inhaled_gas") return `${fmt(Number(p.certifiedH2FlowMlMin ?? 0))} mL/min`;
+  return ppmLabel(Number(p.certifiedConcentrationPpm ?? 0));
+}
+
+/** Bath and inhalation copy added 2026-11-06 — needs Josh's read before those badges go on. */
+export const ROUTE_COPY: Record<DoseRoute, {
+  line2: (n: string, label: string) => string;
+  studiesOf: string;
+  doseReported: string;
+  levelNote: (productName: string) => string;
+  notReported: string;
+  studied: string;
+  measuredBy: string;
+  tableDose: string;
+  notAdvice: string;
+}> = {
+  drinking_water: {
+    line2: (n, label) => `${n} used drinking water at ≤${label}`,
+    studiesOf: "human studies of drinking hydrogen water",
+    doseReported: "report the concentration they used",
+    levelNote: (name) => `a level the ${name} reaches`,
+    notReported: "studies did not report a concentration and are not counted",
+    studied: "They studied hydrogen water at concentrations this device can reach.",
+    measuredBy: "Concentration measured by",
+    tableDose: "H2 (mg/L)",
+    notAdvice: "This is a summary of published research, not medical advice. Hydrogen water is not a treatment for any disease.",
+  },
+  bath: {
+    line2: (n, label) => `${n} used bath water at ≤${label}`,
+    studiesOf: "human studies of hydrogen baths",
+    doseReported: "report the hydrogen concentration of the bath water",
+    levelNote: (name) => `a level the ${name} reached in the lab test`,
+    notReported: "studies did not report a bath-water concentration and are not counted",
+    studied: "They studied hydrogen baths at concentrations this device reached in the lab test.",
+    measuredBy: "Bath-water concentration measured by",
+    tableDose: "H2 in bath (mg/L)",
+    notAdvice: "This is a summary of published research, not medical advice. Hydrogen bathing is not a treatment for any disease.",
+  },
+  inhaled_gas: {
+    line2: (n, label) => `${n} used a hydrogen flow of ≤${label}`,
+    studiesOf: "human studies of breathing hydrogen gas",
+    doseReported: "report a hydrogen flow, or the percentage and total flow it can be worked out from",
+    levelNote: (name) => `within the hydrogen flow measured from the ${name}`,
+    notReported: "studies did not report a flow that can be compared with a device and are not counted",
+    studied: "They studied hydrogen gas at flows within this device's measured output.",
+    measuredBy: "Hydrogen flow measured by",
+    tableDose: "H2 flow (mL/min)",
+    notAdvice: "This is a summary of published research, not medical advice. Hydrogen inhalation is not a treatment for any disease.",
+  },
+};
+
 export function mixPhrase(m: OutcomeMix): string {
   const parts = [
     m.improved ? `${fmt(m.improved)} improved their main outcome` : "",
@@ -42,7 +98,7 @@ export function mixPhrase(m: OutcomeMix): string {
 
 export const BADGE = {
   line1: (d: DoseMatch) => `${fmt(d.humanStudies)} human studies on molecular hydrogen`,
-  line2: (d: DoseMatch, ppmLabel: string) => `${fmt(d.matched.length)} used drinking water at ≤${ppmLabel}`,
+  line2: (d: DoseMatch, label: string) => ROUTE_COPY[d.route ?? "drinking_water"].line2(fmt(d.matched.length), label),
   cta: "See the research",
   source: "From Hydrogen Studies, the research library Echo Water funds",
 };
@@ -53,16 +109,20 @@ export const PROFILE = {
     "Echo Water makes this product and funds Hydrogen Studies. The studies below were run by other researchers; we list them by a fixed rule so the count can be checked.",
   echoDevice: (d: DoseMatch) =>
     d.usedEchoDevice === 0
-      ? "None of these studies tested an Echo product. They studied hydrogen water at concentrations this device can reach."
+      ? `None of these studies tested an Echo product. ${ROUTE_COPY[d.route ?? "drinking_water"].studied}`
       : `${fmt(d.usedEchoDevice)} of these studies used an Echo device.`,
   echoFunding: (d: DoseMatch) =>
     d.fundedByEcho === 0
       ? `None of them was funded by Echo. ${fmt(d.fundingStated)} of ${fmt(d.matched.length)} state their funding.`
       : `${fmt(d.fundedByEcho)} of them were funded by Echo.`,
-  summary: (d: DoseMatch, productName: string, ppmLabel: string) =>
-    `Of ${fmt(d.drinkingStudies)} human studies of drinking hydrogen water, ${fmt(d.withConcentration)} report the concentration they used, and ${fmt(d.matched.length)} of those used ${ppmLabel} or less, a level the ${productName} reaches. Of those ${fmt(d.matched.length)}, ${mixPhrase(d.mix)}. ${fmt(d.notReported)} studies did not report a concentration and are not counted.`,
-  certificate: (lab: string, reportId: string, testDate: string, summary: string) =>
-    `Concentration measured by ${lab}, report ${reportId} (${testDate}): ${summary}.`,
+  summary: (d: DoseMatch, productName: string, label: string) => {
+    const c = ROUTE_COPY[d.route ?? "drinking_water"];
+    const n = d.matched.length;
+    const mix = n ? ` Of those ${fmt(n)}, ${mixPhrase(d.mix)}.` : "";
+    return `Of ${fmt(d.routeStudies ?? d.drinkingStudies)} ${c.studiesOf}, ${fmt(d.withDose ?? d.withConcentration)} ${c.doseReported}, and ${fmt(n)} of those used ${label} or less, ${c.levelNote(productName)}.${mix} ${fmt(d.notReported)} ${c.notReported}.`;
+  },
+  certificate: (lab: string, reportId: string, testDate: string, summary: string, route: DoseRoute = "drinking_water") =>
+    `${ROUTE_COPY[route].measuredBy} ${lab}, report ${reportId} (${testDate}): ${summary}.`,
   ruleHeading: "How this count is made",
   tableHeading: "The matched studies",
   notAdvice: "This is a summary of published research, not medical advice. Hydrogen water is not a treatment for any disease.",

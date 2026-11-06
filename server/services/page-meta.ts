@@ -104,7 +104,7 @@ import {
 import { PRODUCTS_H1, PRODUCTS_LAST_REVIEWED, PRODUCTS_PATH } from "../../shared/products-guide";
 import { marked } from "marked";
 import { getEvidenceProfile } from "./evidence-profile";
-import { PROFILE as EVIDENCE_PROFILE_COPY, ppmLabel as evidencePpmLabel } from "../../shared/evidence-badge-copy";
+import { PROFILE as EVIDENCE_PROFILE_COPY, measureLabel as evidenceMeasureLabel } from "../../shared/evidence-badge-copy";
 import { reviewerPersonJsonLd } from "../../shared/reviewer";
 
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
@@ -199,7 +199,7 @@ export async function resolvePageMeta(pathname: string): Promise<PageMeta | null
       if (!ep || !ep.product.badgeEnabled) return null;
       const h1 = EVIDENCE_PROFILE_COPY.h1(ep.product.name);
       const canonical = `${SITE_URL}/evidence/${ep.product.slug}`;
-      const description = excerptAtWord(EVIDENCE_PROFILE_COPY.summary(ep.match, ep.product.name, evidencePpmLabel(ep.product.certifiedConcentrationPpm ?? 0)), 160);
+      const description = excerptAtWord(EVIDENCE_PROFILE_COPY.summary(ep.match, ep.product.name, evidenceMeasureLabel(ep.product)), 160);
       return {
         title: buildPageTitle(h1),
         description,

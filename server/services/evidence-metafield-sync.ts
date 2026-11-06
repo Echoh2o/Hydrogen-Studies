@@ -15,7 +15,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../db";
 import { getEvidenceProfile, getTopicEvidence } from "./evidence-profile";
 import { CLAIM_TOPICS } from "../../shared/evidence-match";
-import { BADGE, CLAIM_WIDGET, ppmLabel } from "../../shared/evidence-badge-copy";
+import { BADGE, CLAIM_WIDGET, measureLabel } from "../../shared/evidence-badge-copy";
 import { logger } from "../utils/logger";
 
 const API_VERSION = "2024-10";
@@ -74,12 +74,12 @@ export async function syncEvidenceMetafields(opts: { dryRun?: boolean } = {}): P
         continue;
       }
 
-      const ppm = ppmLabel(profile.product.certifiedConcentrationPpm as number);
+      const label = measureLabel(profile.product);
       const evidenceUrl = utm(`${SITE_URL}/evidence/${slug}`, slug);
       const profileValue = {
         slug,
         line1: BADGE.line1(profile.match),
-        line2: BADGE.line2(profile.match, ppm),
+        line2: BADGE.line2(profile.match, label),
         cta: BADGE.cta,
         source: BADGE.source,
         evidenceUrl,
@@ -89,7 +89,7 @@ export async function syncEvidenceMetafields(opts: { dryRun?: boolean } = {}): P
       };
       const topics: Record<string, { line: string; cta: string; url: string }> = {};
       for (const topic of Object.keys(CLAIM_TOPICS)) {
-        const t = await getTopicEvidence(topic);
+        const t = await getTopicEvidence(topic, profile.match.route);
         if (t && t.count >= MIN_TOPIC_STUDIES) topics[topic] = { line: CLAIM_WIDGET.line(t.count, t.mix), cta: CLAIM_WIDGET.cta, url: evidenceUrl };
       }
       if (!opts.dryRun) {
