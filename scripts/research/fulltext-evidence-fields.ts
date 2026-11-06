@@ -14,6 +14,7 @@ import fs from "fs";
 import path from "path";
 import pg from "pg";
 import { ENUMS } from "../../shared/evidence-fields";
+import { isConcentrationText } from "../../shared/study-dose-module";
 
 const args = process.argv.slice(2);
 const arg = (k: string) => {
@@ -151,8 +152,8 @@ async function main() {
       const en = (v: any, l: readonly string[]) => (typeof v === "string" && l.includes(v) ? v : null);
       const norm = (s: string) => s.normalize("NFKD").toLowerCase().replace(/[^a-z0-9]+/g, "");
       const snippet = typeof raw?.source_snippet === "string" && norm(text).includes(norm(raw.source_snippet)) ? raw.source_snippet.slice(0, 200) : null;
-      // A per-day amount ("5.5 mmol of H2 per day") is a dose, never a concentration.
-      const perDay = /per day|\/\s*day|daily|\/d\b/i.test(String(raw?.h2_concentration_raw ?? ""));
+      // An amount ("5.5 mmol of H2 per day", "12 mg per serving") is a dose, never a concentration.
+      const perDay = !isConcentrationText(raw?.h2_concentration_raw);
       const ppm = perDay ? null : num(raw?.h2_concentration_ppm, 0.005, 50);
       results.push({
         id: c.id,

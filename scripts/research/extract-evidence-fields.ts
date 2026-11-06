@@ -20,6 +20,7 @@ import path from "path";
 import pg from "pg";
 import { STUDY_REVIEWER } from "../../shared/reviewer";
 import { ENUMS, FIELDS, type Extracted } from "../../shared/evidence-fields";
+import { isConcentrationText } from "../../shared/study-dose-module";
 export { ENUMS, FIELDS };
 
 const args = process.argv.slice(2);
@@ -60,8 +61,8 @@ export function validate(raw: any, abstract: string): Extracted {
   const en = (v: any, list: readonly string[]) => (typeof v === "string" && list.includes(v) ? v : null);
   const str = (v: any, max: number) => (typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null);
   // ≥ 0.005 mg/L (5 ppb): anything smaller is a misread dose (e.g. µg/day), not a concentration.
-  // A per-day amount ("5.5 mmol of H2 per day") is a dose, never a concentration.
-  const perDay = /per day|\/\s*day|daily|\/d\b/i.test(String(raw?.h2_concentration_raw ?? ""));
+  // An amount ("5.5 mmol of H2 per day", "12 mg per serving") is a dose, never a concentration.
+  const perDay = !isConcentrationText(raw?.h2_concentration_raw);
   out.h2_concentration_ppm = perDay ? null : num(raw?.h2_concentration_ppm, 0.005, 50);
   out.h2_concentration_kind = en(raw?.h2_concentration_kind, ENUMS.h2_concentration_kind) ?? "not_reported";
   out.h2_concentration_raw = str(raw?.h2_concentration_raw, 60);
