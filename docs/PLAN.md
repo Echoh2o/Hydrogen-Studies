@@ -145,13 +145,13 @@ Runs only after Josh approves `reports/keep-list.csv`. Expected: ~8,777 → 200�
 Placement rule for every bridge: **Appendix E allowlist only.** Nothing on pages whose primary topic is a named disease.
 
 - [ ] **5.1 "Studied dose vs. your device" module** on allowed study/hub pages. Factual line generated from 4.3 fields: *"This trial used 1.6 ppm hydrogen-rich water, 1.5 L/day for 4 weeks. Matching that at home requires a device certified at ≥1.6 ppm."* Below it, a clearly labeled **"From our sponsor, Echo Water"** card (Flask, 8 ppm certified) with UTM and `rel="sponsored"`. Standard wellness disclaimer. Never inside summary text. Counsel reviews the template before launch.
-- [ ] **5.2 `/for-clinicians` hub (the wholesale bridge — wholesale is ~80% of revenue; practitioners are one segment of it).** Two-artifact rule so research isn't promotional labeling: (a) evidence briefs per *allowed* topic published by Hydrogen Studies, no product content, open HTML + gated PDF (email + profession); (b) a separate "Stock hydrogen devices in your practice" page on echowater.com that the hub links to. Leads → Klaviyo practitioner segment → existing StoryBrand wholesale flows + Attio. Counsel reviews the briefs.
-- [ ] **5.3 Research Digest newsletter.** Monthly, written by the reviewer, consumer + practitioner segments, sponsored footer, signup on every page. Also send to Echo's existing customer list (retention + credibility).
+- [x] **DROPPED 2026-11-05 (Josh: "drop 5.2 and 5.3")** ~~**5.2 `/for-clinicians` hub (the wholesale bridge — wholesale is ~80% of revenue; practitioners are one segment of it).** Two-artifact rule so research isn't promotional labeling: (a) evidence briefs per *allowed* topic published by Hydrogen Studies, no product content, open HTML + gated PDF (email + profession); (b) a separate "Stock hydrogen devices in your practice" page on echowater.com that the hub links to. Leads → Klaviyo practitioner segment → existing StoryBrand wholesale flows + Attio. Counsel reviews the briefs.~~
+- [x] **DROPPED 2026-11-05 (Josh: "drop 5.2 and 5.3")** ~~**5.3 Research Digest newsletter.** Monthly, written by the reviewer, consumer + practitioner segments, sponsored footer, signup on every page. Also send to Echo's existing customer list (retention + credibility).~~
 - [ ] **5.4 Consumer bridges:** allowed hubs get "Which delivery method did these studies use?" → matching Echo category; home gets a two-sentence "Why this database exists" (Josh's founding story) → echowater.com/about; `/products` becomes an honest "how hydrogen devices work and what to look for" guide (concentration certification, electrode materials, third-party testing, outgassing) with Echo listed and labeled among devices meeting the bar; then remove its `noindex`.
-- [ ] **5.5 Review-post disposition** per Section 12 (recommended: replace with the Phase 6 measurement dataset; move brand-vs-brand comparisons to echowater.com).
+- [ ] **5.5 Review-post disposition** per Section 12 (recommended: replace with the Phase 6 measurement dataset — 6.4 dropped 2026-11-05, so retire or keep noindexed instead; move brand-vs-brand comparisons to echowater.com).
 - [ ] **5.6 UTM discipline** (CLAUDE.md rule); confirm attribution lands in Shopify and GA4.
 
-**Done when:** every *allowed* study/hub page has one labeled bridge and every disease page has none (crawl check); `/for-clinicians` live with ≥5 briefs; Klaviyo receives practitioner leads tagged with source; GA4 shows a `hydrogenstudies` referral source with revenue attached.
+**Done when:** every *allowed* study/hub page has one labeled bridge and every disease page has none (crawl check); GA4 shows a `hydrogenstudies` referral source with revenue attached.
 
 ---
 
@@ -160,10 +160,10 @@ Placement rule for every bridge: **Appendix E allowlist only.** Nothing on pages
 - [ ] **6.1 Living systematic reviews.** Per-outcome pages with pooled effect estimates, forest plots, heterogeneity, and a GRADE certainty rating, updated as studies land, with a methods section, PRISMA-style flow, version history, and the reviewer as author. Start with the three outcomes that have the most RCTs (likely exercise recovery/performance, metabolic markers, oxidative-stress biomarkers); require ≥5 RCTs before pooling. This is the Examine "Human Effect Matrix" taken further, it's publishable (submit the first one to a journal — a citable paper about your own database), and it's the single most citable thing you can build.
 - [ ] **6.2 "State of Hydrogen Research" annual report + public dataset.** Studies by year, evidence level, condition, delivery method, country, funding, human vs. animal, typical doses. Charts + analysis + CSV under CC BY 4.0 with `Dataset` schema and a Zenodo DOI. Seed from `/research-analytics`. Original data is the highest-leverage content type for AI citations and what journalists write about.
 - [ ] **6.3 Interactive evidence-gap map.** Outcome × evidence-level matrix (counts, direction, certainty) — the visual version of 6.2; PR-able; embeddable.
-- [ ] **6.4 Device measurement dataset (replaces the reviews).** Open testing protocol (concentration at 0/5/15/30 min after generation, method, temperature), every major bottle/tablet tested, third-party lab confirmation on the top 10, published as a dated dataset with the conflict of interest stated on the page. Ties directly to the PPM-meter project. This is what Reddit and YouTube reviewers will cite instead of "is X worth it."
+- [x] **DROPPED 2026-11-05 (Josh: "we can't get that data")** ~~**6.4 Device measurement dataset (replaces the reviews).** Open testing protocol (concentration at 0/5/15/30 min after generation, method, temperature), every major bottle/tablet tested, third-party lab confirmation on the top 10, published as a dated dataset with the conflict of interest stated on the page. Ties directly to the PPM-meter project. This is what Reddit and YouTube reviewers will cite instead of "is X worth it."~~
 - [ ] **6.5 Direct-answer structure everywhere:** each H2 opens with a 2–3-sentence answer; question-style headings; visible dates.
 
-**Done when:** ≥3 living reviews published with methods + versioning; report + dataset + DOI live; gap map live; measurement dataset covers ≥15 devices with protocol published.
+**Done when:** ≥3 living reviews published with methods + versioning; report + dataset + DOI live; gap map live. (6.4 dropped.)
 
 ---
 
@@ -171,14 +171,14 @@ Placement rule for every bridge: **Appendix E allowlist only.** Nothing on pages
 
 - [ ] **7.1 Public API + MCP server.** Expose the database as a documented REST API (OpenAPI spec, API keys, rate limits) and an MCP server on Railway with tools like `search_studies(query, filters)`, `get_study(id)`, `get_evidence_summary(outcome)`, `list_conditions()`. Every response carries attribution ("Source: Hydrogen Studies, funded by Echo Technologies") and the study URL. List it in the Anthropic connector directory and OpenAI's app/connector directory; publish a ChatGPT app (Apps SDK) wrapping the same endpoints. When someone asks Claude or ChatGPT about hydrogen research, the assistant calls your database and credits it. Most 2026-native distribution move on the list, and squarely in Josh's wheelhouse.
 - [ ] **7.2 Internal-link the winners.** GSC striking-distance keywords (positions 5–30) from the sync → links from hubs and high-impression pages. Only meaningful after Phase 3 made links visible to bots.
-- [ ] **7.3 YouTube.** "Study breakdown" shorts (60–90s from the TL;DRs) on the Echo channel, embedded on study pages and linking back; plus a monthly "journal club" live with the reviewer. Brand mentions in YouTube titles/transcripts are the strongest single correlate with AI Overview visibility in Ahrefs' 75k-brand study.
-- [ ] **7.4 Reddit, transparently.** r/HydrogenWater, r/Biohackers, r/Supplements, r/longevity — answer with study links, disclosed affiliation, never product pushes; a reviewer AMA once the honesty pages exist.
-- [ ] **7.5 Entity consistency.** Identical org name/description/`sameAs` on both sites, LinkedIn, Crunchbase; create Wikidata items with neutral facts. Do not edit Wikipedia to self-cite; let the dataset and living reviews earn it.
-- [ ] **7.6 Digital PR** on 6.1/6.2/6.4 to health/longevity journalists and the podcast circuit already in the ambassador pool.
-- [ ] **7.7 Paid AI placements test.** ChatGPT ads (via Adspirer/Supermetrics CGPTA) on category queries ("hydrogen water research", "best hydrogen water bottle"), small test budget, UTM-tracked; AI referrals convert ~4–5× organic, so even modest volume can pay.
+- [x] **DROPPED 2026-11-05 (Josh: "we are not going to do them")** ~~**7.3 YouTube.** "Study breakdown" shorts (60–90s from the TL;DRs) on the Echo channel, embedded on study pages and linking back; plus a monthly "journal club" live with the reviewer. Brand mentions in YouTube titles/transcripts are the strongest single correlate with AI Overview visibility in Ahrefs' 75k-brand study.~~
+- [x] **DROPPED 2026-11-05 (Josh: "we are not going to do them")** ~~**7.4 Reddit, transparently.** r/HydrogenWater, r/Biohackers, r/Supplements, r/longevity — answer with study links, disclosed affiliation, never product pushes; a reviewer AMA once the honesty pages exist.~~
+- [x] **DROPPED 2026-11-05 (Josh: "we are not going to do them")** ~~**7.5 Entity consistency.** Identical org name/description/`sameAs` on both sites, LinkedIn, Crunchbase; create Wikidata items with neutral facts. Do not edit Wikipedia to self-cite; let the dataset and living reviews earn it.~~
+- [x] **DROPPED 2026-11-05 (Josh: "we are not going to do them")** ~~**7.6 Digital PR** on 6.1/6.2/6.4 to health/longevity journalists and the podcast circuit already in the ambassador pool.~~
+- [x] **DROPPED 2026-11-05 (Josh: "we are not going to do them")** ~~**7.7 Paid AI placements test.** ChatGPT ads (via Adspirer/Supermetrics CGPTA) on category queries ("hydrogen water research", "best hydrogen water bottle"), small test budget, UTM-tracked; AI referrals convert ~4–5× organic, so even modest volume can pay.~~
 - [ ] **7.8 Monthly AI-citation check** in the Ahrefs UI (API is plan-gated) for the Section 10 prompts → `reports/ai-citations-YYYY-MM.md`.
 
-**Done when:** API + MCP server public with docs and directory listings; ≥10 shorts + 1 journal club live; hydrogenstudies.com appears in ≥30% of tracked AI prompts; paid test has a measured CPA.
+**Done when:** API + MCP server public with docs and directory listings; hydrogenstudies.com appears in ≥30% of tracked AI prompts. (7.3–7.7 dropped.)
 
 ---
 
@@ -224,7 +224,7 @@ Placement rule for every bridge: **Appendix E allowlist only.** Nothing on pages
 | CWV (mobile) study + hub pages | PSI/CrUX | 0.14 | LCP <2.5s, INP <200ms |
 | Referral sessions → echowater.com | GA4 source/medium; Shopify UTM | ~0 (no links today) | 30-day baseline, then +50%/quarter |
 | Revenue attributed to hydrogenstudies | Shopify UTM / GA4 | 0 | track |
-| Practitioner leads (`/for-clinicians`) | Klaviyo by source; Attio | 0 | 20+/month |
+| ~~Practitioner leads (`/for-clinicians`)~~ (5.2 dropped 2026-11-05) | — | — | — |
 | Digest subscribers | Klaviyo | 0 | 1,000 |
 | API/MCP calls per month | server logs | 0 | track; ≥1 directory listing live |
 | AI referral sessions (both sites) | GA4 custom channel group (0.15) | pull today | +50% |
