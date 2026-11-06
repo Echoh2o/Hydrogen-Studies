@@ -129,6 +129,12 @@ export const PROFILE = {
   methodology: "How we review studies",
 };
 
+/** The store modal names only store-listable studies (shared/evidence-match.ts storeList). */
+export const STORE_LIST = {
+  more: (n: number) => `${fmt(n)} more ${n === 1 ? "study is" : "studies are"} listed in the full profile on Hydrogen Studies.`,
+  fullProfile: "See all studies",
+};
+
 export const CLAIM_WIDGET = {
   line: (n: number, m: OutcomeMix) => `Studied in ${fmt(n)} human ${n === 1 ? "study" : "studies"}: ${mixPhrase(m)}`,
   cta: "See the studies",

@@ -88,3 +88,18 @@ describe("validateGasDose", () => {
     expect([g.h2_flow_ml_min, g.h2_gas_percent, g.hyperbaric]).toEqual([null, 49, true]);
   });
 });
+
+describe("store list (echowater.com modal)", () => {
+  it("names only healthy-population studies whose paper title names no condition", async () => {
+    const { storeList } = await import("../../shared/evidence-match");
+    const r = storeList([
+      row({ id: 1, populationKind: "healthy", paperTitle: "Hydrogen-rich water and exercise recovery in trained men" }),
+      row({ id: 2, populationKind: "patients", paperTitle: "Hydrogen water in Parkinson's disease" }),
+      row({ id: 3, populationKind: "healthy", paperTitle: "Hydrogen inhalation for stroke prevention: a safety study in healthy adults", title: "Safe in healthy adults" }),
+      row({ id: 4, populationKind: null, paperTitle: "Hydrogen baths" }),
+      row({ id: 5, populationKind: "athletes", paperTitle: "Effects of hydrogen water on swimming performance" }),
+    ]);
+    expect(r.listed.map((s) => s.id)).toEqual([1, 5]);
+    expect(r.notListed).toBe(3);
+  });
+});

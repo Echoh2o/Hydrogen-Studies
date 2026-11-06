@@ -65,6 +65,8 @@ export const BRIDGE_PROHIBITED_TERMS = [
   "arthritis", "rheumat", "lupus", "sepsis", "covid",
   "respiratory", "lung", "pulmonary", "asthma", "copd",
   "allerg", "autism", "depress", "anxiety", "chronic-fatigue",
+  "stroke", "ischemi", "ischaemi", "infarct", "hepat", "epilep", "seizure", "psoria", "dermatitis",
+  "deaf", "hearing-loss", "ulcer", "wound", "obes", "gout", "uric",
   "disease", "disorder", "syndrome", "patient", "diagnos",
   // gray areas → prohibited until counsel clears them
   "inflammation", "inflammatory", "gut", "digestive", "cognitive", "brain",

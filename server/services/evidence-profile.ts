@@ -41,7 +41,7 @@ export function invalidateEvidenceProfile(): void {
 async function humanRows(): Promise<{ rows: EvidenceStudyRow[]; version: string }> {
   if (_rows && Date.now() - _rowsAt < TTL_MS) return { rows: _rows, version: _version };
   const r = await db.execute(sql`
-    SELECT id, slug, COALESCE(plain_language_title, title) AS title, publish_year, pmid, doi, study_design, sample_size,
+    SELECT id, slug, COALESCE(plain_language_title, title) AS title, title AS paper_title, publish_year, pmid, doi, study_design, sample_size,
            duration_days, delivery_route, h2_concentration_ppm, h2_concentration_kind, h2_flow_ml_min, hyperbaric, population_kind, effect_direction,
            funding_category, funded_by_echo, used_echo_device, health_conditions, evidence_fields_reviewed_at
       FROM studies
@@ -52,6 +52,7 @@ async function humanRows(): Promise<{ rows: EvidenceStudyRow[]; version: string 
     id: Number(x.id),
     slug: String(x.slug),
     title: String(x.title ?? ""),
+    paperTitle: String(x.paper_title ?? x.title ?? ""),
     publishYear: x.publish_year == null ? null : Number(x.publish_year),
     pmid: /^\d{4,9}$/.test(String(x.pmid ?? "").trim()) ? String(x.pmid).trim() : null,
     doi: x.doi ? String(x.doi) : null,
