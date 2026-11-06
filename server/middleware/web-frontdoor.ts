@@ -37,6 +37,8 @@ export const SSR_FAMILIES: Record<string, RegExp> = {
   data: /^\/(?:dataset|state-of-hydrogen-research)$/,
   // PLAN 5.4 device guide (shared/products-guide.ts).
   products: /^\/products$/,
+  // Product evidence profiles behind the echowater.com badge (TRUST-BADGE-PLAN 1.5).
+  evidence_profile: /^\/evidence\/[a-z0-9-]+$/,
 };
 
 // content-security-policy: Next sets a per-request nonce CSP (web/middleware.ts)

@@ -76,6 +76,7 @@ import imageGenerationRoutes from "./routes/image-generation-routes";
 import doiEnhancerRoutes from "./routes/doi-enhancer-routes";
 import learnStatsRoutes from "./routes/learn-stats-routes";
 import embedRoutes from "./routes/embed-routes";
+import evidenceProfileRoutes from "./routes/evidence-profile-routes";
 import { mcpAdminRouter, mcpPublicRouter, mcpRegistryAuthHandler } from "./mcp/http";
 
 // New Controllers
@@ -267,6 +268,9 @@ app.use(cookieParser());
 // Public embeds for echowater.com (live study count + footer badge). Before
 // the CORS allowlist: these answer any origin with `*` and no credentials.
 app.use("/embed", generalApiRateLimiter, embedRoutes);
+// Product evidence profiles for the echowater.com badge (TRUST-BADGE-PLAN 1.2–1.4): public JSON + SVG, any origin.
+app.use(["/api/evidence", "/badge"], generalApiRateLimiter);
+app.use(evidenceProfileRoutes);
 // MCP servers (server/mcp): admin tier (bearer key, server-side synthesis)
 // and the public read-only tier. Before the CORS allowlist / sessions / CSRF
 // for the same reason as /embed; admin first so /mcp/admin never hits public.

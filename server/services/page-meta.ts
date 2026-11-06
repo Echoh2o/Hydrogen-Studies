@@ -103,6 +103,9 @@ import {
 } from "../../shared/dataset";
 import { PRODUCTS_H1, PRODUCTS_LAST_REVIEWED, PRODUCTS_PATH } from "../../shared/products-guide";
 import { marked } from "marked";
+import { getEvidenceProfile } from "./evidence-profile";
+import { PROFILE as EVIDENCE_PROFILE_COPY, ppmLabel as evidencePpmLabel } from "../../shared/evidence-badge-copy";
+import { reviewerPersonJsonLd } from "../../shared/reviewer";
 
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
 const SITE_NAME = "Hydrogen Studies";
@@ -116,6 +119,7 @@ const CONTENT_PATH_PATTERNS = [
   /^\/blog\/[^/]+$/,
   /^\/researchers\/[^/]+$/,
   /^\/journals\/[^/]+$/,
+  /^\/evidence\/[a-z0-9-]+$/,
 ];
 
 export function isContentPath(pathname: string): boolean {
@@ -185,6 +189,41 @@ export async function resolvePageMeta(pathname: string): Promise<PageMeta | null
       }
       if (blog) return buildBlogMeta(blog);
       return null;
+    }
+
+    // Product evidence profiles (TRUST-BADGE-PLAN 1.5): noindex at launch
+    // (Josh 2026-11-05); 404 unless the product's badge is enabled.
+    const evidenceMatch = pathname.match(/^\/evidence\/([a-z0-9-]+)$/);
+    if (evidenceMatch) {
+      const ep = await getEvidenceProfile(evidenceMatch[1]);
+      if (!ep || !ep.product.badgeEnabled) return null;
+      const h1 = EVIDENCE_PROFILE_COPY.h1(ep.product.name);
+      const canonical = `${SITE_URL}/evidence/${ep.product.slug}`;
+      const description = excerptAtWord(EVIDENCE_PROFILE_COPY.summary(ep.match, ep.product.name, evidencePpmLabel(ep.product.certifiedConcentrationPpm ?? 0)), 160);
+      return {
+        title: buildPageTitle(h1),
+        description,
+        canonical,
+        robots: "noindex, follow",
+        ogType: "website",
+        ogImage: `${SITE_URL}/logo.png`,
+        jsonLd: [
+          {
+            "@context": "https://schema.org",
+            "@type": "MedicalWebPage",
+            "@id": canonical,
+            url: canonical,
+            name: h1,
+            description,
+            inLanguage: "en",
+            dateModified: ep.generatedAt,
+            author: { "@type": "Organization", name: SITE_NAME, url: `${SITE_URL}/methodology` },
+            reviewedBy: reviewerPersonJsonLd(SITE_URL),
+            publisher: { "@type": "Organization", "@id": `${SITE_URL}/#organization`, name: SITE_NAME },
+          },
+          breadcrumbListJsonLd(pageBreadcrumbs(h1), SITE_URL),
+        ],
+      };
     }
 
     // Researcher / journal profiles (PLAN 4.7): name, counts and the trail

@@ -182,6 +182,8 @@ export function invalidateEvidenceStats(): void {
   _stats = null;
   _nonPositive = null;
   _gap = null;
+  // The product evidence profiles read the same fields.
+  void import("./evidence-profile").then((m) => m.invalidateEvidenceProfile()).catch(() => {});
 }
 
 export function __resetEvidenceStatsForTests(): void {
