@@ -79,3 +79,19 @@ export const FORBIDDEN_COPY = [
   /\bverified\b/i, /\bindependent(ly)?\b/i, /clinician[- ]approved/i, /doctor[- ]recommended/i, /\bproven\b/i,
   /\bshows? that\b/i, /\btreats?\b/i, /\bcures?\b/i, /\bdiabet/i, /\bcancer/i, /\balzheimer/i, /\bparkinson/i,
 ];
+
+/** "Ask the research" (TRUST-BADGE-PLAN Phase 3) — fixed copy; answers themselves are generated and validated. */
+export const ASK = {
+  intro: "Ask what the published research on molecular hydrogen says. Answers come only from studies in the Hydrogen Studies database and cite them.",
+  medical:
+    "We can't give medical advice, diagnose a condition, or recommend a dose for a health problem. Please talk to your doctor. If it helps, you can browse what studies have measured at hydrogenstudies.com.",
+  diseaseOnStore:
+    "We don't discuss research on medical conditions here, next to products. You can read what studies on this topic found, without any product information, at Hydrogen Studies.",
+  support: "That sounds like a question for Echo's support team. These help articles may answer it:",
+  supportHandoff: "Still need help? Ask Echo support",
+  none: "We found no human studies in our database that answer this. Most hydrogen research so far is in cells and animals.",
+  weakPrefix: "The evidence here is limited:",
+  fallback: "We couldn't write a reliable answer, so here are the closest studies in the database:",
+  limit: "We've reached today's limit for questions. Please try again tomorrow, or browse the studies at hydrogenstudies.com.",
+  disabled: "Ask the research isn't available yet.",
+};
