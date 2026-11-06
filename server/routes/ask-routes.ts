@@ -24,7 +24,7 @@ export const askRateLimiter = rateLimit({
 });
 
 const router = Router();
-const ORIGINS = new Set(["https://echowater.com", "https://www.echowater.com", "https://hydrogenstudies.com", "https://www.hydrogenstudies.com"]);
+const ORIGINS = new Set(["https://echowater.com", "https://www.echowater.com", "https://business.echowater.com", "https://hydrogenstudies.com", "https://www.hydrogenstudies.com"]);
 const DAILY_LIMIT = Number(process.env.ASK_DAILY_LIMIT || 2000);
 const SALT = process.env.ASK_HASH_SALT || "hs-ask";
 
