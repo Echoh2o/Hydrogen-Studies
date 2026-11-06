@@ -73,8 +73,11 @@ const APPROVED = new Set(["auto_approved", "approved"]);
 const ALLOWED_POPULATIONS = new Set(["healthy", "athletes"]);
 /** Tags that are plainly about exercise, fatigue or oxidative stress in healthy people. */
 const ALLOWED_TAG_STEMS = ["exercise", "athletic", "muscle", "muscular", "fatigue", "oxidative-stress", "antioxidant", "sleep-quality", "skin-aging", "hydration", "general-wellness", "endurance", "physical-performance"];
-const CONCENTRATION_RAW = /(ppm|ppb|mg\s*\/\s*l\b|[µμu]g\s*\/\s*l\b|[mµμu]mol\s*\/\s*l\b)/i;
-const AMOUNT_RAW = /\b(mg|g|ml|µg|μg)\s+of\b/i;
+const CONCENTRATION_UNIT = /(p\.?\s?p\.?\s?[mb]\b|[mµμu]?g\s*\/\s*l\b|[mµμu]mol\s*\/\s*l\b)/i;
+const MOLAR = /\d\s*[mµμu]M\b/; // case-sensitive: "0.6 mM", not "mm"
+const PER_VOLUME = /(\/\s*l\b|\bper\s+(1(\.0)?\s*)?(l|liter|litre)\b)/i;
+const PER_UNIT_AMOUNT = /\bper\s+(serving|day|dose|bottle|can|capsule|tablet|stick|sachet)\b|\/\s*day\b|\bdaily\b/i;
+const MASS_OF = /\b(mg|g|ml|µg|μg|mmol)\s+of\b/i;
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 
@@ -102,7 +105,9 @@ export function studyBridgeTopic(f: StudyDoseFields): string | null {
 /** Does the authors' wording describe a concentration (not an amount per day)? */
 export function isConcentrationText(raw: string | null | undefined): boolean {
   const r = String(raw ?? "");
-  return CONCENTRATION_RAW.test(r) && !AMOUNT_RAW.test(r);
+  if (PER_UNIT_AMOUNT.test(r)) return false; // "12 mg per serving", "5.5 mmol per day"
+  if (MASS_OF.test(r)) return PER_VOLUME.test(r); // "8 mg of H2 per L" yes, "5 mg of H2" no
+  return CONCENTRATION_UNIT.test(r) || MOLAR.test(r);
 }
 
 function volume(ml: number): string {

@@ -70,6 +70,14 @@ describe("PLAN 5.1 — the dose line uses only the study's own fields", () => {
     expect(isConcentrationText("0.36 mg of hydrogen")).toBe(false);
     expect(isConcentrationText("5 mg of H2")).toBe(false);
     expect(isConcentrationText("DH decreased from 960 to 870 μg/L")).toBe(true);
+    expect(isConcentrationText("12 mg of dihydrogen per serving")).toBe(false);
+    expect(isConcentrationText("~6 ppm of H2 per day")).toBe(false);
+    expect(isConcentrationText("8 mg of H2 per L")).toBe(true);
+    expect(isConcentrationText("15 mg of H2 per 1.0 L")).toBe(true);
+    expect(isConcentrationText("0.55~0.65 mM")).toBe(true);
+    expect(isConcentrationText("mean of 50 p.p.b. H2")).toBe(true);
+    expect(isConcentrationText("1.6 mg/mL")).toBe(false);
+    expect(isConcentrationText("")).toBe(false);
     expect(studyDoseLine(athletes({ concentrationRaw: "0.36 mg of hydrogen" }))).toBeNull();
   });
   it("missing concentration → no module", () => {
