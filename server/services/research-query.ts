@@ -14,7 +14,7 @@
  */
 import { sql } from "drizzle-orm";
 import { db } from "../db";
-import { abstractExcerpt } from "@shared/seo-markup";
+import { abstractExcerpt, realContent } from "@shared/seo-markup";
 import { exploreHubPath } from "@shared/explore-hubs";
 import { getConditionHubIntro } from "@shared/condition-hub-intros";
 import {
@@ -158,7 +158,7 @@ export function toCorpusStudy(r: Record<string, any>): CorpusStudy {
     sampleSize: posNum(r.sample_size),
     durationDays: posNum(r.duration),
     conditions: Array.isArray(r.health_conditions) ? r.health_conditions.filter(Boolean) : [],
-    keyFinding: r.key_finding?.trim() || null,
+    keyFinding: realContent(r.key_finding) || null,
     doi: r.doi?.trim() || null,
     qualityScore: r.quality_score === null || r.quality_score === undefined ? null : Number(r.quality_score),
     firstAuthor: firstAuthorSurname(r.authors),
