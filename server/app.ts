@@ -77,6 +77,7 @@ import doiEnhancerRoutes from "./routes/doi-enhancer-routes";
 import learnStatsRoutes from "./routes/learn-stats-routes";
 import embedRoutes from "./routes/embed-routes";
 import evidenceProfileRoutes from "./routes/evidence-profile-routes";
+import askRoutes, { askRateLimiter } from "./routes/ask-routes";
 import { mcpAdminRouter, mcpPublicRouter, mcpRegistryAuthHandler } from "./mcp/http";
 
 // New Controllers
@@ -271,6 +272,9 @@ app.use("/embed", generalApiRateLimiter, embedRoutes);
 // Product evidence profiles for the echowater.com badge (TRUST-BADGE-PLAN 1.2–1.4): public JSON + SVG, any origin.
 app.use(["/api/evidence", "/badge"], generalApiRateLimiter);
 app.use(evidenceProfileRoutes);
+// "Ask the research" (TRUST-BADGE-PLAN 3): off unless ASK_ENABLED=true; CORS limited to echowater.com + hydrogenstudies.com.
+app.use("/api/ask", express.json({ limit: "4kb" }), askRateLimiter);
+app.use(askRoutes);
 // MCP servers (server/mcp): admin tier (bearer key, server-side synthesis)
 // and the public read-only tier. Before the CORS allowlist / sessions / CSRF
 // for the same reason as /embed; admin first so /mcp/admin never hits public.
@@ -1092,6 +1096,7 @@ pool.query("SELECT 1").then(async () => {
     const { addResearcherIdentities } = await import("./migrations/add-researcher-identities");
     const { addStudyApprovals } = await import("./migrations/add-study-approvals");
     const { addEvidenceFieldsAndProducts } = await import("./migrations/add-evidence-fields-and-products");
+    const { addAskLog } = await import("./migrations/add-ask-log");
 
     await runMigrations([
       { name: "001_add_fulltext_search", up: addFullTextSearch },
@@ -1126,6 +1131,7 @@ pool.query("SELECT 1").then(async () => {
       { name: "030_add_researcher_identities", up: addResearcherIdentities },
       { name: "031_add_study_approvals", up: addStudyApprovals },
       { name: "032_add_evidence_fields_and_products", up: addEvidenceFieldsAndProducts },
+      { name: "033_add_ask_log", up: addAskLog },
     ]);
 
     // Hub lists cached by a prewarm that ran mid-migration would hide hub rows
