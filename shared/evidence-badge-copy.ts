@@ -13,7 +13,7 @@
  *  - never says or implies the studies tested Echo products unless a study
  *    actually used an Echo device (usedEchoDevice > 0).
  */
-import type { DoseMatch, DoseRoute, OutcomeMix } from "./evidence-match";
+import { productCeiling, type DoseMatch, type DoseRoute, type OutcomeMix, type ProductForMatch } from "./evidence-match";
 
 export const COPY_APPROVAL: { approvedBy: string | null; approvedOn: string | null } = {
   approvedBy: "Josh Carr",
@@ -33,10 +33,17 @@ export function fmt(n: number): string {
  * The product's lab figure as shown: "8.25 ppm" (drinking), "2.22 ppm"
  * (bath water), "1,280 mL/min" (hydrogen gas flow).
  */
-export function measureLabel(p: { deliveryRoute: string; certifiedConcentrationPpm: number | null; certifiedH2FlowMlMin?: number | null }): string {
-  if (p.deliveryRoute === "inhaled_gas") return `${fmt(Number(p.certifiedH2FlowMlMin ?? 0))} mL/min`;
-  return ppmLabel(Number(p.certifiedConcentrationPpm ?? 0));
+export function measureLabel(p: ProductForMatch): string {
+  const v = productCeiling(p) ?? 0;
+  return p.deliveryRoute === "inhaled_gas" ? `${fmt(v)} mL/min` : ppmLabel(v);
 }
+
+/** Drink mix: its lab figure is from a sealed vial, so the open-glass limit is used (Josh, 2026-11-06). */
+export const OPEN_GLASS = {
+  levelNote: (name: string) =>
+    `the most hydrogen an open glass of water holds at normal air pressure (H2 Analytics measured more than that for the ${name}, but in a sealed lab vial)`,
+  studied: "They studied hydrogen water at or below the level an open glass of water can hold.",
+};
 
 /** Bath and inhalation copy added 2026-11-06 — needs Josh's read before those badges go on. */
 export const ROUTE_COPY: Record<DoseRoute, {
@@ -109,7 +116,7 @@ export const PROFILE = {
     "Echo Water makes this product and funds Hydrogen Studies. The studies below were run by other researchers; we list them by a fixed rule so the count can be checked.",
   echoDevice: (d: DoseMatch) =>
     d.usedEchoDevice === 0
-      ? `None of these studies tested an Echo product. ${ROUTE_COPY[d.route ?? "drinking_water"].studied}`
+      ? `None of these studies tested an Echo product. ${d.ceilingBasis === "open_glass_limit" ? OPEN_GLASS.studied : ROUTE_COPY[d.route ?? "drinking_water"].studied}`
       : `${fmt(d.usedEchoDevice)} of these studies used an Echo device.`,
   echoFunding: (d: DoseMatch) =>
     d.fundedByEcho === 0
@@ -119,7 +126,8 @@ export const PROFILE = {
     const c = ROUTE_COPY[d.route ?? "drinking_water"];
     const n = d.matched.length;
     const mix = n ? ` Of those ${fmt(n)}, ${mixPhrase(d.mix)}.` : "";
-    return `Of ${fmt(d.routeStudies ?? d.drinkingStudies)} ${c.studiesOf}, ${fmt(d.withDose ?? d.withConcentration)} ${c.doseReported}, and ${fmt(n)} of those used ${label} or less, ${c.levelNote(productName)}.${mix} ${fmt(d.notReported)} ${c.notReported}.`;
+    const level = d.ceilingBasis === "open_glass_limit" ? OPEN_GLASS.levelNote(productName) : c.levelNote(productName);
+    return `Of ${fmt(d.routeStudies ?? d.drinkingStudies)} ${c.studiesOf}, ${fmt(d.withDose ?? d.withConcentration)} ${c.doseReported}, and ${fmt(n)} of those used ${label} or less, ${level}.${mix} ${fmt(d.notReported)} ${c.notReported}.`;
   },
   certificate: (lab: string, reportId: string, testDate: string, summary: string, route: DoseRoute = "drinking_water") =>
     `${ROUTE_COPY[route].measuredBy} ${lab}, report ${reportId} (${testDate}): ${summary}.`,

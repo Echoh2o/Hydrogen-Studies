@@ -27,6 +27,7 @@ export interface ProductRow {
   status: string;
   badgeEnabled: boolean;
   measurementNote: string | null;
+  sealedVial: boolean;
 }
 
 let _rows: EvidenceStudyRow[] | null = null;
@@ -91,6 +92,7 @@ export async function getProduct(slug: string): Promise<ProductRow | null> {
     measuredSummary: x.measured_summary, lab: x.lab, reportId: x.report_id,
     testDate: x.test_date ? new Date(x.test_date).toISOString().slice(0, 10) : null,
     reportUrl: x.report_url, status: x.status, badgeEnabled: x.badge_enabled === true, measurementNote: x.measurement_note ?? null,
+    sealedVial: /sealed|closed lab vial|headspace vial/i.test(`${x.measurement_note ?? ""} ${x.measured_summary ?? ""}`),
   };
 }
 
@@ -109,9 +111,7 @@ export async function getEvidenceProfile(slug: string): Promise<EvidenceProfile 
   const product = await getProduct(slug);
   if (!product || !isDoseRoute(product.deliveryRoute) || !product.reportId) return null;
   if (productCeiling(product) == null) return null;
-  // A figure measured in a sealed lab vial is not a drinkable concentration (prebiotic sticks):
-  // no dose-match badge until an open-glass measurement exists.
-  if (/sealed|closed lab vial|headspace vial/i.test(`${product.measurementNote ?? ""} ${product.measuredSummary ?? ""}`)) return null;
+  // A sealed-vial figure (drink mix) is capped at the open-glass limit inside productCeiling.
   const { rows, version } = await humanRows();
   return {
     product,
