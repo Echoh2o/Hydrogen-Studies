@@ -6,6 +6,7 @@
  *   GET /embed/stats.json      { totalStudies, humanTrials, healthConditions }
  *   GET /embed/study-count.js  fills every [data-hs-count] element on the page
  *   GET /embed/badge.svg       live "Hydrogen Studies" badge (?theme=light|dark)
+ *   GET /embed/trust-modal.js  "About Hydrogen Studies" modal for the badge link
  *
  * Badge wording is deliberately NOT a seal/certification ("authorized",
  * "verified"): Hydrogen Studies is funded by Echo Technologies, so a
@@ -17,6 +18,7 @@ import { getPublicStudyStats, type PublicStudyStats } from "../services/public-s
 import { logger } from "../utils/logger";
 import { buildEvidenceModalScript } from "../services/evidence-modal-script";
 import { buildAskWidgetScript } from "../services/ask-widget-script";
+import { buildTrustModalScript } from "../services/trust-modal-script";
 
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
 
@@ -107,6 +109,14 @@ const EVIDENCE_MODAL_SCRIPT = buildEvidenceModalScript(SITE_URL);
 router.get("/evidence-modal.js", (_req, res) => {
   setEmbedHeaders(res, 3600);
   res.type("application/javascript").send(EVIDENCE_MODAL_SCRIPT);
+});
+
+const TRUST_MODAL_SCRIPT = buildTrustModalScript(SITE_URL);
+
+/** The "About Hydrogen Studies" modal behind the store's trust badge (data-hs-trust). */
+router.get("/trust-modal.js", (_req, res) => {
+  setEmbedHeaders(res, 3600);
+  res.type("application/javascript").send(TRUST_MODAL_SCRIPT);
 });
 
 const ASK_WIDGET_SCRIPT = buildAskWidgetScript(SITE_URL);
