@@ -168,6 +168,35 @@ export const DOSE_MODULE = {
     "Drinking water at the same concentration does not mean you will get the same result as the people in this study. This is not medical advice, and hydrogen water is not a treatment for any disease.",
 };
 
+/**
+ * The "About Hydrogen Studies" modal behind the store's footer/product trust
+ * badge (/embed/trust-modal.js). Approved by Josh Carr 2026-11-09. The
+ * relationship is the trust signal: say plainly that Echo funds the site.
+ */
+export const TRUST_MODAL = {
+  ariaLabel: "About Hydrogen Studies",
+  title: "Hydrogen Studies",
+  subtitle: "The research library Echo Water funds",
+  intro:
+    "Hydrogen Studies collects published research on molecular hydrogen in one searchable place, so you can read the science behind hydrogen water for yourself.",
+  statStudies: "studies indexed",
+  statHuman: "human studies",
+  howHeading: "How the library works",
+  points: [
+    "Study pages link to the original paper on PubMed or the publisher's site wherever one exists.",
+    "Studies that found no effect, or a worse result, are listed alongside the positive ones.",
+    "Study summaries are reviewed by our scientific reviewer before they are published.",
+    "The summaries explain the research. They are not medical advice, and hydrogen water is not a treatment for any disease.",
+  ],
+  reviewerLabel: "Scientific reviewer",
+  disclosure:
+    "Echo Water (Echo Technologies LLC) owns and funds Hydrogen Studies. The studies were run by other researchers; Hydrogen Studies summarizes them and links to the source.",
+  editorialPolicy: "Editorial policy",
+  methodology: "How we review studies",
+  visit: "Visit Hydrogen Studies",
+  close: "Close",
+};
+
 /** Words the copy may never contain (checked by tests against rendered output). */
 export const FORBIDDEN_COPY = [
   /\bverified\b/i, /\bindependent(ly)?\b/i, /clinician[- ]approved/i, /doctor[- ]recommended/i, /\bproven\b/i,
