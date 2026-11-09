@@ -170,7 +170,7 @@ export const DOSE_MODULE = {
 
 /**
  * The "About Hydrogen Studies" modal behind the store's footer/product trust
- * badge (/embed/trust-modal.js). Added 2026-11-09 — needs Josh's read. The
+ * badge (/embed/trust-modal.js). Approved by Josh Carr 2026-11-09. The
  * relationship is the trust signal: say plainly that Echo funds the site.
  */
 export const TRUST_MODAL = {
