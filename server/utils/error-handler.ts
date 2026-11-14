@@ -93,6 +93,10 @@ export function handleApiError(
       query: res.req?.query,
       ip: res.req?.ip,
       userAgent: res.req?.get("user-agent"),
+      // body-parser / http-errors details (e.g. type "encoding.unsupported",
+      // encoding "br") so rejected client payloads stay diagnosable.
+      errorKind: error?.type,
+      encoding: error?.encoding,
     };
 
     console.error(
@@ -266,6 +270,18 @@ export function globalErrorHandler(
     );
   } else if (err.code === "EBADCSRFTOKEN") {
     handleApiError(res, err, ErrorType.FORBIDDEN, 403, "Invalid CSRF token");
+  } else if (isClientBodyParserError(err)) {
+    // body-parser rejected the request body before any route ran (e.g.
+    // unsupported Content-Encoding "br" -> 415, malformed JSON -> 400,
+    // oversized body -> 413). That is bad client input, not a server bug:
+    // answer with the real 4xx instead of a 500.
+    handleApiError(
+      res,
+      err,
+      ErrorType.VALIDATION_ERROR,
+      err.status,
+      err.expose ? err.message : "Invalid request body",
+    );
   } else {
     handleApiError(res, err, ErrorType.UNKNOWN, 500);
   }
@@ -351,10 +367,32 @@ export function handleError(error: Error | unknown, context?: string): void {
   });
 }
 
+/**
+ * True for http-errors raised by body-parser for client-side problems
+ * (unsupported content encoding/charset, malformed JSON, body too large).
+ * These carry a string `type` (e.g. "encoding.unsupported") and a 4xx status.
+ */
+export function isClientBodyParserError(error: any): boolean {
+  const status = error?.status ?? error?.statusCode;
+  return (
+    typeof error?.type === "string" &&
+    typeof status === "number" &&
+    status >= 400 &&
+    status < 500
+  );
+}
+
 export function isOperationalError(error: any): boolean {
   // AppError instances with isOperational flag
   if (error instanceof AppError) {
     return error.isOperational;
+  }
+
+  // Client-side body-parser rejections are harmless bad input (often probes
+  // to non-existent endpoints); they are still logged via console.error with
+  // url/ip/userAgent/encoding, but are not server defects for Sentry.
+  if (isClientBodyParserError(error)) {
+    return true;
   }
 
   // Common operational errors
