@@ -27,6 +27,7 @@ import { getAuthorIndex, getJournal, getJournalIndex, getResearcher } from "../s
 import { openAlexAuthorUrl, orcidUrl } from "../../shared/author-identity";
 import { getConditionHubs, getTopConditions } from "./seo-body-renderer";
 import { breadcrumbs, esc, footer } from "./html-fragments";
+import { journalDisplayName } from "../../shared/seo-markup";
 
 function span(first: number | null, last: number | null): string {
   if (!first || !last) return "";
@@ -37,7 +38,7 @@ function studyList(studies: readonly ProfileStudy[]): string {
   let h = `<ul class="study-list">`;
   for (const s of studies) {
     h += `<li><a href="/study/${esc(s.slug)}">${esc(s.title)}</a>`;
-    const meta = [s.year ? String(s.year) : "", s.journal ?? "", s.evidence ?? ""].filter(Boolean).join(" · ");
+    const meta = [s.year ? String(s.year) : "", journalDisplayName(s.journal), s.evidence ?? ""].filter(Boolean).join(" · ");
     if (meta) h += ` <span class="meta">— ${esc(meta)}</span>`;
     h += `</li>`;
   }
@@ -72,7 +73,7 @@ export async function renderResearcherPage(slug: string): Promise<string | null>
   h += `<p class="lead">${p.studies.length} studies on molecular hydrogen in this database${years ? `, published ${years}` : ""}; ${p.humanCount} ${p.humanCount === 1 ? "was" : "were"} in people.</p>\n`;
   if (p.variants.length) h += `<p>Also published as: ${p.variants.map(esc).join(", ")}.</p>\n`;
   if (p.journals.length) {
-    h += `<p>Publishes in: ${p.journals.map((j) => `${esc(j.name)} (${j.count})`).join(", ")}.</p>\n`;
+    h += `<p>Publishes in: ${p.journals.map((j) => `${esc(journalDisplayName(j.name))} (${j.count})`).join(", ")}.</p>\n`;
   }
   if (p.conditions.length) {
     h += `<p>Most-studied topics: `;
@@ -113,7 +114,7 @@ export async function renderJournalIndex(): Promise<string> {
   h += `<ul>`;
   for (const j of list) {
     const years = span(j.firstYear, j.lastYear);
-    h += `<li><a href="/journals/${esc(j.slug)}">${esc(j.name)}</a> — ${j.studies.length} studies`;
+    h += `<li><a href="/journals/${esc(j.slug)}">${esc(journalDisplayName(j.name))}</a> — ${j.studies.length} studies`;
     if (j.humanCount) h += `, ${j.humanCount} in people`;
     if (years) h += ` (${years})`;
     h += `</li>`;
@@ -127,8 +128,8 @@ export async function renderJournalPage(slug: string): Promise<string | null> {
   const j = await getJournal(slug);
   if (!j) return null;
   const conditions = await getTopConditions();
-  let h = breadcrumbs(journalBreadcrumbs(j.name));
-  h += `<article>\n<h1>${esc(j.name)}</h1>\n`;
+  let h = breadcrumbs(journalBreadcrumbs(journalDisplayName(j.name)));
+  h += `<article>\n<h1>${esc(journalDisplayName(j.name))}</h1>\n`;
   const years = span(j.firstYear, j.lastYear);
   h += `<p class="lead">${j.studies.length} studies on molecular hydrogen in this database${years ? `, published ${years}` : ""}; ${j.humanCount} ${j.humanCount === 1 ? "was" : "were"} in people.</p>\n`;
   h += `<section><h2>Studies</h2>\n${studyList(j.studies)}</section>\n`;

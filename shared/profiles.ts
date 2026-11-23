@@ -12,6 +12,10 @@
  * so. ORCID/affiliation links are a follow-up (OpenAlex authorships).
  */
 import { hubSlug } from "./explore-hubs";
+import { journalDisplayName } from "./seo-markup";
+
+/** Journal name as shown (stored names can be entity-escaped: "&amp;amp;"). */
+const jn = (name: string) => journalDisplayName(name) || name;
 
 /** Authors with at least this many studies get a profile page. */
 export const RESEARCHER_MIN_STUDIES = 8;
@@ -151,18 +155,18 @@ export function researcherTitle(p: Pick<ResearcherProfile, "name" | "studies">):
 
 export function researcherDescription(p: ResearcherProfile): string {
   const span = p.firstYear && p.lastYear ? (p.firstYear === p.lastYear ? `in ${p.firstYear}` : `from ${p.firstYear} to ${p.lastYear}`) : "";
-  const journals = p.journals.slice(0, 2).map((j) => j.name).join(" and ");
+  const journals = p.journals.slice(0, 2).map((j) => jn(j.name)).join(" and ");
   const human = p.humanCount ? `${p.humanCount} in people` : "none in people";
   return `${p.studies.length} molecular hydrogen studies co-authored by ${p.name}${span ? ` ${span}` : ""} (${human})${journals ? `, including work in ${journals}` : ""}. Every study links to its paper.`;
 }
 
 export function journalTitle(p: Pick<JournalProfile, "name" | "studies">): string {
-  return `${p.name}: hydrogen research (${p.studies.length} studies)`;
+  return `${jn(p.name)}: hydrogen research (${p.studies.length} studies)`;
 }
 
 export function journalDescription(p: JournalProfile): string {
   const span = p.firstYear && p.lastYear ? ` published ${p.firstYear}–${p.lastYear}` : "";
-  return `${p.studies.length} studies on molecular hydrogen${span} in ${p.name}, ${p.humanCount} of them in people, with plain-language summaries and links to each paper.`;
+  return `${p.studies.length} studies on molecular hydrogen${span} in ${jn(p.name)}, ${p.humanCount} of them in people, with plain-language summaries and links to each paper.`;
 }
 
 /** Visible H1s of the two index pages (renderer + page meta). */

@@ -7,7 +7,7 @@
 
 import { db } from "../db";
 import { headingId } from "../../shared/heading-id";
-import { sql } from "drizzle-orm";
+import { sql, type SQL } from "drizzle-orm";
 import { sanitizeArticleHtml } from "../utils/sanitize-html";
 import { marked } from "marked";
 import {
@@ -31,6 +31,8 @@ import {
   studySourceLink,
   studyUpdatedAt,
   withoutPlaceholders,
+  displayStudyType,
+  journalDisplayName,
   type BlogByline,
 } from "../../shared/seo-markup";
 import { isBridgeAllowed } from "../../shared/bridge-policy";
@@ -213,7 +215,7 @@ export async function getConditionHubStudies(
     slug: s.slug,
     title: s.title,
     publish_year: s.publish_year ?? null,
-    journal: s.journal ?? null,
+    journal: journalDisplayName(s.journal) || null,
     study_type: s.study_type ?? null,
     excerpt: abstractExcerpt(s.abstract),
   }));
@@ -579,13 +581,13 @@ export async function renderStudy(slugOrId: string): Promise<string | null> {
     h += `<dl>`;
     if (evidence) h += `<dt>Evidence type</dt><dd>${esc(evidence.label)}</dd>`;
     if (s.authors) h += `<dt>Authors</dt><dd>${esc(s.authors)}</dd>`;
-    if (s.journal) h += `<dt>Journal</dt><dd>${esc(s.journal)}</dd>`;
+    if (journalDisplayName(s.journal)) h += `<dt>Journal</dt><dd>${esc(journalDisplayName(s.journal))}</dd>`;
     if (s.publish_year) h += `<dt>Year</dt><dd>${s.publish_year}</dd>`;
     if (doi) h += `<dt>DOI</dt><dd><a href="https://doi.org/${esc(doi)}" rel="noopener">${esc(doi)}</a></dd>`;
     // PMID is in the JSON-LD identifier list, so it must be visible too.
     const pmid = String(s.pmid ?? "").match(/^\d{4,}$/)?.[0];
     if (pmid) h += `<dt>PMID</dt><dd><a href="https://pubmed.ncbi.nlm.nih.gov/${pmid}/" rel="noopener">${pmid}</a></dd>`;
-    if (s.study_type) h += `<dt>Study Type</dt><dd>${esc(s.study_type)}</dd>`;
+    if (displayStudyType(s.study_type)) h += `<dt>Study Type</dt><dd>${esc(displayStudyType(s.study_type))}</dd>`;
     if (s.outcome) h += `<dt>Outcome</dt><dd>${esc(s.outcome)}</dd>`;
     if (s.peer_reviewed) h += `<dt>Peer Reviewed</dt><dd>Yes</dd>`;
     if (s.country) h += `<dt>Country</dt><dd>${esc(s.country)}</dd>`;
@@ -825,7 +827,7 @@ async function renderStudiesList(): Promise<string> {
   h += `<section><h2>Studies</h2><ul>`;
   for (const s of rows) {
     h += `<li><a href="/study/${esc(s.slug)}">${esc(s.title)}</a>`;
-    const meta = [s.publish_year, s.journal].filter(Boolean).join(", ");
+    const meta = [s.publish_year, journalDisplayName(s.journal)].filter(Boolean).join(", ");
     if (meta) h += ` — ${esc(String(meta))}`;
     h += `</li>`;
   }
@@ -937,7 +939,7 @@ async function renderConditionPage(slug: string): Promise<string | null> {
     let studyItems = "";
     for (const s of studies) {
       studyItems += `<li><a href="/study/${esc(s.slug)}">${esc(s.title)}</a>`;
-      const meta = [s.publish_year, s.journal, s.study_type].filter(Boolean).join(", ");
+      const meta = [s.publish_year, journalDisplayName(s.journal), displayStudyType(s.study_type)].filter(Boolean).join(", ");
       if (meta) studyItems += ` — ${esc(String(meta))}`;
       studyItems += `</li>`;
     }
@@ -1014,7 +1016,7 @@ async function renderBodySystemPage(slug: string): Promise<string | null> {
     h += `<section><h2>Research Studies</h2><ul>`;
     for (const s of studies) {
       h += `<li><a href="/study/${esc(s.slug)}">${esc(s.title)}</a>`;
-      const meta = [s.publish_year, s.journal].filter(Boolean).join(", ");
+      const meta = [s.publish_year, journalDisplayName(s.journal)].filter(Boolean).join(", ");
       if (meta) h += ` — ${esc(String(meta))}`;
       h += `</li>`;
     }
@@ -1125,7 +1127,7 @@ export async function getExploreDetailStudies(slug: string): Promise<ExploreDeta
     slug: row.slug,
     title: row.title,
     publish_year: row.publish_year ?? null,
-    journal: row.journal ?? null,
+    journal: journalDisplayName(row.journal) || null,
   }));
 }
 
@@ -1161,6 +1163,40 @@ async function renderExploreDetail(type: string, slug: string): Promise<string |
   } catch { return null; }
 }
 
+const HYDROGEN_FOR_LIST_MAX = 30;
+
+/**
+ * WHERE clause for a /hydrogen-for topic: the slug phrase OR any of the
+ * topic's searchTerms (shared/hydrogen-for-topics.ts), each ILIKE'd against
+ * the title and the health_conditions text. Every term is a bound parameter.
+ */
+export function hydrogenForMatch(searchTerms: readonly string[], slugPhrase: string): SQL {
+  const seen = new Set<string>();
+  const terms: string[] = [];
+  for (const t of [slugPhrase, ...searchTerms]) {
+    const v = t.trim();
+    if (v && !seen.has(v.toLowerCase())) {
+      seen.add(v.toLowerCase());
+      terms.push(v);
+    }
+  }
+  return sql.join(
+    terms.map((t) => {
+      const pattern = `%${t.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+      return sql`(title ILIKE ${pattern} OR array_to_string(health_conditions, ' ') ILIKE ${pattern})`;
+    }),
+    sql` OR `,
+  );
+}
+
+/** Neutral intro line; no count sentence when nothing matched. */
+export function hydrogenForIntro(topicName: string, total: number, listed: number): string {
+  const lead = `What published studies report on molecular hydrogen and ${topicName.toLowerCase()}.`;
+  if (total <= 0) return lead;
+  if (total > listed) return `${lead} ${total} studies match this topic; the ${listed} most recent are listed below.`;
+  return `${lead} ${total} ${total === 1 ? "study is" : "studies are"} listed below.`;
+}
+
 export async function renderHydrogenForPage(slug: string): Promise<string | null> {
   // Same topic record as the SPA (HydrogenForConditionPage.tsx). Unknown
   // slugs have no page in the SPA either → null → hard 404.
@@ -1171,23 +1207,21 @@ export async function renderHydrogenForPage(slug: string): Promise<string | null
   try {
     const [studiesR, blogsR, conditions] = await Promise.all([
       db.execute(sql`
-        SELECT slug, COALESCE(plain_language_title, title) as title, publish_year, outcome
-        FROM studies WHERE slug IS NOT NULL AND is_excluded = false AND (
-          LOWER(array_to_string(health_conditions, ' ')) LIKE LOWER(${"%" + searchTerm + "%"})
-          OR LOWER(title) LIKE LOWER(${"%" + searchTerm + "%"})
-        )
-        ORDER BY publish_year DESC NULLS LAST LIMIT 30
+        SELECT slug, COALESCE(plain_language_title, title) as title, publish_year, outcome,
+               COUNT(*) OVER() AS total_count
+        FROM studies WHERE slug IS NOT NULL AND is_excluded = false AND (${hydrogenForMatch(topic.searchTerms, searchTerm)})
+        ORDER BY publish_year DESC NULLS LAST, id DESC LIMIT ${HYDROGEN_FOR_LIST_MAX}
       `),
       getRelatedBlogs(searchTerm, 8),
       getTopConditions(),
     ]);
 
     const studies = (studiesR.rows || []) as any[];
+    const total = Math.max(Number(studies[0]?.total_count) || 0, studies.length);
 
     let h = breadcrumbs(hydrogenForBreadcrumbs(displayName));
     h += `<h1>Hydrogen for ${esc(displayName)}</h1>\n`;
-    h += `<p>Research on how molecular hydrogen therapy may help with ${esc(displayName.toLowerCase())}. `;
-    h += `Explore ${studies.length} peer-reviewed studies below.</p>\n`;
+    h += `<p>${esc(hydrogenForIntro(displayName, total, studies.length))}</p>\n`;
 
     if (studies.length > 0) {
       h += `<section><h2>Research Studies</h2><ul>`;

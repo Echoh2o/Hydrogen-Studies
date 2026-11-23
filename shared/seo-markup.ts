@@ -40,7 +40,47 @@ export function isPlaceholder(value: unknown): boolean {
   const v = value.trim();
   if (!v) return true;
   if (/^__[a-z0-9_]+__$/i.test(v)) return true;
-  return PLACEHOLDER_VALUES.has(v.toLowerCase());
+  if (PLACEHOLDER_VALUES.has(v.toLowerCase())) return true;
+  return isModelRefusal(v);
+}
+
+// Model refusals / meta-commentary stored as study content (audit
+// 2026-11-22, reports/audit-2026-11-22/03-study-refusal-and-meta-commentary.csv:
+// study 4357 TL;DR "I'm sorry, but I can't write a meaningful TL;DR…", 4352
+// "I'd love to help, but…", 3719 "I can't write a good summary…"). Anchored
+// on the OPENING of the field, so real summaries that say "specific results
+// are not available" mid-text are untouched.
+const REFUSAL_OPENING_RE = new RegExp(
+  "^(?:" +
+    [
+      String.raw`i(?:['’]m| am) sorry\b`,
+      String.raw`i apologi[sz]e\b`,
+      String.raw`i can(?:['’]?t|not)\b`,
+      String.raw`i(?:['’]m| am) (?:not able|unable) to\b`,
+      String.raw`i(?:['’]d| would) (?:love|be happy|be glad) to help\b`,
+      String.raw`i don['’]?t have (?:enough|access|the (?:abstract|full|study|paper))\b`,
+      String.raw`as an ai\b`,
+      String.raw`unfortunately,? (?:the|this) (?:abstract|study|paper|article) (?:does not|doesn['’]?t|lacks|is not available|isn['’]?t available|was not provided)\b`,
+      String.raw`no abstract (?:is )?available\b`,
+    ].join("|") +
+    ")",
+  "i",
+);
+
+/** True for a model refusal / "I can't summarize this" meta-commentary. */
+export function isModelRefusal(value: string | null | undefined): boolean {
+  if (!value) return false;
+  const v = stripTldrLabel(String(value)).replace(/^["'“‘*_\s]+/, "");
+  return REFUSAL_OPENING_RE.test(v);
+}
+
+// A leading markdown TL;DR label or heading: "**TL;DR:**", "# TL;DR", "TL;DR -".
+const TLDR_LABEL_RE =
+  /^\s*(?:#{1,6}[ \t]*)?(?:\*{1,2}|_{1,2})?[ \t]*tl;?[ \t]*dr\b[ \t]*(?:\*{1,2}|_{1,2})?[ \t]*[:.\-–—]?[ \t]*(?:\*{1,2}|_{1,2})?\s*/i;
+
+/** Strip a leading markdown TL;DR label/heading ("**TL;DR:** text" → "text"). */
+export function stripTldrLabel(value: string): string {
+  return value.replace(TLDR_LABEL_RE, "").trim();
 }
 
 /** The string if it is real content, otherwise "". */
@@ -50,14 +90,59 @@ export function realContent(value: string | null | undefined): string {
 
 /**
  * Shallow copy of `obj` with every placeholder STRING field nulled, so a page
- * can keep its `{field && …}` guards and never render a sentinel.
+ * can keep its `{field && …}` guards and never render a sentinel. Model
+ * refusals count as placeholders; a leading markdown TL;DR label is stripped.
  */
 export function withoutPlaceholders<T extends Record<string, any>>(obj: T): T {
   const out: Record<string, any> = { ...obj };
   for (const [key, value] of Object.entries(out)) {
-    if (typeof value === "string" && isPlaceholder(value)) out[key] = null;
+    if (typeof value !== "string") continue;
+    if (isPlaceholder(value)) {
+      out[key] = null;
+      continue;
+    }
+    if (TLDR_LABEL_RE.test(value)) {
+      const stripped = stripTldrLabel(value);
+      out[key] = isPlaceholder(stripped) ? null : stripped;
+    }
   }
   return out as T;
+}
+
+/**
+ * Decode &amp; &lt; &gt; &quot; &#39; repeatedly until stable — journal names
+ * are stored escaped several times over ("Diabetology &amp;amp; Metabolic
+ * Syndrome"). Returns TEXT: callers still escape it for output.
+ */
+export function decodeBasicEntities(value: string): string {
+  let prev = value;
+  for (let i = 0; i < 10; i++) {
+    const next = prev
+      .replace(/&amp;/gi, "&")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
+      .replace(/&quot;/gi, '"')
+      .replace(/&#0*39;|&#x0*27;|&apos;/gi, "'");
+    if (next === prev) return next;
+    prev = next;
+  }
+  return prev;
+}
+
+/**
+ * The legacy study_type value to show as "Study Type", or "". "clinical" is
+ * an unclassified import bucket (mostly reviews; shared/research-vocab.ts
+ * classifySubject), so it never renders. Other values pass through unchanged.
+ */
+export function displayStudyType(value: string | null | undefined): string {
+  const v = realContent(value);
+  return v.toLowerCase() === "clinical" ? "" : v;
+}
+
+/** Display form of a stored journal name: entities decoded, "" when empty. */
+export function journalDisplayName(value: string | null | undefined): string {
+  const v = realContent(value);
+  return v ? decodeBasicEntities(v).replace(/\s+/g, " ").trim() : "";
 }
 
 // ── Text utilities ──────────────────────────────────────────────
@@ -355,7 +440,7 @@ export function studyJsonLd(
     .map((a) => a.trim())
     .filter((a) => a && !isPlaceholder(a));
   if (authors.length) paper.author = authors.map((name) => ({ "@type": "Person", name }));
-  if (realContent(study.journal)) paper.isPartOf = { "@type": "Periodical", name: realContent(study.journal) };
+  if (journalDisplayName(study.journal)) paper.isPartOf = { "@type": "Periodical", name: journalDisplayName(study.journal) };
   const published = normalizePubDate(study.journalPublishDate || study.publishDate);
   if (published) paper.datePublished = published;
   const doi = normalizeDoi(study.doi);
