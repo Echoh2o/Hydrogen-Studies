@@ -12,6 +12,7 @@ import type { ResearchDigest } from "@shared/schema";
 import { eq, sql, gte, lte, desc, and } from "drizzle-orm";
 import { ai } from "./ai-provider";
 import { logger } from "../utils/logger";
+import { generationEnabled, GENERATION_DISABLED_MESSAGE } from "../utils/generation-flags";
 
 /**
  * Get the Monday and Sunday of the previous completed week.
@@ -62,7 +63,14 @@ async function digestExistsForWeek(weekStart: string): Promise<ResearchDigest | 
  * Generate a weekly research digest.
  * Idempotent — returns existing digest if one already exists for this week.
  */
-export async function generateWeeklyDigest(): Promise<ResearchDigest> {
+export async function generateWeeklyDigest(): Promise<ResearchDigest | null> {
+  // Kill-switch (docs/PLAN.md §2): no model call and no new digest row while
+  // GENERATION_ENABLED=false. Callers treat null as "skipped".
+  if (!generationEnabled()) {
+    logger.info(`${GENERATION_DISABLED_MESSAGE} — weekly digest skipped`, "DigestGenerator");
+    return null;
+  }
+
   const { weekStart, weekEnd } = getPreviousWeekBounds();
 
   // Check idempotency
@@ -88,7 +96,8 @@ export async function generateWeeklyDigest(): Promise<ResearchDigest> {
 
   if (weekStudies.length === 0) {
     logger.info("No studies this week, skipping digest", "DigestGenerator");
-    // Create a minimal digest so we don't retry
+    // Record a minimal UNPUBLISHED marker row so we don't retry this week.
+    // The canned "no new studies" page is never published — it's a thin page.
     const [digest] = await db
       .insert(researchDigests)
       .values({
@@ -102,7 +111,7 @@ export async function generateWeeklyDigest(): Promise<ResearchDigest> {
         notableFindings: "[]",
         studyCount: 0,
         studyIds: "[]",
-        isPublished: true,
+        isPublished: false,
       })
       .returning();
     return digest;
@@ -174,8 +183,8 @@ ${JSON.stringify(studySummaries, null, 2)}`,
       studyIds: JSON.stringify(weekStudies.map((s) => s.id)),
       metaTitle: digestContent.metaTitle,
       metaDescription: digestContent.metaDescription,
-      isPublished: true,
-      publishedAt: new Date(),
+      // AI-written: saved as a draft for human review (docs/PLAN.md §2).
+      isPublished: false,
     })
     .returning();
 

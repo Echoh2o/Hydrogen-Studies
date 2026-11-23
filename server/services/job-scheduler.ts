@@ -9,6 +9,7 @@ import { studies, blogArticles } from "@shared/schema";
 import { and, eq, sql, asc, isNotNull } from "drizzle-orm";
 import { logger } from "../utils/logger";
 import { withAdvisoryLock } from "../utils/advisory-lock";
+import { generationEnabled } from "../utils/generation-flags";
 
 /**
  * Job Scheduler Service
@@ -1645,11 +1646,18 @@ export class JobScheduler {
       const today = new Date().getDay();
       if (this.lastDigestCheck && today !== 1) return; // 1 = Monday
 
+      // Kill-switch (docs/PLAN.md §2): skip before importing/calling the model.
+      if (!generationEnabled()) {
+        logger.info("Weekly digest skipped: GENERATION_ENABLED=false", "JobScheduler");
+        this.lastDigestCheck = new Date();
+        return;
+      }
+
       logger.info("Running weekly digest generation", "JobScheduler");
       const { generateWeeklyDigest } = await import("./research-digest-generator");
-      await generateWeeklyDigest();
+      const digest = await generateWeeklyDigest();
       this.lastDigestCheck = new Date();
-      logger.info("Digest generation complete", "JobScheduler");
+      logger.info(digest ? "Digest generation complete (draft)" : "Digest generation skipped", "JobScheduler");
     } catch (error) {
       logger.error("Digest generation error", error, "JobScheduler");
     }
