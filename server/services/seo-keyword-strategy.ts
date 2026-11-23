@@ -473,7 +473,7 @@ async function ensureClusterTableExists(): Promise<boolean> {
  */
 export async function seedKeywordClusters(): Promise<{ created: number; existing: number }> {
   if (!(await ensureClusterTableExists())) {
-    throw new Error("seo_content_clusters table does not exist yet. Run db:push first.");
+    throw new Error("seo_content_clusters table does not exist yet. Deploy so the server can run the boot migrations (server/migrations/, registered in server/app.ts).");
   }
 
   let created = 0;
@@ -559,7 +559,7 @@ export async function generateKeywordPillarPage(clusterId: number): Promise<{
   message: string;
 }> {
   if (!(await ensureClusterTableExists())) {
-    return { success: false, message: "seo_content_clusters table not yet created. Deploy with db:push." };
+    return { success: false, message: "seo_content_clusters table not yet created. Deploy so the server can run the boot migrations (server/migrations/, registered in server/app.ts)." };
   }
   if (ai.getProviderStatus().primary === "none") {
     return { success: false, message: "No AI provider configured" };
@@ -690,6 +690,15 @@ Return JSON with: title, content (markdown), summary, metaTitle (60 chars), meta
         .set({ pillarArticleId: existing.id, updatedAt: new Date() })
         .where(eq(seoContentClusters.id, clusterId));
       return { success: true, articleId: existing.id, title: data.title, message: "Pillar page already exists" };
+    }
+
+    // Never insert a pillar with an empty body (same guard as the cluster
+    // path below): a parsed-but-empty response would otherwise become a
+    // live, blank page.
+    if (typeof data.content !== "string" || data.content.trim().length === 0) {
+      throw new Error(
+        `Generated pillar page for "${cluster.pillarKeyword}" has no content — not saving`,
+      );
     }
 
     // Find a study ID for the FK
