@@ -129,7 +129,12 @@ export const getQueryFn: <T>(options: {
     return await res.json();
   };
 
-export const queryClient = new QueryClient({
+/** A QueryClient with the app defaults. The Next server needs one per render. */
+export function makeQueryClient(): QueryClient {
+  return new QueryClient(queryClientConfig);
+}
+
+const queryClientConfig: ConstructorParameters<typeof QueryClient>[0] = {
   defaultOptions: {
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
@@ -149,4 +154,6 @@ export const queryClient = new QueryClient({
       retry: 1,
     },
   },
-});
+};
+
+export const queryClient = makeQueryClient();
