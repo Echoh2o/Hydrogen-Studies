@@ -305,6 +305,10 @@ router.get("/sitemap-pages.xml", (req: Request, res: Response) => {
     { url: "/hydrogen-for/gut-health", priority: "0.8", freq: "weekly" },
     { url: "/hydrogen-for/kidney-health", priority: "0.8", freq: "weekly" },
     { url: "/hydrogen-for/lung-health", priority: "0.8", freq: "weekly" },
+    // Trust pages (PLAN.md 4.2) — indexable, linked site-wide; added 2026-11-22.
+    { url: "/editorial-policy", priority: "0.5", freq: "monthly" },
+    { url: "/methodology", priority: "0.5", freq: "monthly" },
+    { url: "/disclaimer", priority: "0.3", freq: "yearly" },
     { url: "/privacy", priority: "0.2", freq: "yearly" },
     { url: "/terms", priority: "0.2", freq: "yearly" },
   ];
