@@ -1,5 +1,5 @@
 import { revalidateTag } from "next/cache";
-import { PAGE_DATA_TAG } from "@web/lib/page-data";
+import { PAGE_DATA_TAG, cacheTag } from "@web/lib/page-data";
 
 /**
  * Express calls this when content changes (server/services/web-revalidate
@@ -19,6 +19,7 @@ export async function POST(req: Request) {
     revalidateTag(PAGE_DATA_TAG);
     return Response.json({ revalidated: "all" });
   }
-  for (const p of paths) revalidateTag(p);
+  // Same tag mapping as the cache side, so >200-char paths still bust.
+  for (const p of paths) revalidateTag(cacheTag(p));
   return Response.json({ revalidated: paths });
 }
