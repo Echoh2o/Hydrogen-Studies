@@ -15,7 +15,12 @@ vi.mock("next/cache", () => nextCache);
 vi.mock("@web/lib/page-data", () => import("../../web/lib/page-data"));
 
 const { cacheTag, expressJson, PAGE_DATA_TAG } = await import("../../web/lib/page-data");
-const { POST } = await import("../../web/app/web_revalidate/route");
+// Non-literal specifier: keeps the root tsc (which lacks web/'s @web path
+// alias) from type-checking the route; web/ is checked by its own build.
+const routePath = "../../web/app/web_revalidate/route";
+const { POST } = (await import(/* @vite-ignore */ routePath)) as {
+  POST: (req: Request) => Promise<Response>;
+};
 
 const longPath = "/study/" + "hydrogen-rich-water-".repeat(20) + "pmid-12345678";
 
