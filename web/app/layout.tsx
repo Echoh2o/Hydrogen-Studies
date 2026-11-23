@@ -4,6 +4,7 @@ import { Montserrat } from "next/font/google";
 import "../../client/src/index.css";
 import "./content.css";
 import { Analytics } from "@web/components/Analytics";
+import { jsonLdSafe } from "@shared/json-ld";
 
 const ORGANIZATION_LD = {
   "@context": "https://schema.org",
@@ -54,8 +55,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={montserrat.variable}>
       <head>
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ORGANIZATION_LD) }} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(WEBSITE_LD) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(ORGANIZATION_LD) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(WEBSITE_LD) }} />
       </head>
       <body className="min-h-screen bg-white text-neutral-900 antialiased">
         {children}

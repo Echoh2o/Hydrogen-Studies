@@ -31,19 +31,8 @@ export function escapeAttr(str: string | null | undefined): string {
     .replace(/>/g, "&gt;");
 }
 
-/**
- * Serialize a value for embedding inside a <script type="application/ld+json">
- * block. JSON.stringify does NOT escape `<` or `/`, so a field containing the
- * literal `</script>` would break out of the block and inject markup. Escaping
- * `<`, `>` and `&` to their \uXXXX forms keeps the payload inert while staying
- * valid JSON.
- */
-export function jsonLdSafe(value: unknown): string {
-  return JSON.stringify(value)
-    .replace(/</g, "\\u003c")
-    .replace(/>/g, "\\u003e")
-    .replace(/&/g, "\\u0026");
-}
+// jsonLdSafe lives in shared/ so the Next app (web/) uses the same escaping.
+export { jsonLdSafe } from "../../shared/json-ld";
 
 /**
  * Return `url` only if it uses a safe scheme for an href/src — http(s),

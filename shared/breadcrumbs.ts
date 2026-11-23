@@ -4,6 +4,8 @@
  * page shows (CLAUDE.md). One builder per page type; the last crumb has no
  * href. Study pages build theirs in shared/study-page.ts (studyBreadcrumbs).
  */
+import { journalDisplayName } from "./seo-markup";
+
 export interface Crumb {
   label: string;
   href?: string;
@@ -90,7 +92,8 @@ export function researcherBreadcrumbs(name: string): Crumb[] {
 }
 
 export function journalBreadcrumbs(name: string): Crumb[] {
-  return [HOME, { label: "Journals", href: "/journals" }, { label: name }];
+  // Stored names can be entity-escaped ("&amp;amp;"); trail and BreadcrumbList show the decoded name.
+  return [HOME, { label: "Journals", href: "/journals" }, { label: journalDisplayName(name) || name }];
 }
 
 /** Home › <page> for a top-level page with no section parent. */

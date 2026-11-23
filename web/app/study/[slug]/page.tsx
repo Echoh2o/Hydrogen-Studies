@@ -1,9 +1,12 @@
 import { STUDY_REVIEWER, reviewerBylineLabel } from "@shared/reviewer";
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
+import { jsonLdSafe } from "@shared/json-ld";
 import {
   EDITORIAL_TEAM,
+  displayStudyType,
   excerptAtWord,
+  journalDisplayName,
   formatLongDate,
   isoDate,
   normalizeDoi,
@@ -137,12 +140,15 @@ export default async function StudyPage({ params }: { params: { slug: string } }
       </span>,
     ]);
   } else if (study.authors) details.push(["Authors", study.authors]);
-  if (study.journal) details.push(["Journal", study.journal]);
+  const journal = journalDisplayName(study.journal);
+  if (journal) details.push(["Journal", journal]);
   if (study.publishYear) details.push(["Year", study.publishYear]);
   if (doi) details.push(["DOI", <a key="doi" href={`https://doi.org/${doi}`} rel="noopener" className="text-primary underline">{doi}</a>]);
   const pmid = String(study.pmid ?? "").match(/^\d{4,}$/)?.[0];
   if (pmid) details.push(["PMID", <a key="pmid" href={`https://pubmed.ncbi.nlm.nih.gov/${pmid}/`} rel="noopener" className="text-primary underline">{pmid}</a>]);
-  if (study.studyType) details.push(["Study Type", study.studyType]);
+  // Legacy "clinical" is an unclassified bucket (mostly reviews) — not shown.
+  const studyType = displayStudyType(study.studyType);
+  if (studyType) details.push(["Study Type", studyType]);
   for (const d of studyDetails(study as Parameters<typeof studyDetails>[0])) details.push([d.label, d.value]);
   if (study.outcome) details.push(["Outcome", study.outcome]);
   if (study.peerReviewed) details.push(["Peer Reviewed", "Yes"]);
@@ -165,7 +171,7 @@ export default async function StudyPage({ params }: { params: { slug: string } }
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(ld) }} />
       <SiteHeader />
       <main id="main" className="container mx-auto max-w-4xl px-4 py-8">
         <nav aria-label="Breadcrumb" className="mb-6 text-sm text-neutral-500">

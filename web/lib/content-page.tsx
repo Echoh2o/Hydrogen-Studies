@@ -5,6 +5,7 @@ import { PageDataError, pageData, type FooterCondition } from "@web/lib/page-dat
 import { SiteHeader } from "@web/components/SiteHeader";
 import { SiteFooter } from "@web/components/SiteFooter";
 import { pageContextFromPath } from "@shared/echo-products";
+import { jsonLdSafe } from "@shared/json-ld";
 
 /**
  * Pages whose body is a shared React component (client/src/pages/content/*):
@@ -54,7 +55,7 @@ export function contentPage(path: string, extraJsonLd: object[] = []) {
     return (
       <div className={className}>
         {ld.map((block, i) => (
-          <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(block) }} />
+          <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(block) }} />
         ))}
         <SiteHeader />
         <div id="main">{children}</div>

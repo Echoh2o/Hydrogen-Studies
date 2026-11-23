@@ -116,15 +116,32 @@ export interface EchoUtmContext {
   slug: string;
 }
 
-/** Normalize a UTM value: lowercase, url-safe, bounded. */
+export const UTM_VALUE_MAX = 100;
+
+// Permanent-ID suffixes of a stable study slug (shared/study-slug.ts). Kept
+// when a long slug is shortened, so two studies never share a utm_content.
+const PERMANENT_ID_SUFFIX_RE = /-(?:pmid-\d{4,9}|doi-10-\d{4,9}-[a-z0-9-]+|hs-\d+)$/;
+
+/**
+ * Normalize a UTM value: lowercase, url-safe, ≤ UTM_VALUE_MAX chars. A long
+ * study slug keeps its trailing permanent ID (-pmid-…, -doi-…, -hs-…): the
+ * title words are cut at a word boundary and the suffix re-appended.
+ */
 export function normalizeUtmValue(value: string | null | undefined, fallback = "unknown"): string {
   const v = String(value ?? "")
     .toLowerCase()
     .replace(/[^a-z0-9_-]+/g, "-")
     .replace(/-{2,}/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 100);
-  return v || fallback;
+    .replace(/^-+|-+$/g, "");
+  if (!v) return fallback;
+  if (v.length <= UTM_VALUE_MAX) return v;
+  const suffix = v.match(PERMANENT_ID_SUFFIX_RE)?.[0] ?? "";
+  if (!suffix || suffix.length >= UTM_VALUE_MAX - 1) return v.slice(0, UTM_VALUE_MAX).replace(/-+$/g, "");
+  // Title words that fit, plus one char to see whether the cut lands on a dash.
+  let head = v.slice(0, v.length - suffix.length).slice(0, UTM_VALUE_MAX - suffix.length + 1);
+  const lastDash = head.lastIndexOf("-");
+  head = lastDash > 0 ? head.slice(0, lastDash) : head.slice(0, UTM_VALUE_MAX - suffix.length);
+  return `${head.replace(/-+$/g, "")}${suffix}`.replace(/^-+/, "");
 }
 
 const ECHO_HOST_RE = /^(?:www\.)?echowater\.com$/i;
