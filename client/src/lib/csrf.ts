@@ -67,6 +67,9 @@ export function installCsrfInterceptor(): void {
     .then((res) => {
       const fresh = res.headers.get("X-CSRF-Token");
       if (fresh) csrfToken = fresh;
+      // Drain the body: an unread response (e.g. one sent Cache-Control:
+      // no-store) stays in flight in Chrome and blocks network idle.
+      return res.body?.cancel();
     })
     .catch(() => {
       /* priming is best-effort; subsequent GETs will populate the token */

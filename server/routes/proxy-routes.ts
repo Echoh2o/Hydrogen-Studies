@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { pool } from "../db";
 import { jsonLdSafe, safeUrl, escapeHtml, escapeAttr } from "../utils/html-safety";
 import { productsForDeliveryMethod, type EchoProduct } from "@shared/echo-products";
+import { abstractExcerpt, studySourceLink } from "@shared/seo-markup";
 
 const router = Router();
 
@@ -793,6 +794,10 @@ router.get("/study/:slug", async (req: Request, res: Response) => {
     const citation = `${authorList} (${study.publish_year || "n.d."}). ${study.title}. ${study.journal || ""}${study.doi ? `. https://doi.org/${study.doi}` : ""}`;
 
     // Build page content
+    // CLAUDE.md: ≤300-char excerpt + link to PubMed/DOI, never the full abstract.
+    const excerpt = abstractExcerpt(study.abstract);
+    const sourceLink = studySourceLink({ pmid: study.pmid, doi: study.doi, url: study.url });
+
     const content = `
       ${renderBreadcrumb([
         { label: "Research Database", href: "/tools/hydrogen-research/" },
@@ -858,10 +863,11 @@ router.get("/study/:slug", async (req: Request, res: Response) => {
         </div>
       ` : ""}
 
-      ${study.abstract ? `
+      ${excerpt ? `
         <div class="h2r-section">
-          <h2 class="h2r-section-title">Abstract</h2>
-          <p class="h2r-text">${escapeHtml(study.abstract)}</p>
+          <h2 class="h2r-section-title">Abstract (excerpt)</h2>
+          <p class="h2r-text">${escapeHtml(excerpt)}</p>
+          ${sourceLink ? `<p class="h2r-text"><a href="${escapeAttr(sourceLink.href)}" target="_blank" rel="noopener" class="h2r-link">${escapeHtml(sourceLink.label)}</a></p>` : ""}
         </div>
       ` : ""}
 
