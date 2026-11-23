@@ -99,6 +99,11 @@ export function publicAbstractsJson(_req: Request, res: Response, next: NextFunc
 
 /** Mount right after the session middleware. Anonymous requests cost no DB hit. */
 export async function resolveAbstractAccess(req: Request, res: Response, next: NextFunction): Promise<void> {
+  // Only JSON APIs carry study records; pages, assets and the rest skip the lookup.
+  if (!req.path.startsWith("/api/")) {
+    res.locals.fullAbstractAccess = false;
+    return next();
+  }
   try {
     res.locals.fullAbstractAccess = await isAdminRequest(req);
   } catch {

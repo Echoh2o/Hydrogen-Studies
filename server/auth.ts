@@ -215,10 +215,13 @@ export async function isElevatedRequest(req: Request): Promise<boolean> {
  * (server/middleware/public-abstracts.ts).
  */
 export async function isAdminRequest(req: Request): Promise<boolean> {
-  return requestHasRole(req, [UserRole.ADMIN]);
+  // Read-only: this runs on every /api request, so it must never write the
+  // session — concurrent saves from a logged-in admin's parallel requests
+  // would race (and clobber the CSRF secret stored in the same session).
+  return requestHasRole(req, [UserRole.ADMIN], false);
 }
 
-async function requestHasRole(req: Request, roles: string[]): Promise<boolean> {
+async function requestHasRole(req: Request, roles: string[], cacheInSession = true): Promise<boolean> {
   if (!req.session || !req.session.userId) return false;
 
   const cacheAge = Date.now() - (req.session.roleCachedAt || 0);
@@ -238,9 +241,11 @@ async function requestHasRole(req: Request, roles: string[]): Promise<boolean> {
       .where(eq(users.id, req.session.userId))
       .limit(1);
     if (!user) return false;
-    req.session.userRole = user.role || "";
-    req.session.userIsActive = user.isActive ?? true;
-    req.session.roleCachedAt = Date.now();
+    if (cacheInSession) {
+      req.session.userRole = user.role || "";
+      req.session.userIsActive = user.isActive ?? true;
+      req.session.roleCachedAt = Date.now();
+    }
     return (user.isActive ?? true) && roles.includes(user.role || "");
   } catch (error) {
     // Fail closed: on any lookup error, treat the request as unprivileged.
