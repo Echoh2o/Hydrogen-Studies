@@ -8,7 +8,7 @@
  * CSRF (like /embed): MCP clients are not browsers on our origin.
  */
 import crypto from "crypto";
-import express, { Router, type Request, type Response } from "express";
+import express, { Router, type NextFunction, type Request, type Response } from "express";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { buildMcpServer, type McpTier } from "./server";
 import rateLimit from "express-rate-limit";
@@ -44,6 +44,22 @@ export function handleMcp(tier: McpTier) {
       }
     }
   };
+}
+
+/**
+ * body-parser failures (malformed or oversized JSON) are the client's fault:
+ * answer with a JSON-RPC error instead of falling through to the app's 500
+ * handler (registry probes send unquoted keys — Sentry SERVER-C).
+ */
+export function jsonBodyErrors(err: unknown, _req: Request, res: Response, next: NextFunction) {
+  const type = (err as { type?: string } | null)?.type;
+  if (type === "entity.parse.failed") {
+    return res.status(400).json({ jsonrpc: "2.0", error: { code: -32700, message: "Parse error: invalid JSON" }, id: null });
+  }
+  if (type === "entity.too.large") {
+    return res.status(413).json({ jsonrpc: "2.0", error: { code: -32600, message: "Request body too large" }, id: null });
+  }
+  next(err);
 }
 
 function methodNotAllowed(_req: Request, res: Response) {
@@ -97,6 +113,7 @@ export function mcpPublicRouter(): Router {
   });
   router.post("/", ...limiter, express.json({ limit: "1mb" }), handleMcp("public"));
   router.all("/", methodNotAllowed);
+  router.use(jsonBodyErrors);
   return router;
 }
 
@@ -133,6 +150,7 @@ export function mcpAdminRouter(): Router {
   });
   router.post("/", express.json({ limit: "1mb" }), handleMcp("admin"));
   router.all("/", methodNotAllowed);
+  router.use(jsonBodyErrors);
   return router;
 }
 

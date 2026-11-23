@@ -152,14 +152,17 @@ export async function enrichStudySummaries(
           title: study.title?.substring(0, 60),
         });
 
-        // Mark as processed ONLY for study-specific failures (invalid JSON —
-        // this study's content reliably breaks parsing), so it isn't retried
-        // forever. Transient provider errors (429/5xx/timeout) must NOT write
-        // the sentinel: doing so permanently un-enriched every study in a
-        // batch that happened to hit a one-off Anthropic blip. Those rows stay
-        // NULL and are retried on a later cycle.
+        // Mark as processed ONLY for study-specific failures, so it isn't
+        // retried forever: invalid JSON (this study's content reliably breaks
+        // parsing) or a model refusal (the same prompt is refused every time —
+        // study 4325 was retried every 15 min for weeks). Transient provider
+        // errors (429/5xx/timeout) must NOT write the sentinel: doing so
+        // permanently un-enriched every study in a batch that happened to hit
+        // a one-off Anthropic blip. Those rows stay NULL and are retried on a
+        // later cycle.
         const isStudySpecific =
-          error instanceof Error && error.message.includes("invalid JSON");
+          error instanceof Error &&
+          (error.message.includes("invalid JSON") || error.message.includes("stop_reason: refusal"));
         if (isStudySpecific) {
           try {
             await db

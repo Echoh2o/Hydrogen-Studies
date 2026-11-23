@@ -291,6 +291,18 @@ describe("HTTP surface", () => {
     const get = await fetch(`${base}/mcp`);
     expect(get.status).toBe(405);
   });
+
+  it("answers malformed JSON with a 400 JSON-RPC parse error, not a 500", async () => {
+    // Registry probes send bodies like this (Sentry HYDROGEN-STUDIES-SERVER-C).
+    const res = await fetch(`${base}/mcp`, {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json, text/event-stream" },
+      body: '{"jsonrpc":"2.0","id":1,"method":"initialize",params:{}}',
+    });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ jsonrpc: "2.0", error: { code: -32700, message: "Parse error: invalid JSON" }, id: null });
+    expect(res.headers.get("access-control-allow-origin")).toBe("*");
+  });
 });
 
 describe("admin MCP server", () => {

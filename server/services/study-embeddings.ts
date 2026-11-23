@@ -26,7 +26,14 @@ export const EMBED_DIMS = 384;
 /** bge retrieval models embed QUERIES with this instruction; documents without it. */
 const QUERY_PREFIX = "Represent this sentence for searching relevant passages: ";
 const INDEX_TTL_MS = 30 * 60 * 1000;
-const BATCH = 32;
+/**
+ * One text per model call. ONNX Runtime's CPU arena grows to the largest
+ * batch it has seen and never returns that memory: 32 study-length texts took
+ * RSS from ~270 MB to 1.4–2.4 GB (measured 2026-11-22), and every background
+ * sync in prod stepped memory up ~1.2 GB until the 11-19 OOM. One at a time
+ * stays ~300 MB; a 50-study sync is still only seconds.
+ */
+const BATCH = 1;
 
 /** The text a study is embedded from: our titles and finding, its conditions, and the abstract opening. */
 export function embeddingText(s: {

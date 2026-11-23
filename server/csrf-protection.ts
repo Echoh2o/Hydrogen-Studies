@@ -100,8 +100,12 @@ export function csrfProtection(options: CsrfOptions = {}) {
   return (req: Request, res: Response, next: NextFunction) => {
     // Skip CSRF check for ignored methods
     if (ignoreMethods.includes(req.method)) {
-      // Generate token for GET requests to provide to forms
-      if (req.method === "GET" && req.session) {
+      // Mint a token on API GETs only: the client reads it from the
+      // X-CSRF-Token header of GET /api/* responses (client/src/lib/csrf.ts).
+      // Minting on every GET wrote a secret into a brand-new session for each
+      // cookie-less page view, crawler hit and asset request, so
+      // express-session saved ~1,000 throwaway session rows an hour.
+      if (req.method === "GET" && req.session && req.path.startsWith("/api/")) {
         ensureCsrfToken(req, res, cookieOptions);
       }
       return next();

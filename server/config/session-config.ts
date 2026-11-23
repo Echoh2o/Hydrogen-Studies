@@ -134,11 +134,25 @@ export async function getSessionConfig() {
  * Non-async wrapper for Express middleware
  * This allows the session config to be used in Express setup
  */
+const STATIC_FILE_RE = /^\/(?:assets|_next\/static)\/|\.(?:js|mjs|css|map|png|jpe?g|gif|svg|ico|webp|avif|woff2?|ttf|eot|webmanifest)$/i;
+
+/**
+ * Static files never need a session. They are served after this middleware
+ * (server/index.ts), so without this every asset request with a session
+ * cookie read the session row and — `rolling: true` — wrote it back; when the
+ * pool was starved, /assets/*.js.map requests 500'd on the session lookup
+ * (Sentry SERVER-F). API routes always keep their session.
+ */
+export function skipsSession(path: string): boolean {
+  return !path.startsWith("/api/") && STATIC_FILE_RE.test(path);
+}
+
 export function getSessionMiddleware() {
   let sessionMiddleware: any = null;
   let initPromise: Promise<void> | null = null;
 
   return async (req: any, res: any, next: any) => {
+    if (skipsSession(req.path)) return next();
     if (!sessionMiddleware) {
       if (!initPromise) {
         initPromise = getSessionConfig()
