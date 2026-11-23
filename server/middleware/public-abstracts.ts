@@ -88,8 +88,13 @@ export function publicAbstractsJson(_req: Request, res: Response, next: NextFunc
   const json = res.json.bind(res);
   res.json = ((body: unknown) => {
     if (hasFullAbstractAccess(res)) {
-      // Full text is per-user: never let a shared cache keep it.
-      res.setHeader("Cache-Control", "private, no-store");
+      // Full text is per-user: never let a shared cache keep it. Only bodies
+      // that actually carry it (the public would get a redacted copy) are
+      // marked — NOT every admin JSON response. A blanket no-store also hit
+      // /api/auth/check-session, whose CSRF-priming fetch (client/src/lib/
+      // csrf.ts) never read its body: Chrome kept that no-store request
+      // in flight forever, so admin pages never reached network idle.
+      if (publicAbstracts(body) !== body) res.setHeader("Cache-Control", "private, no-store");
       return json(body);
     }
     return json(publicAbstracts(body));

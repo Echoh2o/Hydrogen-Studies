@@ -137,6 +137,27 @@ describe("public study endpoints", () => {
     expect(res.headers["cache-control"]).toBe("private, no-store");
   });
 
+  // Regression (PR #192 E2E): a blanket no-store on every admin JSON response
+  // reached /api/auth/check-session, whose CSRF-priming fetch never reads its
+  // body — Chrome held that request open and admin pages never hit network idle.
+  it("admin responses without full abstracts keep their normal caching", async () => {
+    admin.value = true;
+    const app = express();
+    app.use(publicAbstractsJson);
+    app.use(resolveAbstractAccess);
+    app.get("/api/auth/check-session", (_req, res) => {
+      res.json({ authenticated: true, userRole: "admin" });
+    });
+    app.get("/api/blog-recommendations", (_req, res) => {
+      res.json([{ title: "t", abstract: null }]);
+    });
+    for (const path of ["/api/auth/check-session", "/api/blog-recommendations"]) {
+      const res = await request(app).get(path);
+      expect(res.status).toBe(200);
+      expect(res.headers["cache-control"]).toBeUndefined();
+    }
+  });
+
   it("PUT ignores an abstract that is only the public excerpt of the stored one", async () => {
     admin.value = true;
     await request(makeApp())
