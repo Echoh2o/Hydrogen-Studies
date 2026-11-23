@@ -22,6 +22,7 @@ import { jobScheduler } from "./services/job-scheduler";
 import { stopHealthMonitoring } from "./utils/health-monitoring";
 import { isBot } from "./utils/user-agent";
 import { webFrontDoor } from "./middleware/web-frontdoor";
+import { redirectIndexHtml } from "./middleware/index-html-redirect";
 import { isKnownSpaRoute, sendSpaShell } from "./middleware/spa-shell";
 import { generalApiRateLimiter } from "./utils/rate-limiting";
 import path from "path";
@@ -66,6 +67,9 @@ async function setupServer() {
       }
       next();
     });
+
+    // /index.html → 301 / (before static serving and the front door).
+    app.use(redirectIndexHtml);
 
     // Rate-limit bot requests before the SEO middleware runs any DB renders.
     // isBot() trusts the User-Agent, so a spoofed crawler UA could otherwise
