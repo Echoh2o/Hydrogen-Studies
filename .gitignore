@@ -52,3 +52,6 @@ reports/backups/study-exclusions/
 
 # Next.js front door build output
 web/.next/
+
+# macOS Finder/iCloud duplicate copies ("file 2.ts") — they broke tsc once.
+* 2.*

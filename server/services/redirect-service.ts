@@ -178,7 +178,9 @@ export async function resolveRedirect(req: Request): Promise<RedirectDecision | 
   }
 
   const normalizedPath = path.toLowerCase().replace(/\/+$/, "") || "/";
-  const match = redirectCache.get(normalizedPath);
+  // req.path is still percent-encoded (/study/...-%ce%b3-...), while rows are
+  // usually stored decoded (...-γ-...): try both, or non-ASCII sources never match.
+  const match = redirectCache.get(normalizedPath) ?? redirectCache.get(decodedPath(normalizedPath));
   const rawQuery = rawQueryOf(req.originalUrl);
 
   if (match) {
@@ -206,6 +208,14 @@ export async function resolveRedirect(req: Request): Promise<RedirectDecision | 
     logger.error("URL hygiene check failed", err, TAG);
   }
   return null;
+}
+
+function decodedPath(p: string): string {
+  try {
+    return decodeURIComponent(p).toLowerCase();
+  } catch {
+    return p;
+  }
 }
 
 function bumpHitCount(id: number): void {

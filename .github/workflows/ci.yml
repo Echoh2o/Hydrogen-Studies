@@ -5,6 +5,10 @@ on:
     branches: [hydrogen-studies]
   pull_request:
 
+# See .npmrc: skip onnxruntime-node's CUDA download (asset 404s; CPU-only).
+env:
+  ONNXRUNTIME_NODE_INSTALL_CUDA: skip
+
 jobs:
   ci:
     name: Typecheck, Build & Test

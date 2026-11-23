@@ -12,7 +12,10 @@ vi.mock("../db", () => ({
         where: async () => {
           loads++;
           await new Promise((r) => setTimeout(r, 20));
-          return [{ id: 1, fromPath: "/old", toPath: "/new", statusCode: 301 }];
+          return [
+            { id: 1, fromPath: "/old", toPath: "/new", statusCode: 301 },
+            { id: 2, fromPath: "/study/il-6-γ-old", toPath: "/study/il-6-new", statusCode: 301 },
+          ];
         },
       }),
     }),
@@ -30,5 +33,10 @@ describe("redirect cache", () => {
     const results = await Promise.all(Array.from({ length: 8 }, () => resolveRedirect(req("/old"))));
     expect(loads).toBe(1);
     expect(results[0]).toMatchObject({ kind: "redirect", status: 301, location: "/new" });
+  });
+
+  it("matches a decoded (non-ASCII) row from the percent-encoded request path", async () => {
+    const r = await resolveRedirect(req("/study/il-6-%CE%B3-old"));
+    expect(r).toMatchObject({ kind: "redirect", status: 301, location: "/study/il-6-new" });
   });
 });
