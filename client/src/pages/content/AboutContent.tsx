@@ -1,6 +1,8 @@
 "use client";
 // Body of the about page, shared by the SPA (about.tsx) and the Next.js
 // front door (web/), so both serve the same text. No layout or data here.
+import { STATIC_PAGE_UPDATED } from "@shared/page-byline";
+import { PageBylineLine } from "@/components/PageBylineLine";
 import { Separator } from "@/components/ui/separator";
 import { HiMail, HiPhone, HiLocationMarker } from "react-icons/hi";
 
@@ -15,6 +17,7 @@ export function AboutContent() {
               <h1 className="text-3xl font-bold mb-4">
                 About Hydrogen Studies
               </h1>
+              <PageBylineLine date={STATIC_PAGE_UPDATED["/about"]} />
               <p className="text-lg text-neutral-600 mb-6">
                 A complete research database focused on molecular hydrogen gas
                 and its applications in health and medicine.

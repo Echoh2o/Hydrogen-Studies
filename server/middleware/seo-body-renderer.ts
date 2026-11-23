@@ -5,6 +5,8 @@
  * SPA shell so search engine crawlers see fully-formed pages, not an empty div.
  */
 
+import { getLatestStudyModified, latestModifiedForSlugs } from "../services/study-dates";
+import { pageBylineHtml, STATIC_PAGE_UPDATED } from "../../shared/page-byline";
 import { db } from "../db";
 import { headingId } from "../../shared/heading-id";
 import { sql, type SQL } from "drizzle-orm";
@@ -789,6 +791,7 @@ async function renderHomepage(): Promise<string> {
   const reviewed = Number((statsR.rows?.[0] as any)?.reviewed || 0);
 
   let h = `<h1>Hydrogen Studies Research Database</h1>\n`;
+  h += pageBylineHtml(await getLatestStudyModified());
   // One claim, once (the old copy said "peer-reviewed" twice back to back —
   // PLAN.md 0.5).
   h += `<p>Explore ${total.toLocaleString()} hydrogen therapy research studies — `;
@@ -847,6 +850,7 @@ async function renderStudiesList(): Promise<string> {
 
   let h = breadcrumbs(studiesListBreadcrumbs());
   h += `<h1>Research Studies Directory</h1>\n`;
+  h += pageBylineHtml(await getLatestStudyModified());
   h += `<p>Browse our comprehensive directory of hydrogen therapy research studies. Filter by condition, body system, study type, and outcome.</p>\n`;
 
   const rows = (studiesR.rows || []) as any[];
@@ -983,6 +987,7 @@ async function renderConditionPage(slug: string): Promise<string | null> {
       h += renderConditionHubOwnerGuideHtml(intro);
     } else {
       h += `<h1>Hydrogen Research for ${esc(cond.name)}</h1>\n`;
+      h += pageBylineHtml(await latestModifiedForSlugs(studies.map((s: any) => s.slug)));
       if (cond.description) h += `<p>${esc(cond.description)}</p>\n`;
       h += `<p>${studies.length} research stud${studies.length === 1 ? "y" : "ies"} on hydrogen therapy for ${esc(cond.name.toLowerCase())}.</p>\n`;
       if (studies.length > 0) {
@@ -1035,6 +1040,7 @@ async function renderBodySystemPage(slug: string): Promise<string | null> {
 
     let h = breadcrumbs(bodySystemHubBreadcrumbs(displayName));
     h += `<h1>Hydrogen Research: ${esc(displayName)}</h1>\n`;
+    h += pageBylineHtml(await latestModifiedForSlugs(studies.map((s) => s.slug)));
     // bodySystemHubName ends in "System" exactly once ("the immune system",
     // not "the immune system system").
     h += `<p>Research studies on molecular hydrogen's effects on the ${esc(bodySystemHubName(slug).toLowerCase())}. Browse clinical trials, reviews, and findings.</p>\n`;
@@ -1060,6 +1066,8 @@ async function renderExploreIndex(type: string): Promise<string> {
 
   let h = breadcrumbs(exploreIndexBreadcrumbs(title));
   h += `<h1>${esc(title)}</h1>\n`;
+  // An index lists hubs built from every study → the newest study change.
+  h += pageBylineHtml(await getLatestStudyModified());
 
   if (type === "condition") {
     // The condition hubs that exist (a health_conditions row with studies) —
@@ -1172,6 +1180,7 @@ async function renderExploreDetail(type: string, slug: string): Promise<string |
 
     let h = breadcrumbs(exploreDetailBreadcrumbs(type, displayName));
     h += `<h1>${esc(h1)}</h1>\n`;
+    h += pageBylineHtml(await latestModifiedForSlugs(studies.map((s) => s.slug)));
     h += `<p>${esc(intro)}</p>\n`;
 
     if (studies.length > 0) {
@@ -1249,6 +1258,7 @@ export async function renderHydrogenForPage(slug: string): Promise<string | null
 
     let h = breadcrumbs(hydrogenForBreadcrumbs(displayName));
     h += `<h1>Hydrogen for ${esc(displayName)}</h1>\n`;
+    h += pageBylineHtml(await latestModifiedForSlugs(studies.map((s) => s.slug)));
     h += `<p>${esc(hydrogenForIntro(displayName, total, studies.length))}</p>\n`;
 
     if (studies.length > 0) {
@@ -1332,6 +1342,8 @@ function renderStaticPage(pathname: string): string | null {
 
   let h = breadcrumbs(crumbs);
   h += `<h1>${esc(page.title)}</h1>\n`;
+  // Static pages: the hand-maintained copy date (bump it when copy changes).
+  if (STATIC_PAGE_UPDATED[pathname]) h += pageBylineHtml(STATIC_PAGE_UPDATED[pathname]);
   h += `<p>${esc(page.desc)}</p>\n`;
 
   // Internal links section

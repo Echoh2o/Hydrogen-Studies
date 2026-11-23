@@ -10,6 +10,8 @@
  * The prose is reviewed (LIMITS_LAST_REVIEWED); the numbers come from
  * server/services/evidence-stats.ts each time the page is built.
  */
+import { pageBylineHtml } from "../../shared/page-byline";
+import { getLatestStudyModified, latestModifiedForSlugs } from "../services/study-dates";
 import { EDITORIAL_TEAM, blogByline, formatLongDate } from "../../shared/seo-markup";
 import { pageBreadcrumbs } from "../../shared/breadcrumbs";
 import {
@@ -127,6 +129,7 @@ export async function renderNullResultsHub(): Promise<string> {
   const other = studies.filter((s) => !s.isHuman);
   let h = breadcrumbs(pageBreadcrumbs(NULL_RESULTS_H1));
   h += `<h1>${esc(NULL_RESULTS_H1)}</h1>\n`;
+  h += pageBylineHtml(await latestModifiedForSlugs(studies.map((s) => s.slug)));
   h += `<p class="lead">${fmtInt(studies.length)} of the ${fmtInt(stats.outcomes.withOutcome)} studies with a recorded outcome direction (${pct(studies.length, stats.outcomes.withOutcome)}) report a neutral, negative or mixed result for hydrogen, ${fmtInt(human.length)} of them in people. Most sites about hydrogen never mention them. They matter more than their number suggests: in a literature where ${pct(stats.outcomes.positive, stats.outcomes.withOutcome)} of published results are positive, the studies that found nothing are the ones that tell you how large the real effect could be.</p>\n`;
   h += `<p>How a study gets here: for studies in people, we record the direction of the study's primary outcome from its abstract (improved, no clear effect, worsened or mixed), with the sentence it is based on, and our reviewer can correct it; for other studies, the direction of the main result as our pipeline recorded it. A study is listed when the result is anything but positive. If a study below is misclassified, <a href="/contact">tell us</a>. The wider context is on <a href="${LIMITS_PATH}">the limits of the evidence</a>.</p>\n`;
   const list = (items: typeof studies) => {

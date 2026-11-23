@@ -2,6 +2,8 @@
 // Body of /research-analytics, shared by the SPA page (ResearchAnalyticsPage)
 // and the Next.js front door, which seeds React Query with the five
 // /api/studies/* responses so the numbers are in the server HTML.
+import { useSiteLastUpdated } from "@/hooks/use-site-last-updated";
+import { PageBylineLine } from "@/components/PageBylineLine";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,6 +27,8 @@ import HealthOutcomesMap from "@/components/visualizations/HealthOutcomesMap";
 
 
 export function ResearchAnalyticsContent() {
+  // Byline date: newest study change behind these charts (shared/page-byline).
+  const lastUpdated = useSiteLastUpdated();
   // Get analytics data
   const { data: analyticsData, isLoading: analyticsLoading } = useQuery<any>({
     queryKey: ["/api/studies/analytics"],
@@ -57,6 +61,7 @@ export function ResearchAnalyticsContent() {
               <h1 className="text-4xl md:text-5xl font-bold mb-6">
                 Research Analytics & Citation Networks
               </h1>
+              <PageBylineLine date={lastUpdated} className="byline text-sm text-teal-100 mb-6 [&_a]:text-white" />
               <p className="text-xl text-teal-100 mb-8 leading-relaxed">
                 Explore the interconnected landscape of hydrogen health research
                 through advanced visualizations, citation networks, and

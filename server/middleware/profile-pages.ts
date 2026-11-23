@@ -12,6 +12,8 @@
  * affiliations, credentials or ORCIDs are claimed (follow-up: OpenAlex
  * authorships). Unknown slugs return null → 404 for everyone.
  */
+import { getLatestStudyModified, latestModifiedForSlugs } from "../services/study-dates";
+import { pageBylineHtml, STATIC_PAGE_UPDATED } from "../../shared/page-byline";
 import { conditionHubForValue, exploreHubPath } from "../../shared/explore-hubs";
 import { journalBreadcrumbs, profilesIndexBreadcrumbs, researcherBreadcrumbs } from "../../shared/breadcrumbs";
 import {
@@ -49,6 +51,7 @@ export async function renderResearcherIndex(): Promise<string> {
   const [{ list }, conditions] = await Promise.all([getAuthorIndex(), getTopConditions()]);
   let h = breadcrumbs(profilesIndexBreadcrumbs(RESEARCHERS_H1));
   h += `<h1>${esc(RESEARCHERS_H1)}</h1>\n`;
+  h += pageBylineHtml(await getLatestStudyModified());
   h += `<p>Authors with at least ${RESEARCHER_MIN_STUDIES} studies in this database, most prolific first. Each page lists the author's hydrogen studies with links to the papers. Grouping is by published name, so two researchers who share a name share a page.</p>\n`;
   h += `<ul>`;
   for (const p of list) {
@@ -69,6 +72,7 @@ export async function renderResearcherPage(slug: string): Promise<string | null>
   const [conditions, hubs] = await Promise.all([getTopConditions(), getConditionHubs()]);
   let h = breadcrumbs(researcherBreadcrumbs(p.name));
   h += `<article>\n<h1>${esc(p.name)}</h1>\n`;
+  h += pageBylineHtml(await latestModifiedForSlugs(p.studies.map((s) => s.slug)));
   const years = span(p.firstYear, p.lastYear);
   h += `<p class="lead">${p.studies.length} studies on molecular hydrogen in this database${years ? `, published ${years}` : ""}; ${p.humanCount} ${p.humanCount === 1 ? "was" : "were"} in people.</p>\n`;
   if (p.variants.length) h += `<p>Also published as: ${p.variants.map(esc).join(", ")}.</p>\n`;
@@ -110,6 +114,7 @@ export async function renderJournalIndex(): Promise<string> {
   const [{ list }, conditions] = await Promise.all([getJournalIndex(), getTopConditions()]);
   let h = breadcrumbs(profilesIndexBreadcrumbs(JOURNALS_H1));
   h += `<h1>${esc(JOURNALS_H1)}</h1>\n`;
+  h += pageBylineHtml(await getLatestStudyModified());
   h += `<p>Journals with at least ${JOURNAL_MIN_STUDIES} molecular hydrogen studies in this database, most first. Each page lists the journal's hydrogen studies with links to the papers.</p>\n`;
   h += `<ul>`;
   for (const j of list) {
@@ -130,6 +135,7 @@ export async function renderJournalPage(slug: string): Promise<string | null> {
   const conditions = await getTopConditions();
   let h = breadcrumbs(journalBreadcrumbs(journalDisplayName(j.name)));
   h += `<article>\n<h1>${esc(journalDisplayName(j.name))}</h1>\n`;
+  h += pageBylineHtml(await latestModifiedForSlugs(j.studies.map((s) => s.slug)));
   const years = span(j.firstYear, j.lastYear);
   h += `<p class="lead">${j.studies.length} studies on molecular hydrogen in this database${years ? `, published ${years}` : ""}; ${j.humanCount} ${j.humanCount === 1 ? "was" : "were"} in people.</p>\n`;
   h += `<section><h2>Studies</h2>\n${studyList(j.studies)}</section>\n`;
