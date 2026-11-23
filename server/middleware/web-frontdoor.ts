@@ -89,6 +89,16 @@ export function webFrontDoor() {
     // Next's own fallback rewrite proxies unmigrated paths back here; never
     // bounce those to Next again.
     if (req.get("x-from-web")) return next();
+    // Image optimizer: unused, and the source of Next 14's critical advisories.
+    if (req.path.startsWith("/_next/image")) return res.status(404).type("text/plain").send("Not found");
+    // Next's fallback rewrite forwards our own request headers but skips its
+    // middleware for /_next/*, so a missing chunk arrives back here without
+    // x-from-web. Proxying it again looped until the 15 s timeout (hundreds of
+    // hops per scanner GET). Anything we already sent to Next stops here.
+    if (req.get("x-from-express")) {
+      if (NEXT_ASSETS.test(req.path)) return res.status(404).type("text/plain").send("Not found");
+      return next();
+    }
     const families = enabledFamilies();
     const family = NEXT_ASSETS.test(req.path) && families.length ? "assets" : ssrFamilyFor(req.path, families);
     if (!family) return next();
