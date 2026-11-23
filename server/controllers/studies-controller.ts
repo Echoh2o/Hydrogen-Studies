@@ -3,6 +3,7 @@ import { studyService } from "../services/study-service";
 import { getPersonalizedRecommendations } from "../services/recommendation-engine";
 import { searchRateLimiter, aiGenerationRateLimiter } from "../utils/rate-limiting";
 import { requireAdmin, isElevatedRequest } from "../auth";
+import { isExcerptOfStored } from "../middleware/public-abstracts";
 import { notifyWebRevalidate } from "../services/web-revalidate";
 import { logger } from "../utils/logger";
 import { getConditionHubs } from "../middleware/seo-body-renderer";
@@ -619,6 +620,14 @@ export class StudiesController {
           const parsed = updateSchema.safeParse(req.body);
           if (!parsed.success) {
               return res.status(400).json({ error: "Invalid study data", details: parsed.error.flatten() });
+          }
+          // Never overwrite a full abstract with its public excerpt (a form
+          // filled from a response cached before the admin logged in).
+          if (typeof parsed.data.abstract === "string") {
+              const current = await studyService.getStudyById(studyId);
+              if (current && isExcerptOfStored(parsed.data.abstract, current.abstract)) {
+                  delete parsed.data.abstract;
+              }
           }
           if (Object.keys(parsed.data).length === 0) {
               return res.status(400).json({ error: "No valid fields to update" });

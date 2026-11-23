@@ -206,9 +206,20 @@ export function isAdminOrEditor(
  * incur a role lookup (reusing the session role cache when fresh).
  */
 export async function isElevatedRequest(req: Request): Promise<boolean> {
-  if (!req.session || !req.session.userId) return false;
+  return requestHasRole(req, [UserRole.ADMIN, UserRole.EDITOR]);
+}
 
-  const elevated = [UserRole.ADMIN, UserRole.EDITOR] as string[];
+/**
+ * Non-blocking admin check — the same role test requireAdmin applies, as a
+ * boolean. Used to decide whether a response may carry full abstracts
+ * (server/middleware/public-abstracts.ts).
+ */
+export async function isAdminRequest(req: Request): Promise<boolean> {
+  return requestHasRole(req, [UserRole.ADMIN]);
+}
+
+async function requestHasRole(req: Request, roles: string[]): Promise<boolean> {
+  if (!req.session || !req.session.userId) return false;
 
   const cacheAge = Date.now() - (req.session.roleCachedAt || 0);
   const ROLE_CACHE_TTL = 5 * 60 * 1000;
@@ -217,7 +228,7 @@ export async function isElevatedRequest(req: Request): Promise<boolean> {
     req.session.userIsActive !== undefined &&
     cacheAge < ROLE_CACHE_TTL
   ) {
-    return req.session.userIsActive && elevated.includes(req.session.userRole);
+    return req.session.userIsActive && roles.includes(req.session.userRole);
   }
 
   try {
@@ -230,7 +241,7 @@ export async function isElevatedRequest(req: Request): Promise<boolean> {
     req.session.userRole = user.role || "";
     req.session.userIsActive = user.isActive ?? true;
     req.session.roleCachedAt = Date.now();
-    return (user.isActive ?? true) && elevated.includes(user.role || "");
+    return (user.isActive ?? true) && roles.includes(user.role || "");
   } catch (error) {
     // Fail closed: on any lookup error, treat the request as unprivileged.
     logger.error("isElevatedRequest check error", error, "Auth");

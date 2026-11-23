@@ -37,6 +37,7 @@ import authRoutes from "./routes/auth-routes";
 import { requireAdmin } from "./auth";
 import studiesRouter from "./routes/studies-router";
 import { stripSentinels } from "./middleware/strip-sentinels";
+import { publicAbstractsJson, resolveAbstractAccess } from "./middleware/public-abstracts";
 import researchUnifiedRoutes from "./routes/research-unified-routes";
 import keywordMonitorRoutes from "./routes/keyword-monitor-routes";
 import keywordMonitorScheduleRoutes from "./routes/keyword-monitor-schedule-routes";
@@ -266,6 +267,11 @@ app.use(timeoutMiddleware(30000)); // 30 second timeout
 
 // Cookie parser for CSRF tokens
 app.use(cookieParser());
+
+// CLAUDE.md: never republish full abstracts. Every JSON body carries the
+// ≤300-char excerpt in `abstract` unless resolveAbstractAccess (after the
+// session middleware) marks the request as admin. Mounted before every router.
+app.use(publicAbstractsJson);
 
 // Public embeds for echowater.com (live study count + footer badge). Before
 // the CORS allowlist: these answer any origin with `*` and no credentials.
@@ -531,6 +537,8 @@ app.use("/proxy", shopifyProxyAuth, proxyRateLimiter, proxyRoutes);
 
 // Secure session middleware with PostgreSQL store
 app.use(getSessionMiddleware());
+// Admins (and only admins) get full abstracts — see publicAbstractsJson above.
+app.use(resolveAbstractAccess);
 console.log("🔄 Initializing session store with PostgreSQL...");
 
 // CSRF protection middleware
