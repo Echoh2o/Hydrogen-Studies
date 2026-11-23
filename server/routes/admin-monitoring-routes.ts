@@ -12,6 +12,7 @@ import { jobScheduler } from "../services/job-scheduler";
 import { RUBRIC_VERSION } from "../services/study-scoring-service";
 import { ai } from "../services/ai-provider";
 import { fetchWithTimeout } from "../utils/http";
+import { logger } from "../utils/logger";
 
 /**
  * Per-study cap for the loopback enrichment calls below. Enrichment runs AI
@@ -362,7 +363,7 @@ router.post("/trigger/consumer-content", async (req: Request, res: Response) => 
       }
       processStatus.consumerContentGeneration.studiesProcessed += processed;
       processStatus.consumerContentGeneration.isRunning = false;
-    })();
+    })().catch((err) => logger.error("Background consumer-content loop failed", err, "AdminMonitoring"));
 
     res.json({
       started: true,
@@ -413,7 +414,7 @@ router.post("/trigger/research-enrichment", async (req: Request, res: Response) 
       }
       processStatus.researchEnrichment.studiesProcessed += processed;
       processStatus.researchEnrichment.isRunning = false;
-    })();
+    })().catch((err) => logger.error("Background research-enrichment loop failed", err, "AdminMonitoring"));
 
     res.json({
       started: true,
@@ -464,7 +465,7 @@ router.post("/trigger/visual-enhancement", async (req: Request, res: Response) =
       }
       processStatus.visualEnhancement.studiesProcessed += processed;
       processStatus.visualEnhancement.isRunning = false;
-    })();
+    })().catch((err) => logger.error("Background image-generation loop failed", err, "AdminMonitoring"));
 
     res.json({
       started: true,

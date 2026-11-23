@@ -556,7 +556,7 @@ router.post("/keyword-strategy/generate-pillar/:id", aiGenerationRateLimiter, as
   void saveJobState({ id: `seo-factory:${clusterId}`, kind: "seo-factory", status: "running", progress: { kind: "pillar", clusterId } });
 
   // Fire and forget — don't block the response on generation
-  (async () => {
+  void (async () => {
     try {
       const result = await generateKeywordPillarPage(clusterId);
       logger.info(
@@ -637,7 +637,7 @@ router.post("/keyword-strategy/generate-full-cluster/:id", aiGenerationRateLimit
   inFlightClusterJobs.set(clusterId, { kind: "full", startedAt: new Date() });
   void saveJobState({ id: `seo-factory:${clusterId}`, kind: "seo-factory", status: "running", progress: { kind: "full", clusterId } });
 
-  (async () => {
+  void (async () => {
     try {
       const result = await generateFullCluster(clusterId, delayMs);
       logger.info(
