@@ -16,6 +16,8 @@ const QUERIES = [
   "/api/studies/timeline",
   "/api/studies/trends",
   "/api/studies/health-outcomes",
+  // Byline date (latestStudyUpdate) — useSiteLastUpdated.
+  "/api/public-stats",
 ];
 
 export default async function Page() {

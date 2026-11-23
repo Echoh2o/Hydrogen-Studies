@@ -2,6 +2,8 @@
 // Body of /studies (search, filters, paginated list), shared by the SPA
 // (studies.tsx) and the Next.js front door, which passes the first page of
 // results so the list is in the HTML. Needs React Query + a wouter Router.
+import { useSiteLastUpdated } from "@/hooks/use-site-last-updated";
+import { PageBylineLine } from "@/components/PageBylineLine";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -32,6 +34,8 @@ export function StudiesContent({ initial }: { initial?: { key: string; data: Stu
   // wouter's useLocation() has no query string; useSearch() does, so URL
   // filters (?category=…&page=…) now actually seed the state.
   const urlParams = new URLSearchParams(useSearch());
+  // Byline date: newest study change in the directory (shared/page-byline).
+  const lastUpdated = useSiteLastUpdated();
 
   const [currentPage, setCurrentPage] = useState(
     parseInt(urlParams.get("page") || "1")
@@ -197,6 +201,7 @@ export function StudiesContent({ initial }: { initial?: { key: string; data: Stu
                 {totalStudies.toLocaleString("en-US")} studies found
               </span>
             </div>
+            <PageBylineLine date={lastUpdated} />
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               {/* Filters sidebar */}

@@ -647,6 +647,13 @@ app.get("/api/public-stats", generalApiRateLimiter, async (req, res) => {
     const [humanResult] = await database.select({ value: countFn() }).from(studiesTable).where(sqlFn`${studiesTable.isHumanTrial} = true AND ${live}`);
     const [oldestResult] = await database.select({ value: sqlFn`MIN(${studiesTable.publishYear})` }).from(studiesTable).where(sqlFn`${studiesTable.publishYear} IS NOT NULL AND ${studiesTable.publishYear} > 1900 AND ${live}`);
 
+    // Newest study change (the sitemap's lastmod column) — the truthful
+    // "Last updated" date for site-wide listings (shared/page-byline.ts).
+    const [latestResult] = await database
+      .select({ value: sqlFn<string | null>`to_char(MAX(COALESCE(${studiesTable.lastModified}, ${studiesTable.createdAt})), 'YYYY-MM-DD')` })
+      .from(studiesTable)
+      .where(live);
+
     const totalStudies = Number(totalResult?.value || 0);
     const countries = Number(countryResult?.value || 0);
     const peerReviewed = Number(peerReviewedResult?.value || 0);
@@ -664,6 +671,7 @@ app.get("/api/public-stats", generalApiRateLimiter, async (req, res) => {
       humanTrials,
       yearsOfResearch,
       oldestYear,
+      latestStudyUpdate: latestResult?.value ?? null,
     };
     cachedStatsTime = now;
     res.json(cachedStats);

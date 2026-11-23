@@ -2,6 +2,7 @@
 // Body of the homepage, shared by the SPA (HomePage.tsx) and the Next.js front
 // door (web/). Data comes in as props (each renderer fetches it); links use
 // the renderer's own Link (wouter in the SPA, plain anchors in Next).
+import { PageBylineLine } from "@/components/PageBylineLine";
 import type { ComponentType, ReactNode } from "react";
 import {
   Search,
@@ -29,6 +30,8 @@ export interface SiteStats {
   humanTrials: number;
   yearsOfResearch: number;
   peerReviewedPct: number;
+  /** Newest study change, YYYY-MM-DD (/api/public-stats) — the byline date. */
+  latestStudyUpdate?: string | null;
 }
 
 type LinkLike = ComponentType<{ href: string; className?: string; children?: ReactNode }>;
@@ -110,6 +113,7 @@ export function HomeContent({
                 Molecular Hydrogen
               </span>
             </h1>
+            <PageBylineLine date={siteStats?.latestStudyUpdate} className="byline text-sm text-gray-600 mb-6" />
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
               Molecular Hydrogen is being studied for the health benefits it provides.
               Delivered through Hydrogen Water, Hydrogen Inhalation, Hydrogen Bathing,

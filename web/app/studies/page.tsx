@@ -3,6 +3,7 @@ import { studiesQueryString, type StudiesPageResponse } from "@/pages/content/st
 import { abstractExcerpt } from "@shared/seo-markup";
 import { contentPage } from "@web/lib/content-page";
 import { expressJson } from "@web/lib/page-data";
+import { prefetchQueries } from "@web/lib/prefetch";
 import { ClientProviders } from "@web/components/ClientProviders";
 import { WouterBridge } from "@web/components/WouterBridge";
 
@@ -42,9 +43,11 @@ export default async function Page({ searchParams }: { searchParams: Record<stri
   } catch {
     initial = undefined; // the client fetches it instead
   }
+  // Byline date (latestStudyUpdate) for useSiteLastUpdated, in the HTML.
+  const state = await prefetchQueries(["/api/public-stats"], 600, ["/studies"]);
   return (
     <page.Shell>
-      <ClientProviders>
+      <ClientProviders dehydratedState={state}>
         <WouterBridge path="/studies" search={search}>
           <StudiesContent initial={initial} />
         </WouterBridge>

@@ -4,6 +4,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { jsonLdSafe } from "@shared/json-ld";
 import {
   EDITORIAL_TEAM,
+  NO_ABSTRACT_NOTE,
   displayStudyType,
   excerptAtWord,
   journalDisplayName,
@@ -37,6 +38,8 @@ interface StudyPageData {
     title: string;
     abstractExcerpt: string;
     sourceLink: { href: string; label: string } | null;
+    /** No real abstract: Express withheld the AI-written fields. */
+    titleOnly?: boolean;
   };
   hubLinks: HubLink[];
   authorLinks?: { name: string; href: string | null }[];
@@ -248,6 +251,7 @@ export default async function StudyPage({ params }: { params: { slug: string } }
             </dl>
           )}
 
+          {study.titleOnly && <p className="no-abstract mb-8 text-neutral-700">{NO_ABSTRACT_NOTE}</p>}
           {study.tldr && <Section title="TL;DR"><p>{study.tldr}</p></Section>}
           {study.keyFinding && <Section title="Key Finding"><p>{study.keyFinding}</p></Section>}
           {summary && <Section title="Summary"><p>{summary}</p></Section>}

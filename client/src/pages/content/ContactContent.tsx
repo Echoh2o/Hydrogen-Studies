@@ -1,6 +1,8 @@
 "use client";
 // Body of the contact page (form + FAQ), shared by the SPA (ContactPage.tsx)
 // and the Next.js front door (web/). Needs a QueryClientProvider + Toaster.
+import { STATIC_PAGE_UPDATED } from "@shared/page-byline";
+import { PageBylineLine } from "@/components/PageBylineLine";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -87,6 +89,7 @@ export function ContactContent() {
       <main className="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Contact Us</h1>
+          <PageBylineLine date={STATIC_PAGE_UPDATED["/contact"]} />
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Have questions about hydrogen therapy research? Need help navigating our database? 
             We're here to help!

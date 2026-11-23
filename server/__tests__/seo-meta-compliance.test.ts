@@ -147,6 +147,16 @@ describe("#7 per-route static meta", () => {
     expect(ld.mainEntity[0].name).toBe("Can hydrogen water help manage diabetes?");
   });
 
+  // Audit 2026-11-22: these were 176–224 chars.
+  it.each([
+    "/products", "/limits-of-the-evidence", "/null-and-negative-results", "/is-hydrogen-water-a-scam",
+    "/dataset", "/state-of-hydrogen-research", "/evidence-gap-map",
+  ])("%s description ≤ 160 chars", (p) => {
+    const meta = resolveStaticPageMeta(p)!;
+    expect(meta).not.toBeNull();
+    expect(meta.description.length).toBeLessThanOrEqual(160);
+  });
+
   it("unknown hydrogen-for slug has no meta", () => {
     expect(resolveStaticPageMeta("/hydrogen-for/not-a-topic")).toBeNull();
   });

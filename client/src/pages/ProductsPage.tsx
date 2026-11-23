@@ -22,7 +22,7 @@ export default function ProductsPage() {
         <title>Hydrogen Water Devices: What to Check | Hydrogen Studies</title>
         <meta
           name="description"
-          content="How hydrogen water bottles, machines, tablets and inhalers work, what ppm figures mean, outgassing, electrodes and third-party testing, plus our funder Echo's devices, labeled."
+          content="How hydrogen water bottles, machines, tablets and inhalers work, what ppm figures mean and how testing works, plus our funder Echo's devices, labeled."
         />
         <link rel="canonical" href="https://hydrogenstudies.com/products" />
       </Helmet>

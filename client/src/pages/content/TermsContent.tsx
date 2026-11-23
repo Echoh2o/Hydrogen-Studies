@@ -1,6 +1,8 @@
 "use client";
 // Body of the TermsOfServicePage page, shared by the SPA (TermsOfServicePage.tsx) and the Next.js
 // front door (web/), so both serve the same text. No layout or data here.
+import { STATIC_PAGE_UPDATED } from "@shared/page-byline";
+import { PageBylineLine } from "@/components/PageBylineLine";
 import { Card } from "@/components/ui/card";
 
 export function TermsContent() {
@@ -9,7 +11,8 @@ export function TermsContent() {
       
       <main className="max-w-4xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
         <Card className="p-8 shadow-lg bg-white">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">Terms of Service</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Terms of Service</h1>
+          <PageBylineLine date={STATIC_PAGE_UPDATED["/terms"]} className="byline text-sm text-neutral-600 mb-8" />
           
           <div className="prose prose-gray max-w-none">
             <p className="text-sm text-gray-600 mb-6">

@@ -8,6 +8,33 @@ import { aiGenerationRateLimiter } from "../utils/rate-limiting";
 
 const router = express.Router();
 
+/**
+ * Consumer category names → the canonical /explore-by-body-system/<slug> hub
+ * whose matching (shared/explore-hubs.ts terms over studies.body_systems) the
+ * count reuses. The legacy `category` values these names used to map to
+ * ("Cardiovascular", "Neurological", …) no longer exist — live values are
+ * e.g. "General", "Lung" — so every mapped count was 0 (audit 2026-11-22).
+ * Names without a body-system hub keep the older fallbacks below.
+ */
+export const CONSUMER_CATEGORY_HUB: Readonly<Record<string, string>> = {
+  "Heart Disease & Hypertension": "cardiovascular",
+  "Brain & Neurological Disorders": "brain-nervous-system",
+  "Diabetes & Metabolic Health": "endocrine",
+  "Arthritis & Inflammation": "immune-system",
+  "Lung & Respiratory Conditions": "respiratory",
+  "Digestive Health (Gut/Liver)": "digestive",
+  "Cardiovascular System": "cardiovascular",
+  "Nervous System": "brain-nervous-system",
+  "Respiratory System": "respiratory",
+  "Digestive System": "digestive",
+  "Immune System": "immune-system",
+  "Musculoskeletal System": "musculoskeletal",
+  "Renal System": "urinary-renal",
+  "Integumentary System": "skin-dermatology",
+  "Endocrine System": "endocrine",
+  "Reproductive System": "reproductive",
+};
+
 // High-performance cache for category counts
 let categoryCountsCache: any = null;
 let cacheTimestamp = 0;
@@ -165,6 +192,19 @@ router.get("/counts", async (req, res) => {
     // Try join table first, then fall back to consumer_categories JSON + keyword search
     let countMap: Record<string, number> = {};
 
+    // Same matching as the /explore-by-body-system/* hub pages.
+    let hubCounts: Record<string, number> | null = null;
+    try {
+      const { getBodySystemHubCounts } = await import("../middleware/seo-body-renderer");
+      hubCounts = await getBodySystemHubCounts();
+    } catch (e) {
+      console.error("Body-system hub counts failed:", e);
+    }
+    const hubCount = (name: string): string | null => {
+      const slug = CONSUMER_CATEGORY_HUB[name];
+      return slug && hubCounts && typeof hubCounts[slug] === "number" ? String(hubCounts[slug]) : null;
+    };
+
     try {
       const allCounts = await pool.query(`
         SELECT c.name, COUNT(DISTINCT s.id) as count
@@ -245,7 +285,7 @@ router.get("/counts", async (req, res) => {
     // Map to consumer-friendly names with authentic counts
     const healthConditionCounts = conditionCategories.map((name) => ({
       name,
-      count: (countMap[categoryMapping[name]] || 0).toString(),
+      count: hubCount(name) ?? (countMap[categoryMapping[name]] || 0).toString(),
     }));
 
     // Body systems: use the body_systems array column directly (most accurate)
@@ -265,6 +305,8 @@ router.get("/counts", async (req, res) => {
       });
 
       bodySystemCounts = bodySystemCategories.map((name) => {
+        const fromHub = hubCount(name);
+        if (fromHub !== null) return { name, count: fromHub };
         // Direct match from body_systems array
         if (bsMap[name] && bsMap[name] > 0) {
           return { name, count: bsMap[name].toString() };
@@ -280,6 +322,8 @@ router.get("/counts", async (req, res) => {
     } catch {
       // If body_systems query fails, use original fallback logic
       bodySystemCounts = bodySystemCategories.map((name) => {
+        const fromHub = hubCount(name);
+        if (fromHub !== null) return { name, count: fromHub };
         const mapped = categoryMapping[name];
         if (mapped === "__keyword_search__") {
           return { name, count: (countMap[`__kw_${name}`] || 0).toString() };
@@ -299,6 +343,8 @@ router.get("/counts", async (req, res) => {
         condition: healthConditionCounts,
         body_system: bodySystemCounts,
         life_stage: lifeStageCount,
+        // Per /explore-by-body-system/<slug> hub (same matching as the hub page).
+        body_system_hubs: hubCounts ?? {},
       },
     };
 

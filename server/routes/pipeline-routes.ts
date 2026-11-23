@@ -321,6 +321,9 @@ router.post("/digests/generate", async (req, res) => {
   try {
     const { generateWeeklyDigest } = await import("../services/research-digest-generator");
     const digest = await generateWeeklyDigest();
+    if (!digest) {
+      return res.status(409).json({ error: "Content generation is paused (GENERATION_ENABLED=false — see docs/PLAN.md)", generationDisabled: true });
+    }
     res.json({ success: true, digest });
   } catch (error) {
     logger.error("Digest generation failed", error, "PipelineRoutes");

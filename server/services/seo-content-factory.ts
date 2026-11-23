@@ -10,6 +10,7 @@
  */
 
 import { ai } from "./ai-provider";
+import { generationEnabled, GENERATION_DISABLED_MESSAGE } from "../utils/generation-flags";
 import { db } from "../db";
 import { studies, blogArticles } from "../../shared/schema";
 import { eq, sql, and, ilike, or, desc, isNotNull } from "drizzle-orm";
@@ -121,6 +122,7 @@ export interface GeneratedArticle {
  * Generate a pillar page for a specific topic cluster
  */
 export async function generatePillarPage(cluster: TopicCluster): Promise<GeneratedArticle | null> {
+  if (!generationEnabled()) return null;
   if (ai.getProviderStatus().primary === "none") return null;
 
   // Fetch all related studies for this topic
@@ -278,6 +280,7 @@ export async function generateClusterPost(
   cluster: TopicCluster,
   clusterKeyword: TopicCluster["clusterKeywords"][number],
 ): Promise<GeneratedArticle | null> {
+  if (!generationEnabled()) return null;
   if (ai.getProviderStatus().primary === "none") return null;
 
   // Fetch related studies
@@ -417,8 +420,13 @@ export async function saveGeneratedArticle(
   studyId?: number,
 ): Promise<number | null> {
   try {
-    // Choke-point guard: this function publishes (isPublished: true) — refuse
-    // stub bodies here too in case a future generator forgets its own gate.
+    // Kill-switch + choke-point guard. Generated articles are saved as DRAFTS
+    // only (docs/PLAN.md §2) — a human publishes them from /admin. Refuse stub
+    // bodies here too in case a future generator forgets its own gate.
+    if (!generationEnabled()) {
+      console.warn(`[ContentFactory] ${GENERATION_DISABLED_MESSAGE} — not saving "${article.title}"`);
+      return null;
+    }
     if (!article.content || article.content.trim().length < 500) {
       console.error(
         `[ContentFactory] Refusing to publish "${article.title}" — content is ` +
@@ -454,7 +462,7 @@ export async function saveGeneratedArticle(
         quickInsights: article.quickInsights,
         readingLevel: article.readingLevel,
         articleType: article.articleType,
-        isPublished: true,
+        isPublished: false, // drafts only (docs/PLAN.md §2)
         metaTitle: article.metaTitle,
         metaDescription: article.metaDescription,
         ogTitle: article.ogTitle,
@@ -482,7 +490,7 @@ export async function saveGeneratedArticle(
           quickInsights: article.quickInsights,
           readingLevel: article.readingLevel,
           articleType: article.articleType,
-          isPublished: true,
+          isPublished: false, // drafts only (docs/PLAN.md §2)
           metaTitle: article.metaTitle,
           metaDescription: article.metaDescription,
           ogTitle: article.ogTitle,
@@ -545,6 +553,11 @@ export async function runContentFactory(options: {
     specificTopic,
     onProgress,
   } = options;
+
+  if (!generationEnabled()) {
+    console.warn(`[ContentFactory] ${GENERATION_DISABLED_MESSAGE} — run skipped`);
+    return { pillarsGenerated: 0, clustersGenerated: 0, failed: 0, topics: [] };
+  }
 
   let clusters = await generateTopicClusters();
 

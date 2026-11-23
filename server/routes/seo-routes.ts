@@ -13,7 +13,7 @@ import { requireAdmin } from "../auth";
 import { logger } from "../utils/logger";
 import { toAbsoluteUrl } from "../utils/absolute-url";
 import { LIFE_STAGE_HUB_SLUGS, MECHANISM_HUB_SLUGS, exploreHubPath } from "../utils/explore-hubs";
-import { getConditionHubSummaries, getLiveBodySystemHubs } from "../middleware/seo-body-renderer";
+import { getConditionHubSummaries, getLiveBodySystemHubs, getLiveExploreHubs } from "../middleware/seo-body-renderer";
 
 const router = Router();
 const SITE_URL = process.env.SITE_URL || "https://hydrogenstudies.com";
@@ -546,6 +546,18 @@ router.get("/sitemap-explore.xml", async (req: Request, res: Response) => {
     for (const { slug: bs } of await getLiveBodySystemHubs()) {
       urls.push(`  <url>
     <loc>${SITE_URL}/explore-by-body-system/${bs}</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>`);
+    }
+
+    // Delivery-method detail hubs that currently list ≥1 study — the same
+    // getLiveExploreHubs list the 404 predicate (exploreHubExists) and both
+    // indexes read, so every URL here is a 200, index,follow page.
+    for (const { slug: dm } of await getLiveExploreHubs("delivery-method")) {
+      urls.push(`  <url>
+    <loc>${SITE_URL}${exploreHubPath("delivery-method", dm)}</loc>
     <lastmod>${today}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>

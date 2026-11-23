@@ -11,15 +11,54 @@ import { requireAdmin } from "../auth";
 import { jobScheduler } from "../services/job-scheduler";
 import { RUBRIC_VERSION } from "../services/study-scoring-service";
 import { ai } from "../services/ai-provider";
-import { fetchWithTimeout } from "../utils/http";
+import { enhanceStudyContent } from "../services/content-enrichment";
 import { logger } from "../utils/logger";
 
 /**
- * Per-study cap for the loopback enrichment calls below. Enrichment runs AI
- * + external lookups and can legitimately take a while, but without a cap a
- * hung request wedges the in-process isRunning guard forever.
+ * Per-study cap for the enrichment calls below. Enrichment runs external
+ * lookups and can legitimately take a while, but without a cap a hung call
+ * wedges the in-process isRunning guard forever.
  */
 const ENRICHMENT_CALL_TIMEOUT_MS = 120_000;
+
+type TriggerKey = "consumerContentGeneration" | "researchEnrichment" | "visualEnhancement";
+
+/**
+ * Background loop for the /trigger/* buttons. Calls the enrichment service
+ * directly (it used to POST to http://localhost/api/content-enrichment/study/:id
+ * without a session, so requireAdmin rejected every call while the job still
+ * reported started: true). Sequential, one study at a time, each capped at
+ * ENRICHMENT_CALL_TIMEOUT_MS; isRunning is always cleared in finally.
+ */
+export async function runEnrichmentTrigger(
+  key: TriggerKey,
+  studyIds: number[],
+  enhance: (id: number) => Promise<{ success: boolean; message?: string }> = enhanceStudyContent,
+): Promise<number> {
+  let processed = 0;
+  try {
+    for (const id of studyIds) {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        const result = await Promise.race([
+          enhance(id),
+          new Promise<never>((_, reject) => {
+            timer = setTimeout(() => reject(new Error(`timed out after ${ENRICHMENT_CALL_TIMEOUT_MS}ms`)), ENRICHMENT_CALL_TIMEOUT_MS);
+          }),
+        ]);
+        if (result.success) processed++;
+      } catch (err) {
+        logger.error(`Failed to enrich study ${id}`, err, "AdminMonitoring");
+      } finally {
+        if (timer) clearTimeout(timer);
+      }
+    }
+  } finally {
+    processStatus[key].studiesProcessed += processed;
+    processStatus[key].isRunning = false;
+  }
+  return processed;
+}
 
 const router = Router();
 
@@ -27,7 +66,7 @@ const router = Router();
 router.use(requireAdmin);
 
 // Track active processes
-const processStatus = {
+export const processStatus = {
   consumerContentGeneration: {
     isRunning: false,
     lastRun: null as string | null,
@@ -346,24 +385,8 @@ router.post("/trigger/consumer-content", async (req: Request, res: Response) => 
       .limit(50);
 
     // Process in background
-    (async () => {
-      let processed = 0;
-      for (const study of candidates) {
-        try {
-          // Use the existing content enrichment endpoint
-          const response = await fetchWithTimeout(
-            `http://localhost:${process.env.PORT || 5000}/api/content-enrichment/study/${study.id}`,
-            { method: "POST", headers: { "Content-Type": "application/json" } },
-            ENRICHMENT_CALL_TIMEOUT_MS,
-          );
-          if (response.ok) processed++;
-        } catch (err) {
-          console.error(`Failed to enrich study ${study.id}:`, err);
-        }
-      }
-      processStatus.consumerContentGeneration.studiesProcessed += processed;
-      processStatus.consumerContentGeneration.isRunning = false;
-    })().catch((err) => logger.error("Background consumer-content loop failed", err, "AdminMonitoring"));
+    void runEnrichmentTrigger("consumerContentGeneration", candidates.map((c) => c.id))
+      .catch((err) => logger.error("Background consumer-content loop failed", err, "AdminMonitoring"));
 
     res.json({
       started: true,
@@ -398,23 +421,8 @@ router.post("/trigger/research-enrichment", async (req: Request, res: Response) 
       .where(isNull(studies.doi))
       .limit(50);
 
-    (async () => {
-      let processed = 0;
-      for (const study of candidates) {
-        try {
-          const response = await fetchWithTimeout(
-            `http://localhost:${process.env.PORT || 5000}/api/content-enrichment/study/${study.id}`,
-            { method: "POST", headers: { "Content-Type": "application/json" } },
-            ENRICHMENT_CALL_TIMEOUT_MS,
-          );
-          if (response.ok) processed++;
-        } catch (err) {
-          console.error(`Failed to enrich study ${study.id}:`, err);
-        }
-      }
-      processStatus.researchEnrichment.studiesProcessed += processed;
-      processStatus.researchEnrichment.isRunning = false;
-    })().catch((err) => logger.error("Background research-enrichment loop failed", err, "AdminMonitoring"));
+    void runEnrichmentTrigger("researchEnrichment", candidates.map((c) => c.id))
+      .catch((err) => logger.error("Background research-enrichment loop failed", err, "AdminMonitoring"));
 
     res.json({
       started: true,
@@ -449,23 +457,8 @@ router.post("/trigger/visual-enhancement", async (req: Request, res: Response) =
       .where(isNull(studies.imageUrl))
       .limit(20);
 
-    (async () => {
-      let processed = 0;
-      for (const study of candidates) {
-        try {
-          const response = await fetchWithTimeout(
-            `http://localhost:${process.env.PORT || 5000}/api/content-enrichment/study/${study.id}`,
-            { method: "POST", headers: { "Content-Type": "application/json" } },
-            ENRICHMENT_CALL_TIMEOUT_MS,
-          );
-          if (response.ok) processed++;
-        } catch (err) {
-          console.error(`Failed to enrich study ${study.id}:`, err);
-        }
-      }
-      processStatus.visualEnhancement.studiesProcessed += processed;
-      processStatus.visualEnhancement.isRunning = false;
-    })().catch((err) => logger.error("Background image-generation loop failed", err, "AdminMonitoring"));
+    void runEnrichmentTrigger("visualEnhancement", candidates.map((c) => c.id))
+      .catch((err) => logger.error("Background image-generation loop failed", err, "AdminMonitoring"));
 
     res.json({
       started: true,

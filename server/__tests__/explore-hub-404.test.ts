@@ -506,5 +506,9 @@ describe("sitemaps list only valid hubs", () => {
     // Canonical body-system hubs without studies are left out.
     expect(res.text).not.toContain("/explore-by-body-system/eyes-vision<");
     expect(res.text).toContain("/explore-by-body-system/cardiovascular<");
+    // Delivery-method hubs with studies are advertised (audit 2026-11-22);
+    // ones without studies (404s) are not.
+    expect(res.text).toContain("/explore-by-delivery-method/inhalation<");
+    expect(res.text).not.toContain("/explore-by-delivery-method/tablets<");
   });
 });

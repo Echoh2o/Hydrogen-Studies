@@ -15,6 +15,7 @@ export default function HomePage() {
     humanTrials: number;
     yearsOfResearch: number;
     peerReviewedPct: number;
+    latestStudyUpdate?: string | null;
   }>({
     queryKey: ["/api/public-stats"],
     staleTime: 5 * 60 * 1000,

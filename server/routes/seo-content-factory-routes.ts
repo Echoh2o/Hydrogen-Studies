@@ -14,6 +14,7 @@ import { logger } from "../utils/logger";
 import { requireAdmin } from "../auth";
 import { aiGenerationRateLimiter } from "../utils/rate-limiting";
 import { saveJobState, listJobStates } from "../services/job-state-store";
+import { generationEnabled, GENERATION_DISABLED_MESSAGE } from "../utils/generation-flags";
 import {
   enrichAndSaveStudy,
   batchEnrichStudies,
@@ -47,6 +48,18 @@ const router = Router();
 
 // All routes require admin authentication
 router.use(requireAdmin);
+
+/**
+ * Kill-switch gate (docs/PLAN.md §2) for the content-factory / keyword-strategy
+ * generators. With GENERATION_ENABLED=false they answer 409 before any model
+ * call; when it is on, the services save drafts only (isPublished: false).
+ */
+export function requireGenerationEnabled(_req: Request, res: Response, next: () => void) {
+  if (!generationEnabled()) {
+    return res.status(409).json({ error: GENERATION_DISABLED_MESSAGE, generationDisabled: true });
+  }
+  next();
+}
 
 // ============================================================
 // Study Enrichment Endpoints
@@ -167,7 +180,7 @@ router.get("/content-factory/topics", async (req: Request, res: Response) => {
  * Generate a pillar page for a specific topic
  * Body: { topic: string }
  */
-router.post("/content-factory/generate-pillar", aiGenerationRateLimiter, async (req: Request, res: Response) => {
+router.post("/content-factory/generate-pillar", requireGenerationEnabled, aiGenerationRateLimiter, async (req: Request, res: Response) => {
   try {
     const { topic } = req.body;
     if (!topic) {
@@ -212,7 +225,7 @@ router.post("/content-factory/generate-pillar", aiGenerationRateLimiter, async (
  * Generate cluster posts for a specific topic
  * Body: { topic: string, maxPosts?: number }
  */
-router.post("/content-factory/generate-cluster", aiGenerationRateLimiter, async (req: Request, res: Response) => {
+router.post("/content-factory/generate-cluster", requireGenerationEnabled, aiGenerationRateLimiter, async (req: Request, res: Response) => {
   try {
     const { topic, maxPosts = 5 } = req.body;
     if (!topic) {
@@ -274,7 +287,7 @@ router.post("/content-factory/generate-cluster", aiGenerationRateLimiter, async 
  * Run the full content factory — generates pillar pages + cluster posts
  * Body: { maxTopics?, maxClustersPerTopic?, delayMs?, pillarOnly?, clusterOnly?, topic? }
  */
-router.post("/content-factory/run", aiGenerationRateLimiter, async (req: Request, res: Response) => {
+router.post("/content-factory/run", requireGenerationEnabled, aiGenerationRateLimiter, async (req: Request, res: Response) => {
   try {
     const {
       maxTopics = 5,
@@ -539,7 +552,7 @@ const inFlightClusterJobs = new Map<
  * Client polls /api/seo/keyword-strategy/overview — the cluster's
  * `hasPillar` field flips to true when generation completes.
  */
-router.post("/keyword-strategy/generate-pillar/:id", aiGenerationRateLimiter, async (req: Request, res: Response) => {
+router.post("/keyword-strategy/generate-pillar/:id", requireGenerationEnabled, aiGenerationRateLimiter, async (req: Request, res: Response) => {
   const clusterId = parseInt(req.params.id);
   if (isNaN(clusterId)) return res.status(400).json({ error: "Invalid cluster ID" });
 
@@ -596,7 +609,7 @@ router.post("/keyword-strategy/generate-pillar/:id", aiGenerationRateLimiter, as
  * Generate a single cluster post
  * Body: { keywordIndex: number }
  */
-router.post("/keyword-strategy/generate-cluster-post/:id", aiGenerationRateLimiter, async (req: Request, res: Response) => {
+router.post("/keyword-strategy/generate-cluster-post/:id", requireGenerationEnabled, aiGenerationRateLimiter, async (req: Request, res: Response) => {
   try {
     const clusterId = parseInt(req.params.id);
     const { keywordIndex } = req.body;
@@ -622,7 +635,7 @@ router.post("/keyword-strategy/generate-cluster-post/:id", aiGenerationRateLimit
  *
  * Body: { delayMs?: number }  (delay between posts to avoid rate limits)
  */
-router.post("/keyword-strategy/generate-full-cluster/:id", aiGenerationRateLimiter, async (req: Request, res: Response) => {
+router.post("/keyword-strategy/generate-full-cluster/:id", requireGenerationEnabled, aiGenerationRateLimiter, async (req: Request, res: Response) => {
   const clusterId = parseInt(req.params.id);
   if (isNaN(clusterId)) return res.status(400).json({ error: "Invalid cluster ID" });
 

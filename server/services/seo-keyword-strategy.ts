@@ -11,6 +11,7 @@
  */
 
 import { ai } from "./ai-provider";
+import { generationEnabled, GENERATION_DISABLED_MESSAGE } from "../utils/generation-flags";
 import { db } from "../db";
 import { studies, blogArticles, seoContentClusters } from "../../shared/schema";
 import { eq, sql, desc, ilike, or, inArray } from "drizzle-orm";
@@ -561,6 +562,9 @@ export async function generateKeywordPillarPage(clusterId: number): Promise<{
   if (!(await ensureClusterTableExists())) {
     return { success: false, message: "seo_content_clusters table not yet created. Deploy so the server can run the boot migrations (server/migrations/, registered in server/app.ts)." };
   }
+  if (!generationEnabled()) {
+    return { success: false, message: GENERATION_DISABLED_MESSAGE };
+  }
   if (ai.getProviderStatus().primary === "none") {
     return { success: false, message: "No AI provider configured" };
   }
@@ -713,7 +717,7 @@ Return JSON with: title, content (markdown), summary, metaTitle (60 chars), meta
       quickInsights: data.quickInsights || "",
       readingLevel: "general",
       articleType: "pillar_page",
-      isPublished: true,
+      isPublished: false, // drafts only (docs/PLAN.md §2)
       metaTitle: data.metaTitle || cluster.pillarTitle.substring(0, 60),
       metaDescription: data.metaDescription || "",
       ogTitle: data.ogTitle || "",
@@ -728,7 +732,7 @@ Return JSON with: title, content (markdown), summary, metaTitle (60 chars), meta
       .set({ pillarArticleId: article.id, updatedAt: new Date() })
       .where(eq(seoContentClusters.id, clusterId));
 
-    return { success: true, articleId: article.id, title: data.title, message: "Pillar page generated and saved" };
+    return { success: true, articleId: article.id, title: data.title, message: "Pillar page generated and saved as a draft" };
   } catch (error) {
     console.error(`[KeywordStrategy] Error generating pillar for "${cluster.pillarKeyword}":`, error);
     return { success: false, message: error instanceof Error ? error.message : "Generation failed" };
@@ -749,6 +753,9 @@ export async function generateKeywordClusterPost(
 }> {
   if (!(await ensureClusterTableExists())) {
     return { success: false, message: "seo_content_clusters table not yet created." };
+  }
+  if (!generationEnabled()) {
+    return { success: false, message: GENERATION_DISABLED_MESSAGE };
   }
   if (ai.getProviderStatus().primary === "none") {
     return { success: false, message: "No AI provider configured" };
@@ -886,7 +893,7 @@ Return JSON: title, content (markdown), summary, metaTitle (60 chars), metaDescr
       quickInsights: data.quickInsights || "",
       readingLevel: "general",
       articleType: `cluster_${ckw.articleType}`,
-      isPublished: true,
+      isPublished: false, // drafts only (docs/PLAN.md §2)
       metaTitle: data.metaTitle || ckw.title.substring(0, 60),
       metaDescription: data.metaDescription || "",
       ogTitle: data.ogTitle || "",
@@ -904,7 +911,7 @@ Return JSON: title, content (markdown), summary, metaTitle (60 chars), metaDescr
       })
       .where(eq(seoContentClusters.id, clusterId));
 
-    return { success: true, articleId: article.id, title: data.title, message: "Cluster post generated" };
+    return { success: true, articleId: article.id, title: data.title, message: "Cluster post generated and saved as a draft" };
   } catch (error) {
     console.error(`[KeywordStrategy] Error generating cluster post "${ckw.keyword}":`, error);
     return { success: false, message: error instanceof Error ? error.message : "Generation failed" };
@@ -923,6 +930,9 @@ export async function generateFullCluster(
   totalGenerated: number;
   totalFailed: number;
 }> {
+  if (!generationEnabled()) {
+    return { pillar: { success: false }, clusterPosts: [], totalGenerated: 0, totalFailed: 0 };
+  }
   // Generate pillar first
   const pillarResult = await generateKeywordPillarPage(clusterId);
 
