@@ -39,6 +39,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Link } from "wouter";
+import { abstractExcerpt, studySourceLink } from "@shared/seo-markup";
 import { Helmet } from "react-helmet";
 import SiteHeader from "@/components/layout/SiteHeader";
 import Footer from "@/components/layout/Footer";
@@ -59,6 +60,8 @@ interface Study {
   has_full_text: boolean;
   image_url: string;
   doi: string;
+  pmid?: string | null;
+  url?: string | null;
   plain_language_title: string;
   slug?: string;
 }
@@ -544,9 +547,34 @@ export default function SearchPage() {
                           <h3 className="text-xl font-semibold text-gray-900 mb-2 line-clamp-2 hover:text-teal-600">
                             {study.plain_language_title || study.title}
                           </h3>
-                          <p className="text-gray-600 mb-3 line-clamp-3">
-                            {study.abstract || "No abstract available."}
-                          </p>
+                          {(() => {
+                            // CLAUDE.md: ≤300-char excerpt + PubMed/DOI link; nothing when empty.
+                            const excerpt = abstractExcerpt(study.abstract);
+                            const source = studySourceLink(study);
+                            if (!excerpt) return null;
+                            const openSource = (e: React.SyntheticEvent) => {
+                              // The card is itself a link; open the source without nesting <a>.
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (source) window.open(source.href, "_blank", "noopener,noreferrer");
+                            };
+                            return (
+                              <div className="mb-3">
+                                <p className="text-gray-600 line-clamp-3">{excerpt}</p>
+                                {source && (
+                                  <span
+                                    role="link"
+                                    tabIndex={0}
+                                    className="text-sm text-teal-700 hover:underline"
+                                    onClick={openSource}
+                                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") openSource(e); }}
+                                  >
+                                    {source.label}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                         {study.image_url && (
                           <img
