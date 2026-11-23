@@ -142,6 +142,7 @@ export type RedirectDecision =
   | { kind: "gone"; id: number };
 
 let initialLoadDone = false;
+let cacheLoading: Promise<void> | null = null;
 
 /**
  * Decide what a GET/HEAD request should get before routing, or null to pass
@@ -168,9 +169,11 @@ export async function resolveRedirect(req: Request): Promise<RedirectDecision | 
     return null;
   }
 
-  // Lazy-load cache
+  // Lazy-load cache — single-flight, so a stale cache is reloaded once rather
+  // than by every request in flight (each load reads all ~14k rows).
   if (!initialLoadDone || isCacheStale()) {
-    await loadCache();
+    cacheLoading ??= loadCache().finally(() => (cacheLoading = null));
+    await cacheLoading;
     initialLoadDone = true;
   }
 

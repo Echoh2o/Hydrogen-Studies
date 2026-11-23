@@ -266,6 +266,17 @@ export function globalErrorHandler(
     );
   } else if (err.code === "EBADCSRFTOKEN") {
     handleApiError(res, err, ErrorType.FORBIDDEN, 403, "Invalid CSRF token");
+  } else if (isUnreadableBodyError(err)) {
+    // body-parser couldn't read the request (malformed JSON, unsupported
+    // Content-Encoding, oversized): the client's fault. Answer with its 4xx
+    // and don't report it — scanner POSTs were 500s in Sentry (SERVER-E).
+    res.status(err.status).json({
+      success: false,
+      message: err.status === 413 ? "Request body too large" : err.status === 415 ? "Unsupported request encoding" : "Malformed request body",
+      errorType: ErrorType.VALIDATION_ERROR,
+      timestamp: new Date().toISOString(),
+      requestId: (req as any).requestId,
+    });
   } else {
     handleApiError(res, err, ErrorType.UNKNOWN, 500);
   }
@@ -349,6 +360,18 @@ export function handleError(error: Error | unknown, context?: string): void {
     stack: errorStack,
     timestamp: new Date().toISOString(),
   });
+}
+
+/** A body-parser / raw-body client error (http-errors with a 4xx status and a body-read type). */
+export function isUnreadableBodyError(err: any): boolean {
+  const status = err?.status ?? err?.statusCode;
+  return (
+    typeof status === "number" &&
+    status >= 400 &&
+    status < 500 &&
+    typeof err?.type === "string" &&
+    /^(entity\.|encoding\.unsupported|charset\.unsupported|request\.(aborted|size\.invalid))/.test(err.type)
+  );
 }
 
 export function isOperationalError(error: any): boolean {
