@@ -560,7 +560,9 @@ export class JobScheduler {
         const start = Date.now();
         await this.withTimeout(
           () => this.runCitationBuildJob(),
-          3 * 60 * 1000,
+          // 10 min (was 3): 30 studies x CrossRef + Europe PMC calls with
+          // 1.5s rate-limit delays and per-reference DOI lookups.
+          10 * 60 * 1000,
           "citation-build"
         );
         const elapsed = Date.now() - start;
@@ -1597,13 +1599,29 @@ export class JobScheduler {
    */
   private async runCitationBuildJob() {
     try {
+      const { buildCitationNetwork, getLastCitationBuildAt } = await import("./citation-network-builder");
+
+      // First run since boot: the in-memory last-run time is gone, so seed it
+      // from the DB (max created_at of study_citations). A recent DB run means
+      // a deploy doesn't re-trigger the weekly job (Sentry SERVER-9: it timed
+      // out on every boot). No DB signal → run as before.
+      if (!this.lastCitationBuildCheck) {
+        const lastDbRun = await getLastCitationBuildAt();
+        if (lastDbRun && Date.now() - lastDbRun.getTime() < this.CITATION_BUILD_INTERVAL_MS) {
+          this.lastCitationBuildCheck = lastDbRun;
+          logger.info("Citation build ran recently (per DB) — skipping until a week after it", "JobScheduler", {
+            lastRun: lastDbRun.toISOString(),
+          });
+          return;
+        }
+      }
+
       if (this.lastCitationBuildCheck) {
         const elapsed = Date.now() - this.lastCitationBuildCheck.getTime();
         if (elapsed < this.CITATION_BUILD_INTERVAL_MS) return;
       }
 
       logger.info("Running citation network build", "JobScheduler");
-      const { buildCitationNetwork } = await import("./citation-network-builder");
       const result = await buildCitationNetwork();
       this.lastCitationBuildCheck = new Date();
       logger.info("Citation build complete", "JobScheduler", result);
