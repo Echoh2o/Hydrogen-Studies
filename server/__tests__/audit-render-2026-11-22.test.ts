@@ -217,17 +217,21 @@ describe("#1 /hydrogen-for/:slug", () => {
     await renderHydrogenForPage("brain-health");
     const q = state.queries.find((x) => /COUNT\(\*\) OVER\(\)/.test(x.text))!;
     expect(q).toBeTruthy();
-    expect(q.text).toMatch(/title ILIKE \$\d+ OR array_to_string\(health_conditions, ' '\) ILIKE \$\d+/);
+    expect(q.text).toMatch(/title ~\* \$\d+ OR array_to_string\(health_conditions, ' '\) ~\* \$\d+/);
     expect(q.text).toMatch(/LIMIT \$\d+/);
-    expect(q.params).toContain("%brain health%");
-    for (const t of topic.searchTerms) expect(q.params).toContain(`%${t}%`);
+    expect(q.params).toContain("\\mbrain health");
+    for (const t of topic.searchTerms) expect(q.params).toContain(`\\m${t}`);
     // never string-built
     expect(q.text).not.toContain("cognitive");
   });
 
-  it("escapes LIKE wildcards in terms", () => {
-    const { params } = dialect.sqlToQuery(hydrogenForMatch(["50%_x"], "a"));
-    expect(params).toContain("%50\\%\\_x%");
+  it("escapes regex metacharacters and matches at word starts only", () => {
+    const { params } = dialect.sqlToQuery(hydrogenForMatch(["a.b(c)"], "x"));
+    expect(params).toContain("\\ma\\.b\\(c\\)");
+    // Same semantics as Postgres \m: "aging" must not hit "imaging".
+    const re = (t: string) => new RegExp(`\\b${t}`, "i");
+    expect(re("aging").test("Brain imaging after stroke")).toBe(false);
+    expect(re("aging").test("Skin aging in mice")).toBe(true);
   });
 
   it("shows the true total while listing at most 30", async () => {

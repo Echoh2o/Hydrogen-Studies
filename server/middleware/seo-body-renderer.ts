@@ -1167,7 +1167,7 @@ const HYDROGEN_FOR_LIST_MAX = 30;
 
 /**
  * WHERE clause for a /hydrogen-for topic: the slug phrase OR any of the
- * topic's searchTerms (shared/hydrogen-for-topics.ts), each ILIKE'd against
+ * topic's searchTerms (shared/hydrogen-for-topics.ts), each matched at a word start (~* '\\m…') against
  * the title and the health_conditions text. Every term is a bound parameter.
  */
 export function hydrogenForMatch(searchTerms: readonly string[], slugPhrase: string): SQL {
@@ -1182,8 +1182,10 @@ export function hydrogenForMatch(searchTerms: readonly string[], slugPhrase: str
   }
   return sql.join(
     terms.map((t) => {
-      const pattern = `%${t.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
-      return sql`(title ILIKE ${pattern} OR array_to_string(health_conditions, ' ') ILIKE ${pattern})`;
+      // Word-start match (\m), not a substring: "aging" must not hit
+      // "imaging"/"managing", nor "UV" hit "uveitis".
+      const pattern = `\\m${t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`;
+      return sql`(title ~* ${pattern} OR array_to_string(health_conditions, ' ') ~* ${pattern})`;
     }),
     sql` OR `,
   );
