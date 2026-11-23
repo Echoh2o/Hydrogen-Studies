@@ -15,6 +15,8 @@ import { studies } from "@shared/schema";
 import { sql, eq } from "drizzle-orm";
 import { ai } from "./ai-provider";
 import { logger } from "../utils/logger";
+import { isModelRefusal } from "@shared/seo-markup";
+import { hasRealAbstract, realAbstractSql } from "../utils/real-abstract";
 
 const TAG = "SummaryEnrichment";
 
@@ -109,12 +111,16 @@ export async function enrichStudySummaries(
         duration: studies.duration,
         isHumanTrial: studies.isHumanTrial,
         h2DeliveryMethod: studies.h2DeliveryMethod,
+        plainSummary: studies.plainSummary,
+        practicalTakeaway: studies.practicalTakeaway,
       })
       .from(studies)
+      // Real abstracts only (audit 2026-11-22): a title-only study ("No
+      // abstract available") is never summarised — the model would see the
+      // title alone and refuse or invent findings.
       .where(
         sql`${studies.keyFinding} IS NULL
-            AND ${studies.abstract} IS NOT NULL
-            AND ${studies.abstract} != ''
+            AND ${realAbstractSql()}
             AND ${studies.isExcluded} = false`,
       )
       .limit(batchSize);
@@ -239,7 +245,16 @@ async function enrichSingleStudy(study: {
   duration: number | null;
   isHumanTrial: boolean | null;
   h2DeliveryMethod: string | null;
+  plainSummary?: string | null;
+  practicalTakeaway?: string | null;
 }): Promise<boolean> {
+  // Belt and braces for what realAbstractSql can't express: mark processed
+  // without calling the model.
+  if (!hasRealAbstract(study.abstract)) {
+    await db.update(studies).set({ keyFinding: PROCESSED_SENTINEL }).where(eq(studies.id, study.id));
+    return false;
+  }
+
   const userPrompt = `Title: ${study.title || "Not available"}
 Abstract: ${study.abstract || "Not available"}
 Study Type: ${study.studyType || "Not available"}
@@ -262,10 +277,22 @@ H2 Delivery: ${study.h2DeliveryMethod || "Not specified"}`;
 
   const result = validateResponse(rawResult);
 
+  // A refusal / meta-commentary in ANY field means the model refused this
+  // study: store nothing, mark it processed, never retry (same as the
+  // stop_reason: refusal handling in the caller).
+  if ([result.plain_summary, result.key_finding, result.practical_takeaway].some((v) => v && isModelRefusal(v))) {
+    logger.info("Model refused; marking processed", TAG, { studyId: study.id });
+    await db.update(studies).set({ keyFinding: PROCESSED_SENTINEL }).where(eq(studies.id, study.id));
+    return false;
+  }
+
   const updates: Record<string, any> = {};
   let hasContent = false;
+  // Only fill fields that are NULL: real content is kept, and a field holding
+  // the __no_content__ sentinel is intentionally empty and is never refilled.
+  const isNullField = (v: string | null | undefined) => v === null || v === undefined;
 
-  if (result.plain_summary) {
+  if (result.plain_summary && isNullField(study.plainSummary)) {
     updates.plainSummary = result.plain_summary;
     hasContent = true;
   }
@@ -273,7 +300,7 @@ H2 Delivery: ${study.h2DeliveryMethod || "Not specified"}`;
     updates.keyFinding = result.key_finding;
     hasContent = true;
   }
-  if (result.practical_takeaway) {
+  if (result.practical_takeaway && isNullField(study.practicalTakeaway)) {
     updates.practicalTakeaway = result.practical_takeaway;
     hasContent = true;
   }

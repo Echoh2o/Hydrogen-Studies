@@ -1671,38 +1671,13 @@ export class JobScheduler {
     const MAX_TLDRS_PER_CYCLE = 3; // Reduced from 10 to control API costs
 
     try {
-      const { isNull } = await import("drizzle-orm");
+      // Skip rules (real abstract only, never refill __no_content__, never
+      // store a refusal) live in tldr-backfill.ts — audit 2026-11-22.
+      const { runTldrBackfill } = await import("./tldr-backfill");
+      const { generated, refused } = await runTldrBackfill(MAX_TLDRS_PER_CYCLE);
 
-      const studiesWithoutTldr = await db
-        .select({ id: studies.id, title: studies.title, abstract: studies.abstract, conclusion: studies.conclusion })
-        .from(studies)
-        .where(sql`${studies.tldr} IS NULL AND ${studies.isExcluded} = false`)
-        .limit(MAX_TLDRS_PER_CYCLE);
-
-      if (studiesWithoutTldr.length === 0) return;
-
-      const { generateStudyTldr } = await import("./tldr-generator");
-      const { eq } = await import("drizzle-orm");
-
-      let generated = 0;
-
-      for (const study of studiesWithoutTldr) {
-        try {
-          if (!study.abstract) continue;
-
-          // Haiku (default) is 90% cheaper — TLDRs are simple summaries
-          const tldr = await generateStudyTldr(study, { caller: "JobScheduler.tldr" });
-          if (tldr) {
-            await db.update(studies).set({ tldr }).where(eq(studies.id, study.id));
-            generated++;
-          }
-        } catch (err: any) {
-          logger.warn(`TLDR generation failed for study ${study.id}: ${err.message}`, "JobScheduler");
-        }
-      }
-
-      if (generated > 0) {
-        logger.info(`Auto-generated ${generated} TLDRs (${studiesWithoutTldr.length - generated} remaining)`, "JobScheduler");
+      if (generated > 0 || refused > 0) {
+        logger.info(`Auto-generated ${generated} TLDRs (${refused} refusals marked processed)`, "JobScheduler");
       }
     } catch (error) {
       logger.error("TLDR generation job error", error, "JobScheduler");

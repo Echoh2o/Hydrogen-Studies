@@ -33,6 +33,11 @@ const PLACEHOLDER_VALUES = new Set([
   "abstract not available.", "no abstract", "no abstract.",
 ]);
 
+/** The lowercase filler strings isPlaceholder() rejects (for SQL filters). */
+export function placeholderStrings(): string[] {
+  return [...PLACEHOLDER_VALUES];
+}
+
 /**
  * True for values that must never be rendered: null/empty/whitespace, pipeline
  * sentinels like "__no_content__" (any __token__), and N/A-style fillers.
