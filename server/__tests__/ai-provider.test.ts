@@ -43,6 +43,7 @@ const mocks = vi.hoisted(() => {
     constructor(_opts?: unknown) {}
   }
   const logger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() };
+  const captureException = vi.fn();
 
   return {
     messagesCreate,
@@ -52,12 +53,14 @@ const mocks = vi.hoisted(() => {
     MockAPIError,
     MockAPIConnectionError,
     logger,
+    captureException,
   };
 });
 
 vi.mock("@anthropic-ai/sdk", () => ({ default: mocks.MockAnthropic }));
 vi.mock("openai", () => ({ default: mocks.MockOpenAI }));
 vi.mock("../utils/logger", () => ({ logger: mocks.logger }));
+vi.mock("../utils/sentry", () => ({ Sentry: { captureException: mocks.captureException } }));
 
 const savedEnv = {
   ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
@@ -93,6 +96,7 @@ beforeEach(() => {
   mocks.logger.info.mockClear();
   mocks.logger.warn.mockClear();
   mocks.logger.error.mockClear();
+  mocks.captureException.mockClear();
 });
 
 afterAll(() => {
@@ -264,5 +268,66 @@ describe("ai.generateText — usage logging (M2b)", () => {
         outputTokens: 45,
       }),
     );
+  });
+});
+
+describe("ai.generateText — billing/credit errors reach Sentry (throttled)", () => {
+  const creditError = () =>
+    new mocks.MockAPIError(
+      400,
+      '400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API."}}',
+    );
+
+  it("reports a 400 credit-balance error once with ai_billing tag + fingerprint, and rethrows", async () => {
+    const { ai } = await loadAi({ anthropic: true, openai: true });
+    const err = creditError();
+    mocks.messagesCreate.mockRejectedValueOnce(err);
+
+    await expect(ai.generateText("sys", "user", { caller: "Pipeline.step" })).rejects.toBe(err);
+    expect(mocks.openaiCreate).not.toHaveBeenCalled();
+    expect(mocks.captureException).toHaveBeenCalledTimes(1);
+    expect(mocks.captureException).toHaveBeenCalledWith(
+      err,
+      expect.objectContaining({
+        level: "error",
+        tags: expect.objectContaining({ ai_billing: true }),
+        fingerprint: ["anthropic-billing-credit-error"],
+      }),
+    );
+  });
+
+  it("throttles to one report per 10 minutes per process", async () => {
+    const { ai } = await loadAi({ anthropic: true });
+    const nowSpy = vi.spyOn(Date, "now");
+    try {
+      nowSpy.mockReturnValue(1_000_000);
+      mocks.messagesCreate.mockRejectedValue(creditError());
+      for (let i = 0; i < 5; i++) {
+        await expect(ai.generateText("sys", "user")).rejects.toThrow(/credit balance/);
+      }
+      expect(mocks.captureException).toHaveBeenCalledTimes(1);
+
+      nowSpy.mockReturnValue(1_000_000 + 9 * 60 * 1000);
+      await expect(ai.generateText("sys", "user")).rejects.toThrow();
+      expect(mocks.captureException).toHaveBeenCalledTimes(1);
+
+      nowSpy.mockReturnValue(1_000_000 + 11 * 60 * 1000);
+      await expect(ai.generateText("sys", "user")).rejects.toThrow();
+      expect(mocks.captureException).toHaveBeenCalledTimes(2);
+    } finally {
+      nowSpy.mockRestore();
+      mocks.messagesCreate.mockReset();
+    }
+  });
+
+  it("classifies 402 and billing 403 as billing; ordinary 400/403/429 are not", async () => {
+    const { isAnthropicBillingError } = await loadAi({ anthropic: true });
+    expect(isAnthropicBillingError(new mocks.MockAPIError(402, "Payment required"))).toBe(true);
+    expect(isAnthropicBillingError(new mocks.MockAPIError(403, "Your billing account is suspended"))).toBe(true);
+    expect(isAnthropicBillingError(creditError())).toBe(true);
+    expect(isAnthropicBillingError(new mocks.MockAPIError(400, "max_tokens: too large"))).toBe(false);
+    expect(isAnthropicBillingError(new mocks.MockAPIError(403, "Permission denied for model"))).toBe(false);
+    expect(isAnthropicBillingError(new mocks.MockAPIError(429, "credit balance rate limited"))).toBe(false);
+    expect(isAnthropicBillingError(new Error("Your credit balance is too low"))).toBe(false);
   });
 });

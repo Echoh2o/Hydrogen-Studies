@@ -14,6 +14,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { logger } from "../utils/logger";
+import { Sentry } from "../utils/sentry";
 
 // --- Anthropic (Claude) for text generation ---
 
@@ -166,6 +167,56 @@ function isRetryableAnthropicError(err: unknown): boolean {
   return false;
 }
 
+/**
+ * Billing/credit exhaustion. On 11-16/11-17 three pipeline items failed with
+ * Anthropic's 400 invalid_request_error "Your credit balance is too low" and
+ * nothing reached Sentry — the error was caught and stored per item. Detect
+ * it here: a 400 whose message mentions the credit balance, any 402, or a
+ * 403 whose message is billing-related.
+ */
+export function isAnthropicBillingError(err: unknown): boolean {
+  if (!(err instanceof Anthropic.APIError)) return false;
+  const status = err.status;
+  let text = err.message || "";
+  const body = (err as { error?: unknown }).error;
+  if (body !== undefined) {
+    try {
+      text += " " + JSON.stringify(body);
+    } catch {
+      /* ignore unserializable bodies */
+    }
+  }
+  if (status === 402) return true;
+  if (status === 400) return /credit balance/i.test(text);
+  if (status === 403) return /credit|billing|payment|insufficient funds/i.test(text);
+  return false;
+}
+
+const BILLING_REPORT_THROTTLE_MS = 10 * 60 * 1000;
+let lastBillingReportAt = 0;
+
+/** Report a billing error to Sentry at most once per process per 10 minutes. */
+function reportAnthropicBillingError(err: unknown, options: AIGenerateOptions): void {
+  const now = Date.now();
+  if (lastBillingReportAt && now - lastBillingReportAt < BILLING_REPORT_THROTTLE_MS) return;
+  lastBillingReportAt = now;
+  logger.error("Anthropic billing/credit error — AI generation is failing", err, "AIProvider");
+  try {
+    Sentry.captureException(err, {
+      level: "error",
+      tags: { ai_billing: true, ai_provider: "anthropic" },
+      fingerprint: ["anthropic-billing-credit-error"],
+      extra: {
+        status: err instanceof Anthropic.APIError ? err.status : undefined,
+        model: options.model || MODELS.SONNET,
+        caller: options.caller ?? "unattributed",
+      },
+    });
+  } catch {
+    /* reporting must never mask the original error */
+  }
+}
+
 async function generateTextWithAnthropic(
   claude: Anthropic,
   systemPrompt: string,
@@ -287,6 +338,7 @@ async function generateText(
     try {
       return await generateTextWithAnthropic(claude, systemPrompt, userPrompt, options);
     } catch (err) {
+      if (isAnthropicBillingError(err)) reportAnthropicBillingError(err, options);
       if (isRetryableAnthropicError(err) && isOpenAIConfigured()) {
         logger.warn(
           "Anthropic request failed after retries — falling back to OpenAI",
