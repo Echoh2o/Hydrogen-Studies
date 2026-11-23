@@ -3,3 +3,8 @@ nixPkgs = ["nodejs_22"]
 
 [phases.install]
 cmds = ["npm ci"]
+
+# onnxruntime-node (via @huggingface/transformers) would download CUDA
+# binaries on linux-x64; that asset 404s and prod is CPU-only. Same as .npmrc.
+[variables]
+ONNXRUNTIME_NODE_INSTALL_CUDA = "skip"
