@@ -18,6 +18,11 @@ import { enrichStudyFromPubMed } from "../services/pubmed-enricher";
 import { fetchWithTimeout } from "../utils/http";
 import { logger } from "../utils/logger";
 import { requireAdmin } from "../auth";
+import { clampPageSize } from "../utils/params";
+
+// External search fan-out is admin-only and capped so a single request
+// cannot drain the upstream (PubMed/Europe PMC/CrossRef/S2) quotas.
+const MAX_SEARCH_PAGE_SIZE = 100;
 import {
   checkStudyTopic,
   filterOffTopicSearchResults,
@@ -53,7 +58,7 @@ const router = Router();
  * based on the selected sources and returns consolidated results. It combines results
  * from different sources by matching DOIs and creates a unified listing.
  */
-router.get("/api/research/search", async (req: Request, res: Response) => {
+router.get("/api/research/search", requireAdmin, async (req: Request, res: Response) => {
   try {
     const {
       query,
@@ -67,7 +72,7 @@ router.get("/api/research/search", async (req: Request, res: Response) => {
     }
 
     const pageNum = parseInt(page as string) || 1;
-    const pageSizeNum = parseInt(pageSize as string) || 10;
+    const pageSizeNum = clampPageSize(pageSize, 10, MAX_SEARCH_PAGE_SIZE);
     const selectedSources =
       typeof sources === "string" ? sources.split(",") : ["pubmed"];
 
@@ -1248,6 +1253,7 @@ router.post("/api/europepmc/save", requireAdmin, async (req: Request, res: Respo
  */
 router.get(
   "/api/research/pubmed/search",
+  requireAdmin,
   async (req: Request, res: Response) => {
     try {
       const { query, page = "1", pageSize = "10" } = req.query;
@@ -1257,7 +1263,7 @@ router.get(
       }
 
       const pageNum = parseInt(page as string) || 1;
-      const pageSizeNum = parseInt(pageSize as string) || 10;
+      const pageSizeNum = clampPageSize(pageSize, 10, MAX_SEARCH_PAGE_SIZE);
 
       logger.info("PubMed search", "ResearchUnifiedRoutes", { query, page: pageNum, pageSize: pageSizeNum });
 
@@ -1292,6 +1298,7 @@ router.get(
  */
 router.get(
   "/api/research/europe-pmc/search",
+  requireAdmin,
   async (req: Request, res: Response) => {
     try {
       const { query, page = "1", pageSize = "10" } = req.query;
@@ -1301,7 +1308,7 @@ router.get(
       }
 
       const pageNum = parseInt(page as string) || 1;
-      const pageSizeNum = parseInt(pageSize as string) || 10;
+      const pageSizeNum = clampPageSize(pageSize, 10, MAX_SEARCH_PAGE_SIZE);
 
       logger.info("Europe PMC search", "ResearchUnifiedRoutes", { query, page: pageNum, pageSize: pageSizeNum });
 
@@ -1332,6 +1339,7 @@ router.get(
  */
 router.get(
   "/api/research/crossref/search",
+  requireAdmin,
   async (req: Request, res: Response) => {
     try {
       const { query, page = "1", pageSize = "10" } = req.query;
@@ -1341,7 +1349,7 @@ router.get(
       }
 
       const pageNum = parseInt(page as string) || 1;
-      const pageSizeNum = parseInt(pageSize as string) || 10;
+      const pageSizeNum = clampPageSize(pageSize, 10, MAX_SEARCH_PAGE_SIZE);
 
       logger.info("CrossRef search", "ResearchUnifiedRoutes", { query, page: pageNum, pageSize: pageSizeNum });
 
@@ -1372,6 +1380,7 @@ router.get(
  */
 router.get(
   "/api/research/semantic-scholar/search",
+  requireAdmin,
   async (req: Request, res: Response) => {
     try {
       const { query, page = "1", pageSize = "10" } = req.query;
@@ -1381,7 +1390,7 @@ router.get(
       }
 
       const pageNum = parseInt(page as string) || 1;
-      const pageSizeNum = parseInt(pageSize as string) || 10;
+      const pageSizeNum = clampPageSize(pageSize, 10, MAX_SEARCH_PAGE_SIZE);
 
       logger.info("Semantic Scholar search", "ResearchUnifiedRoutes", { query, page: pageNum, pageSize: pageSizeNum });
 

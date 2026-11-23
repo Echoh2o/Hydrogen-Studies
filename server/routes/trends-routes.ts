@@ -5,6 +5,7 @@
 import express from "express";
 import { requireAdmin, isElevatedRequest } from "../auth";
 import { logger } from "../utils/logger";
+import { parseIntParam, parseOptionalIntParam, PG_INT_MAX } from "../utils/params";
 import { trendDetectionService } from "../services/trend-detection-service";
 import { db } from "../db";
 import {
@@ -604,10 +605,16 @@ router.post("/track-metrics", requireAdmin, async (req, res) => {
  */
 router.get("/study-metrics/:id", async (req, res) => {
   try {
-    const studyId = parseInt(req.params.id);
-    const { days = "30" } = req.query;
+    const studyId = parseIntParam(req.params.id, { min: 1, max: PG_INT_MAX });
+    if (studyId === null) {
+      return res.status(400).json({ error: "Invalid study id" });
+    }
+    const days = parseOptionalIntParam(req.query.days, 30, { min: 1, max: 3650 });
+    if (days === null) {
+      return res.status(400).json({ error: "Invalid days parameter (1-3650)" });
+    }
 
-    const startDate = subDays(new Date(), parseInt(days as string));
+    const startDate = subDays(new Date(), days);
 
     const metrics = await db
       .select()

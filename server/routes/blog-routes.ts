@@ -11,6 +11,7 @@ import {
 import { notifyWebRevalidate } from "../services/web-revalidate";
 import { stripDeadBlogLinks } from "../../shared/content-links";
 import { getLiveBlogPredicate } from "../services/live-blog-index";
+import { parseIntParam, PG_INT_MAX } from "../utils/params";
 
 const router = Router();
 
@@ -595,7 +596,7 @@ router.get("/slug/:slug", async (req, res) => {
  */
 router.get("/:id(\\d+)", async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseIntParam(req.params.id, { min: 1, max: PG_INT_MAX }) ?? NaN;
 
     if (isNaN(id)) {
       return res.status(400).json({
@@ -1064,8 +1065,8 @@ router.post("/:id(\\d+)/demote-from-pillar", requireAdmin, async (req, res) => {
  */
 router.get("/:id(\\d+)/study-chart-data", async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) return res.status(400).json({ error: "Invalid blog ID" });
+    const id = parseIntParam(req.params.id, { min: 1, max: PG_INT_MAX });
+    if (id === null) return res.status(400).json({ error: "Invalid blog ID" });
 
     // Resolve the blog → its study, then category. Single round-trip.
     const [link]: any = await db.execute(sql`
