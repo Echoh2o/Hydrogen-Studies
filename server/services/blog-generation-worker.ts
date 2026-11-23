@@ -59,7 +59,7 @@ export async function startJob(jobId: number): Promise<{ success: boolean; messa
   }
 
   if (!(await ensureTableExists())) {
-    return { success: false, message: "Job queue table not yet created. Deploy with db:push first." };
+    return { success: false, message: "Job queue table not yet created. Deploy so the server can run the boot migrations (server/migrations/, registered in server/app.ts)." };
   }
 
   if (isProcessing) {

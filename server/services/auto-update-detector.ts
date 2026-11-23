@@ -16,6 +16,7 @@ import { contentOptimizationService } from "./content-optimization-service";
 import { ai } from "./ai-provider";
 import { handleOpenAIRequest } from "../utils/service-error-handlers";
 import { AppError, ErrorCode } from "../utils/app-errors";
+import { logger } from "../utils/logger";
 
 interface UpdateCheck {
   contentId: number;
@@ -30,6 +31,13 @@ interface UpdateCheck {
 export class AutoUpdateDetector {
   private isRunning = false;
   private checkInterval: NodeJS.Timeout | null = null;
+
+  /** Fire-and-forget wrapper: a rejected check must never become an unhandled rejection. */
+  private runCheckSafely(): void {
+    this.checkForUpdates().catch((err) =>
+      logger.error("Auto-update check failed", err, "AutoUpdateDetector"),
+    );
+  }
 
   /**
    * Start the auto-update detection process
@@ -46,12 +54,12 @@ export class AutoUpdateDetector {
     );
 
     // Run initial check
-    this.checkForUpdates();
+    this.runCheckSafely();
 
     // Set up recurring check
     this.checkInterval = setInterval(
       () => {
-        this.checkForUpdates();
+        this.runCheckSafely();
       },
       intervalMinutes * 60 * 1000,
     );

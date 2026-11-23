@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { requireAdmin } from "../auth";
 import { explorerDataService } from "../services/explorer-data-service";
+import { parseIntParam, PG_INT_MAX } from "../utils/params";
 
 const router = Router();
 
@@ -45,9 +46,12 @@ router.get("/api/explorer/body-systems", async (req, res) => {
 // Get study connections
 router.get("/api/explorer/study-connections", async (req, res) => {
   try {
-    const studyId = req.query.studyId
-      ? parseInt(req.query.studyId as string)
-      : undefined;
+    let studyId: number | undefined;
+    if (req.query.studyId !== undefined && req.query.studyId !== "") {
+      const parsed = parseIntParam(req.query.studyId, { min: 1, max: PG_INT_MAX });
+      if (parsed === null) return res.status(400).json({ error: "Invalid studyId" });
+      studyId = parsed;
+    }
     const data = await explorerDataService.getStudyConnections(studyId);
     res.json(data);
   } catch (error) {
@@ -82,7 +86,10 @@ router.get("/api/explorer/geographic-distribution", async (req, res) => {
 // Get comparison data for multiple studies
 router.get("/api/explorer/comparison/:ids", async (req, res) => {
   try {
-    const ids = req.params.ids.split(",").map((id) => parseInt(id));
+    const ids = req.params.ids.split(",").map((id) => parseIntParam(id, { min: 1, max: PG_INT_MAX }));
+    if (ids.some((id) => id === null)) {
+      return res.status(400).json({ error: "Invalid study id" });
+    }
 
     if (ids.length < 2 || ids.length > 3) {
       return res
@@ -90,7 +97,7 @@ router.get("/api/explorer/comparison/:ids", async (req, res) => {
         .json({ error: "Please select 2-3 studies for comparison" });
     }
 
-    const data = await explorerDataService.getComparisonData(ids);
+    const data = await explorerDataService.getComparisonData(ids as number[]);
     res.json(data);
   } catch (error) {
     console.error("Error fetching comparison data:", error);

@@ -146,6 +146,13 @@ const ADMIN_GET_ROUTES = [
   "/api/admin/monitoring/status", //    admin-monitoring-routes (router.use(requireAdmin))
   "/api/admin/journal-date-stats", //   inline route in app.ts
   "/api/webhooks/shopify/sync-status", // admin-facing route on the webhook router
+  // External-search fan-out (2026-11-22 audit): admin-only so the public
+  // can't drain the upstream PubMed/Europe PMC/CrossRef/S2 quotas.
+  "/api/research/search?query=hydrogen",
+  "/api/research/pubmed/search?query=hydrogen",
+  "/api/research/europe-pmc/search?query=hydrogen",
+  "/api/research/crossref/search?query=hydrogen",
+  "/api/research/semantic-scholar/search?query=hydrogen&pageSize=100000",
 ];
 
 describe("admin route guards (unauthenticated)", () => {
@@ -200,6 +207,23 @@ describe("admin route guards (unauthenticated)", () => {
         // guard's 401 JSON here instead and Google's redirect would break.
         expect(res.status).not.toBe(401);
         expect(res.body?.error).toBeUndefined();
+      });
+    }
+  });
+
+  describe("2b. malformed numeric ids on public GETs → 400, not 500", () => {
+    for (const route of [
+      "/api/trends/study-metrics/abc",
+      "/api/trends/study-metrics/1?days=abc",
+      "/api/trends/study-metrics/99999999999",
+      "/api/explorer/study-connections?studyId=abc",
+      "/api/explorer/comparison/1,abc",
+      "/api/blogs/99999999999",
+      "/api/blogs/99999999999/study-chart-data",
+    ]) {
+      it(`GET ${route} → 400`, async () => {
+        const res = await request(app).get(route);
+        expect(res.status).toBe(400);
       });
     }
   });

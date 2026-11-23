@@ -102,8 +102,8 @@ router.post("/customer-created", async (req: Request, res: Response) => {
     if (!verifyWebhookOrReject(req, res)) return;
 
     const customer = req.body;
+    // No email in logs (partial PII); the Shopify id is enough to trace.
     logger.info("Customer created webhook received", "Shopify", {
-      email: customer?.email,
       shopifyCustomerId: customer?.id,
     });
 
@@ -146,7 +146,8 @@ router.post("/customer-updated", async (req: Request, res: Response) => {
       return res.status(200).json({ status: "no_match" });
     }
 
-    logger.info("Customer updated", "Shopify", { email });
+    // ~50/min in prod: debug level (skipped in production), no email.
+    logger.debug("Customer updated", "Shopify", { userId: existingUser.id });
 
     // We could update profile fields here if needed
     // For now, just acknowledge
@@ -171,7 +172,8 @@ router.post("/order-created", async (req: Request, res: Response) => {
     }
 
     logger.info("Order created", "Shopify", {
-      email: order.email,
+      orderId: order.id,
+      shopifyCustomerId: order.customer?.id,
       totalPrice: order.total_price,
     });
 

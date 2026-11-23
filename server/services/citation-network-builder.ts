@@ -222,6 +222,29 @@ async function buildCitationsForStudy(studyId: number, doi: string): Promise<{
 }
 
 /**
+ * When the citation build last wrote anything: max(created_at) of
+ * study_citations (the table it inserts into). The scheduler keeps its weekly
+ * last-run time in memory, so without this every deploy re-ran the job.
+ * Returns null when the table is empty or the query fails.
+ */
+export async function getLastCitationBuildAt(): Promise<Date | null> {
+  try {
+    const result: any = await db.execute(
+      sql`SELECT MAX(created_at) AS last FROM study_citations`,
+    );
+    const raw = result?.rows?.[0]?.last ?? result?.[0]?.last ?? null;
+    if (!raw) return null;
+    const d = raw instanceof Date ? raw : new Date(raw);
+    return Number.isNaN(d.getTime()) ? null : d;
+  } catch (error) {
+    logger.warn("Could not read last citation build time", "CitationBuilder", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
+
+/**
  * Build citation network for a batch of studies.
  * Called weekly by the job scheduler.
  */
