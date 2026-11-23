@@ -577,7 +577,7 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
     // PLAN 5.4 device guide (shared/products-guide.ts); indexable since 2026-11-04.
     [PRODUCTS_PATH]: {
       title: `Hydrogen Water Devices: What to Check | ${SITE_NAME}`,
-      description: "How hydrogen water bottles, machines, tablets and inhalers work, what ppm figures mean, outgassing, electrodes and third-party testing, plus our funder Echo's devices, labeled."
+      description: "How hydrogen water bottles, machines, tablets and inhalers work, what ppm figures mean and how testing works, plus our funder Echo's devices, labeled."
     },
     "/contact": {
       title: `Contact Us | ${SITE_NAME}`,
@@ -604,28 +604,28 @@ export function resolveStaticPageMeta(pathname: string): PageMeta | null {
     // PLAN 4.6 — radical-honesty pages (numbers computed live by the renderer).
     [LIMITS_PATH]: {
       title: `The Limits of the Evidence on Hydrogen | ${SITE_NAME}`,
-      description: "How much hydrogen research is actually in people, how small and short the trials are, how positive the published results skew, where the work comes from and what has been replicated — computed live.",
+      description: "How much hydrogen research is in people, how small and short the trials are, how positive published results skew and what has been replicated, computed live.",
     },
     // PLAN 6.2 — open dataset + yearly report.
     [DATASET_PATH]: {
       title: `Open Dataset: Every Hydrogen Study, CSV + JSON | ${SITE_NAME}`,
-      description: "Download every study in the Hydrogen Studies database as CSV or JSON under CC BY 4.0: identity, design class, sample size, duration, delivery, concentration, outcome direction, funding, tags and citation counts.",
+      description: "Download every study in the Hydrogen Studies database as CSV or JSON under CC BY 4.0: design, sample size, delivery, outcome direction, funding and citations.",
     },
     [REPORT_PATH]: {
       title: `State of Hydrogen Research: Live Figures | ${SITE_NAME}`,
-      description: "Molecular hydrogen research by the numbers, computed live: studies per year, by design, delivery method, country and condition, the journals and authors publishing it, and how complete the record is.",
+      description: "Molecular hydrogen research by the numbers, computed live: studies per year, by design, delivery method, country and condition, and who publishes it.",
     },
     [GAP_MAP_PATH]: {
       title: `Evidence Gap Map for Hydrogen Research | ${SITE_NAME}`,
-      description: "Every health condition with 20+ hydrogen studies, by evidence type — systematic reviews, randomized trials, other human studies, animal and laboratory work — with human result direction and reviewed certainty. Computed live.",
+      description: "Every health condition with 20+ hydrogen studies, by evidence type, from systematic reviews and randomized trials to animal and lab work. Computed live.",
     },
     [SCAM_PATH]: {
       title: `Is Hydrogen Water a Scam? An Honest Answer | ${SITE_NAME}`,
-      description: "Not a scam, but heavily oversold: what the research on hydrogen water actually shows, what it does not, the red flags to watch for, and our own conflict of interest, with the numbers computed live.",
+      description: "Not a scam, but heavily oversold: what the research on hydrogen water shows, what it does not, red flags to watch for, and our own conflict of interest.",
     },
     [NULL_RESULTS_PATH]: {
       title: `Null and Negative Results in Hydrogen Research | ${SITE_NAME}`,
-      description: "Every study in our database whose main result for hydrogen was neutral, negative or mixed, people first — the results most hydrogen sites leave out, with links to each paper.",
+      description: "Every study in our database whose main result for hydrogen was neutral, negative or mixed, people first, with links to each paper.",
     },
     "/researchers": {
       title: `Researchers Publishing on Molecular Hydrogen | ${SITE_NAME}`,
