@@ -121,6 +121,11 @@ describe("webFrontDoor proxy", () => {
   it("leaves disabled families, Next's own fallbacks and non-GETs alone", async () => {
     expect((await request(app).get("/explore-by-condition/x")).text).toBe("SPA");
     expect((await request(app).get("/blog/x").set("x-from-web", "1")).text).toBe("SPA");
+    // Next's fallback rewrite echoes x-from-express back: never re-proxy it.
+    expect((await request(app).get("/blog/x").set("x-from-express", "1")).text).toBe("SPA");
+    const looped = await request(app).get("/_next/static/_buildManifest.js").set("x-from-express", "1");
+    expect(looped.status).toBe(404);
+    expect((await request(app).get("/_next/image?url=%2Fx.svg&w=64&q=75")).status).toBe(404);
     process.env.SSR_FAMILIES = "";
     expect((await request(app).get("/blog/x")).text).toBe("SPA");
     expect(fetchMock).not.toHaveBeenCalled();

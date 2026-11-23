@@ -11,6 +11,10 @@ const EXPRESS_ORIGIN = process.env.EXPRESS_ORIGIN || "http://localhost:5000";
 export default {
   output: "standalone",
   poweredByHeader: false,
+  // No page uses next/image. Unoptimized makes Next answer /_next/image with a
+  // 404, closing the image-optimizer RCE/DoS advisories (< 15.5.24) on both the
+  // apex and the web service's own railway.app domain until Next is upgraded.
+  images: { unoptimized: true },
   reactStrictMode: true,
   experimental: {
     // Compile ../shared (the helpers the crawler renderer and SPA already use).
@@ -33,7 +37,9 @@ export default {
   async rewrites() {
     return {
       // Runs only when no Next route or public file matched.
-      fallback: [{ source: "/:path*", destination: `${EXPRESS_ORIGIN}/:path*` }],
+      // Never /_next/*: a missing chunk is Next's own 404, not a trip back to
+      // Express (which used to proxy it to Next again — a loop).
+      fallback: [{ source: "/:path((?!_next/).*)", destination: `${EXPRESS_ORIGIN}/:path` }],
     };
   },
 };
