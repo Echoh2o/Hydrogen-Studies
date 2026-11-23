@@ -286,6 +286,25 @@ function bodySystemMatchSql(slug: string) {
 }
 
 /**
+ * Study count per canonical body-system hub, from the same match the hub page
+ * (renderBodySystemPage) and the SPA hub use — so a count shown next to a
+ * /explore-by-body-system/<slug> link equals what that page lists (before its
+ * 100-row display cap). Used by /learn/health-benefits (audit 2026-11-22: its
+ * cards counted retired `category` values and always showed 0).
+ */
+export async function getBodySystemHubCounts(): Promise<Record<string, number>> {
+  const entries = await Promise.all(
+    BODY_SYSTEM_HUBS.map(async (hub) => {
+      const r = await db.execute(sql`
+        SELECT COUNT(*)::int AS n FROM studies WHERE (${bodySystemMatchSql(hub.slug)}) AND slug IS NOT NULL AND is_excluded = false
+      `);
+      return [hub.slug, Number((r.rows?.[0] as any)?.n ?? 0)] as const;
+    }),
+  );
+  return Object.fromEntries(entries);
+}
+
+/**
  * Canonical body-system hubs that resolve right now — renderBodySystemPage
  * 404s a hub with no matching study, so the index links only these.
  */

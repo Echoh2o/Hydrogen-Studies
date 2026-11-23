@@ -6,6 +6,7 @@ import React from "react";
 import { Link } from "wouter";
 import { Byline } from "@/components/blog/Byline";
 import { LEARN_GUIDES_UPDATED, learnByline } from "@shared/learn-pages";
+import { exploreHubPath } from "@shared/explore-hubs";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -34,27 +35,25 @@ export function HealthBenefitsContent() {
     data: {
       condition: { name: string; count: string }[];
       body_system: { name: string; count: string }[];
+      body_system_hubs?: Record<string, number>;
     };
   }>({
     queryKey: ["/api/consumer-categories/counts"],
     staleTime: 1000 * 60 * 10,
   });
 
-  // Map health page categories to API category names
-  const getStudyCount = (apiName: string): number => {
-    if (!countData?.data) return 0;
-    const all = [...(countData.data.condition || []), ...(countData.data.body_system || [])];
-    const found = all.find((c) => c.name === apiName);
-    return found ? parseInt(found.count) || 0 : 0;
-  };
+  // Each card counts and links the /explore-by-body-system/<slug> hub with the
+  // same matching that hub page uses (audit 2026-11-22: the cards used retired
+  // `category` values, showed "0 studies" and linked empty /studies filters).
+  const getHubCount = (slug: string): number => countData?.data?.body_system_hubs?.[slug] ?? 0;
 
   const healthCategories = [
     {
       category: "Cardiovascular Health",
-      searchCategory: "cardiovascular",
+      hubSlug: "cardiovascular",
       icon: <Heart className="h-8 w-8 text-red-600" />,
       description: "Heart health, circulation, and vascular function",
-      studyCount: getStudyCount("Heart Disease & Hypertension"),
+      studyCount: getHubCount("cardiovascular"),
       evidence: "low",
       hub: { href: "/explore-by-condition/cholesterol", label: "Cholesterol evidence review" },
       benefits: [
@@ -69,10 +68,10 @@ export function HealthBenefitsContent() {
     },
     {
       category: "Neurological Health",
-      searchCategory: "neurological",
+      hubSlug: "brain-nervous-system",
       icon: <Brain className="h-8 w-8 text-purple-600" />,
       description: "Brain function, cognitive health, and neuroprotection",
-      studyCount: getStudyCount("Brain & Neurological Disorders"),
+      studyCount: getHubCount("brain-nervous-system"),
       evidence: "very-low",
       benefits: [
         "Oxidative damage to brain cells (animal studies)",
@@ -86,10 +85,10 @@ export function HealthBenefitsContent() {
     },
     {
       category: "Athletic Performance",
-      searchCategory: "exercise",
+      hubSlug: "musculoskeletal",
       icon: <Zap className="h-8 w-8 text-green-600" />,
       description: "Exercise performance, recovery, and fatigue reduction",
-      studyCount: getStudyCount("Musculoskeletal System"),
+      studyCount: getHubCount("musculoskeletal"),
       evidence: "low",
       hub: { href: "/explore-by-condition/athletic-performance", label: "Athletic performance evidence review" },
       benefits: [
@@ -104,10 +103,10 @@ export function HealthBenefitsContent() {
     },
     {
       category: "Inflammation",
-      searchCategory: "inflammation",
+      hubSlug: "immune-system",
       icon: <Shield className="h-8 w-8 text-orange-600" />,
       description: "Inflammatory and immune markers",
-      studyCount: getStudyCount("Arthritis & Inflammation"),
+      studyCount: getHubCount("immune-system"),
       evidence: "very-low",
       benefits: [
         "Inflammatory markers in blood",
@@ -121,10 +120,10 @@ export function HealthBenefitsContent() {
     },
     {
       category: "Metabolic Health",
-      searchCategory: "metabolic",
+      hubSlug: "endocrine",
       icon: <TrendingUp className="h-8 w-8 text-teal-600" />,
       description: "Blood sugar, blood lipids and body weight",
-      studyCount: getStudyCount("Diabetes & Metabolic Health"),
+      studyCount: getHubCount("endocrine"),
       evidence: "very-low",
       hub: { href: "/explore-by-condition/type-2-diabetes", label: "Type 2 diabetes evidence review" },
       benefits: [
@@ -139,10 +138,10 @@ export function HealthBenefitsContent() {
     },
     {
       category: "Skin Health",
-      searchCategory: "dermatology",
+      hubSlug: "skin-dermatology",
       icon: <Droplet className="h-8 w-8 text-cyan-600" />,
       description: "Skin appearance and UV exposure",
-      studyCount: getStudyCount("Integumentary System"),
+      studyCount: getHubCount("skin-dermatology"),
       evidence: "very-low",
       hub: { href: "/explore-by-condition/skin-aging", label: "Skin aging evidence review" },
       benefits: [
@@ -197,9 +196,8 @@ export function HealthBenefitsContent() {
             </p>
             <Byline byline={learnByline(LEARN_GUIDES_UPDATED)} className="byline text-sm text-gray-600 mb-6" />
             <Badge className="bg-red-100 text-red-800 px-4 py-2">
-              {healthCategories.reduce((sum, c) => sum + c.studyCount, 0) > 0
-                ? `${healthCategories.reduce((sum, c) => sum + c.studyCount, 0).toLocaleString("en-US")} studies in these areas`
-                : "Studies grouped by health area"}
+              {/* No summed total: one study can sit in several hubs. */}
+              Studies grouped by health area
             </Badge>
           </div>
         </section>
@@ -238,9 +236,11 @@ export function HealthBenefitsContent() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <Badge variant="outline" className="mb-1">
-                          {category.studyCount} studies
-                        </Badge>
+                        {category.studyCount > 0 ? (
+                          <Badge variant="outline" className="mb-1">
+                            {category.studyCount.toLocaleString("en-US")} studies
+                          </Badge>
+                        ) : null}
                         <p
                           className={`text-sm font-medium ${getEvidenceLevelColor(category.evidence)}`}
                         >
@@ -292,7 +292,7 @@ export function HealthBenefitsContent() {
                         {category.population}
                       </div>
                       <Link
-                        href={`/studies?category=${encodeURIComponent(category.searchCategory)}`}
+                        href={exploreHubPath("body-system", category.hubSlug)}
                       >
                         <Badge
                           variant="outline"
