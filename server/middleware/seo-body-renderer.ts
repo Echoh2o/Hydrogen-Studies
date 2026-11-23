@@ -31,6 +31,9 @@ import {
   studySourceLink,
   studyUpdatedAt,
   withoutPlaceholders,
+  withoutTitleOnlyAiContent,
+  isTitleOnlyStudy,
+  NO_ABSTRACT_NOTE,
   displayStudyType,
   journalDisplayName,
   type BlogByline,
@@ -538,7 +541,10 @@ export async function renderStudy(slugOrId: string): Promise<string | null> {
     // CLAUDE.md: empty fields never render; pipeline sentinels such as
     // key_finding = "__no_content__" never reach HTML. Null them all up front
     // so every `if (s.x)` guard below skips them.
-    const s: any = withoutPlaceholders(row);
+    // Title-only study (no real abstract): its AI fields were written from the
+    // title alone, so none of them render (audit 2026-11-22).
+    const titleOnly = isTitleOnlyStudy(withoutPlaceholders(row));
+    const s: any = withoutTitleOnlyAiContent(withoutPlaceholders(row));
 
     const title = s.plain_language_title || s.title;
     // health_conditions is a text array — use first element for display
@@ -620,6 +626,7 @@ export async function renderStudy(slugOrId: string): Promise<string | null> {
     if (evidence?.note) h += `<p class="evidence-note">${esc(evidence.note)}</p>\n`;
 
     // Content sections
+    if (titleOnly) h += `<p class="no-abstract">${esc(NO_ABSTRACT_NOTE)}</p>\n`;
     if (s.tldr) h += `<section><h2>TL;DR</h2><p>${esc(s.tldr)}</p></section>\n`;
     if (s.key_finding) h += `<section><h2>Key Finding</h2><p>${esc(s.key_finding)}</p></section>\n`;
     if (s.plain_summary) {

@@ -51,6 +51,9 @@ import {
   studySourceLink,
   studyUpdatedAt,
   withoutPlaceholders,
+  withoutTitleOnlyAiContent,
+  isTitleOnlyStudy,
+  NO_ABSTRACT_NOTE,
 } from "@shared/seo-markup";
 import { studyBreadcrumbs, studyEvidence, type HubLink } from "@shared/study-page";
 
@@ -171,8 +174,14 @@ export default function SEOStudyPage() {
   // CLAUDE.md: empty fields never render; pipeline sentinels such as
   // key_finding = "__no_content__" (and N/A-style fillers) never reach the
   // DOM. Null every placeholder string once so all `{field && …}` guards skip.
+  // Title-only studies (no real abstract): AI fields were written from the
+  // title alone and never render — same rule as renderStudy / the Next page.
   const study = useMemo(
-    () => (rawStudy ? withoutPlaceholders(rawStudy) : undefined),
+    () => (rawStudy ? withoutTitleOnlyAiContent(withoutPlaceholders(rawStudy)) : undefined),
+    [rawStudy],
+  );
+  const titleOnly = useMemo(
+    () => (rawStudy ? isTitleOnlyStudy(withoutPlaceholders(rawStudy)) : false),
     [rawStudy],
   );
 
@@ -547,6 +556,9 @@ export default function SEOStudyPage() {
                     {/* Our own summary — same sections, same order as the
                         bot renderer (renderStudy). Placeholders were nulled
                         above, so empty/sentinel fields never render. */}
+                    {titleOnly && (
+                      <p className="no-abstract mb-8 text-neutral-700">{NO_ABSTRACT_NOTE}</p>
+                    )}
                     {study.tldr && (
                       <section className="mb-8">
                         <h2 className="text-xl font-semibold mb-4">TL;DR</h2>

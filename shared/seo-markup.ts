@@ -28,6 +28,9 @@ const PLACEHOLDER_VALUES = new Set([
   "n/a", "na", "n.a.", "null", "undefined", "nan", "none available", "tbd", "tba",
   "not available", "not applicable", "no content", "no data", "-", "--", "—", "–",
   "...", "…", "[]", "{}",
+  // Import-time abstract fillers (audit 2026-11-22, 105 live studies).
+  "no abstract available", "no abstract available.", "abstract not available",
+  "abstract not available.", "no abstract", "no abstract.",
 ]);
 
 /**
@@ -106,6 +109,57 @@ export function withoutPlaceholders<T extends Record<string, any>>(obj: T): T {
       out[key] = isPlaceholder(stripped) ? null : stripped;
     }
   }
+  return out as T;
+}
+
+// ── Title-only studies ──────────────────────────────────────────
+
+/** Shown on a study page in place of the AI-written sections. */
+export const NO_ABSTRACT_NOTE = "No abstract is available for this study; see the original publication.";
+
+/**
+ * AI-written study fields (camelCase from drizzle, snake_case from raw SQL).
+ * For a study with no real abstract these were generated from the title
+ * alone — a hallucination risk (audit 2026-11-22: study 3955's summary claims
+ * "COVID-19 patients"; reports/audit-2026-11-22/08-…csv) — so they never
+ * render. `outcome` is the model's verdict on the results, so it goes too.
+ */
+const AI_STUDY_FIELDS = [
+  "tldr", "keyFinding", "key_finding", "plainSummary", "plain_summary",
+  "summary50Words", "summary_50_words", "summary100Words", "summary_100_words",
+  "summary200Words", "summary_200_words", "summaryMarkdown", "summary_markdown",
+  "practicalTakeaway", "practical_takeaway", "howToApply", "how_to_apply",
+  "plainLanguageTitle", "plain_language_title", "metaTitle", "meta_title",
+  "metaDescription", "meta_description", "ogTitle", "og_title", "twitterTitle", "twitter_title",
+  "ogDescription", "og_description", "twitterDescription", "twitter_description",
+  "objective", "methodsShort", "methods_short", "resultsShort", "results_short",
+  "conclusionShort", "conclusion_short", "questionAnswerPairs", "question_answer_pairs",
+  "healthBenefits", "health_benefits", "outcome",
+] as const;
+
+/**
+ * True when the study's abstract is loaded and is empty / a placeholder
+ * ("No abstract available"). When the abstract wasn't selected at all we
+ * can't tell, so this is false (nothing is hidden).
+ */
+export function isTitleOnlyStudy(study: Record<string, any> | null | undefined): boolean {
+  if (!study) return false;
+  const has = (k: string) => Object.prototype.hasOwnProperty.call(study, k);
+  if (has("abstract")) return isPlaceholder(study.abstract);
+  if (has("abstractExcerpt")) return isPlaceholder(study.abstractExcerpt);
+  return false;
+}
+
+/**
+ * Shallow copy with every AI-written field nulled when the study is
+ * title-only; otherwise the study unchanged. Title, citation metadata and the
+ * source link are untouched. Shared by the crawler renderer, the Next page
+ * data, page meta and the SPA so all of them show the same thing.
+ */
+export function withoutTitleOnlyAiContent<T extends Record<string, any>>(study: T): T {
+  if (!isTitleOnlyStudy(study)) return study;
+  const out: Record<string, any> = { ...study };
+  for (const k of AI_STUDY_FIELDS) if (Object.prototype.hasOwnProperty.call(out, k)) out[k] = null;
   return out as T;
 }
 
@@ -383,7 +437,11 @@ export function studyDescription(study: StudyLike, max = 300): string {
     .map((v) => realContent(v))
     .find(Boolean);
   if (own) return excerptAtWord(own, max);
-  return excerptAtWord(abstractExcerpt(study.abstract), max);
+  const excerpt = excerptAtWord(abstractExcerpt(study.abstract), max);
+  if (excerpt) return excerpt;
+  // Title-only study (AI fields withheld): a neutral, factual description.
+  const title = realContent(study.title);
+  return title ? excerptAtWord(`${NO_ABSTRACT_NOTE} ${title}`, max) : "";
 }
 
 /** "Updated" date for the study summary line + JSON-LD dateModified. */

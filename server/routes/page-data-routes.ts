@@ -22,7 +22,7 @@ import {
   getRelatedStudies,
   getTopConditions,
 } from "../middleware/seo-body-renderer";
-import { abstractExcerpt, studySourceLink, withoutPlaceholders } from "../../shared/seo-markup";
+import { abstractExcerpt, isTitleOnlyStudy, studySourceLink, withoutPlaceholders, withoutTitleOnlyAiContent } from "../../shared/seo-markup";
 import { studyHubLinks } from "../../shared/study-page";
 import { getStudyDoseModule } from "../services/study-dose";
 import { isContentPath, resolvePageMeta, resolveStaticPageMeta } from "../services/page-meta";
@@ -69,7 +69,11 @@ router.get("/study/:slug", async (req: Request, res: Response) => {
     if (!raw) return res.status(404).json({ error: "not found" });
     if (raw.isExcluded) return res.status(410).json({ error: "gone" });
 
-    const study: any = withoutPlaceholders(raw as any);
+    const cleaned: any = withoutPlaceholders(raw as any);
+    // Title-only studies: AI fields (written from the title alone) are never
+    // sent to the page; it shows NO_ABSTRACT_NOTE instead (audit 2026-11-22).
+    const titleOnly = isTitleOnlyStudy(cleaned);
+    const study: any = withoutTitleOnlyAiContent(cleaned);
     const conditions: string[] = (study.healthConditions || []).filter((c: string) => c?.trim());
     const condition = conditions[0] || study.category || null;
     const [hubs, related, relatedBlogs, footerConditions, authorLinks, doseModule] = await Promise.all([
@@ -84,7 +88,7 @@ router.get("/study/:slug", async (req: Request, res: Response) => {
     const { abstract, ...rest } = study;
     res.set("Cache-Control", "no-store");
     res.json({
-      study: { ...rest, abstractExcerpt: abstractExcerpt(abstract), sourceLink: studySourceLink(study) },
+      study: { ...rest, abstractExcerpt: abstractExcerpt(abstract), sourceLink: studySourceLink(study), titleOnly },
       hubLinks: studyHubLinks({ healthConditions: conditions, bodySystems: study.bodySystems }, hubs),
       authorLinks,
       related,

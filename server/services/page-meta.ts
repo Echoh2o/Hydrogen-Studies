@@ -29,6 +29,7 @@ import {
   studyDescription,
   studyJsonLd,
   studyPageTitle,
+  withoutTitleOnlyAiContent,
 } from "../../shared/seo-markup";
 import { getHydrogenForTopic } from "../../shared/hydrogen-for-topics";
 import { conditionHubJsonLd, getConditionHubIntro } from "../../shared/condition-hub-intros";
@@ -306,7 +307,9 @@ export async function resolvePageMeta(pathname: string): Promise<PageMeta | null
   }
 }
 
-export function buildStudyMeta(study: any, conditionHubs: readonly ConditionHubRef[] = []): PageMeta {
+export function buildStudyMeta(rawStudy: any, conditionHubs: readonly ConditionHubRef[] = []): PageMeta {
+  // Title-only studies: no AI-written title/description/schema (audit 2026-11-22).
+  const study = withoutTitleOnlyAiContent(rawStudy);
   const slug = study.slug || `id/${study.id}`;
   const canonical = `${SITE_URL}/study/${slug}`;
   const ogImage = toAbsoluteUrl(study.ogImage || study.imageUrl || "/logo.png", SITE_URL);
