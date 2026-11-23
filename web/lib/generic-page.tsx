@@ -4,6 +4,7 @@ import { PageDataError, pageData, type FooterCondition } from "@web/lib/page-dat
 import { SiteHeader } from "@web/components/SiteHeader";
 import { SiteFooter } from "@web/components/SiteFooter";
 import { pageContextFromPath } from "@shared/echo-products";
+import { jsonLdSafe } from "@shared/json-ld";
 
 /**
  * Pages the crawler renderer already builds (blog, hubs, /hydrogen-for,
@@ -71,7 +72,7 @@ export function genericPage<P>(pathFor: (params: P) => string, revalidate: numbe
     return (
       <>
         {ld.map((block, i) => (
-          <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(block) }} />
+          <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdSafe(block) }} />
         ))}
         <SiteHeader />
         <main id="main" className="container mx-auto max-w-4xl px-4 py-8">
