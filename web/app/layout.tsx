@@ -47,11 +47,11 @@ export const metadata: Metadata = {
   alternates: { types: { "application/rss+xml": "/rss.xml" } },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // Reading the request makes every page render per request, so each gets a
   // fresh CSP nonce (web/middleware.ts). Page data stays cached (fetch
   // revalidate), so this costs a React render, not a database round trip.
-  headers().get("x-nonce");
+  (await headers()).get("x-nonce");
   return (
     <html lang="en" className={montserrat.variable}>
       <head>

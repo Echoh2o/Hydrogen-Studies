@@ -32,9 +32,9 @@ function forCards(res: StudiesPageResponse): StudiesPageResponse {
   };
 }
 
-export default async function Page({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function Page({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const search = new URLSearchParams(
-    Object.entries(searchParams).flatMap(([k, v]) => (Array.isArray(v) ? v.map((x) => [k, x]) : v ? [[k, v]] : [])),
+    Object.entries(await searchParams).flatMap(([k, v]) => (Array.isArray(v) ? v.map((x) => [k, x]) : v ? [[k, v]] : [])),
   ).toString();
   const key = studiesQueryString(search);
   let initial: { key: string; data: StudiesPageResponse } | undefined;

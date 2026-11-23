@@ -16,10 +16,10 @@ export default {
   // apex and the web service's own railway.app domain until Next is upgraded.
   images: { unoptimized: true },
   reactStrictMode: true,
+  outputFileTracingRoot: repoRoot,
   experimental: {
     // Compile ../shared (the helpers the crawler renderer and SPA already use).
     externalDir: true,
-    outputFileTracingRoot: repoRoot,
   },
   // The SPA's analytics/consent modules (client/src/lib) read Vite env vars;
   // define them at build time so they run unchanged here.
