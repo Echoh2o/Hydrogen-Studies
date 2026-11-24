@@ -43,8 +43,8 @@ function robotsFrom(value: string | undefined): Metadata["robots"] {
 
 
 export function genericPage<P>(pathFor: (params: P) => string, revalidate: number) {
-  async function generateMetadata({ params }: { params: P }): Promise<Metadata> {
-    const { meta } = await load(pathFor(params), revalidate);
+  async function generateMetadata({ params }: { params: Promise<P> }): Promise<Metadata> {
+    const { meta } = await load(pathFor(await params), revalidate);
     const og = meta.ogType === "article" ? "article" : "website";
     return {
       title: { absolute: meta.title },
@@ -64,8 +64,8 @@ export function genericPage<P>(pathFor: (params: P) => string, revalidate: numbe
     };
   }
 
-  async function Page({ params }: { params: P }) {
-    const path = pathFor(params);
+  async function Page({ params }: { params: Promise<P> }) {
+    const path = pathFor(await params);
     const { meta, bodyHtml, footerConditions } = await load(path, revalidate);
     const ld = meta.jsonLd ? (Array.isArray(meta.jsonLd) ? meta.jsonLd : [meta.jsonLd]) : [];
     const utm = pageContextFromPath(path); // same UTM rule as the body links (shared/echo-products)

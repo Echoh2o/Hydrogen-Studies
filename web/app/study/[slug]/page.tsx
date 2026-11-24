@@ -75,8 +75,8 @@ function helperInput(study: StudyPageData["study"]) {
   return { ...study, abstract: study.abstractExcerpt };
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const { study } = await load(params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { study } = await load((await params).slug);
   const input = helperInput(study);
   const title = studyPageTitle(input);
   const description = excerptAtWord(studyDescription(input, 300), 160);
@@ -101,8 +101,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-export default async function StudyPage({ params }: { params: { slug: string } }) {
-  const { study, hubLinks, authorLinks, related, relatedBlogs, footerConditions, doseModule } = await load(params.slug);
+export default async function StudyPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { study, hubLinks, authorLinks, related, relatedBlogs, footerConditions, doseModule } = await load((await params).slug);
   const input = helperInput(study);
   const plainTitle = realContent(study.plainLanguageTitle);
   const pageTitle = plainTitle || study.title;
