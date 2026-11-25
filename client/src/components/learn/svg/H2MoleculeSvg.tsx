@@ -3,7 +3,7 @@ export default function H2MoleculeSvg() {
     <svg
       viewBox="0 0 220 220"
       width="100%"
-      height="auto"
+      style={{ height: "auto" }}
       xmlns="http://www.w3.org/2000/svg"
     >
       <g style={{ animation: "lp-float 4s ease-in-out infinite" }}>

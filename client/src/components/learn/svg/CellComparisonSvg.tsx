@@ -3,7 +3,7 @@ export default function CellComparisonSvg() {
     <svg
       viewBox="0 0 500 280"
       width="100%"
-      height="auto"
+      style={{ height: "auto" }}
       xmlns="http://www.w3.org/2000/svg"
     >
       {/* --- Left: Healthy cell --- */}
@@ -64,7 +64,7 @@ export default function CellComparisonSvg() {
             refY="5"
             markerWidth="6"
             markerHeight="6"
-            orient="auto-start-auto"
+            orient="auto"
           >
             <path d="M 0 0 L 10 5 L 0 10 Z" fill="#6B7280" />
           </marker>
