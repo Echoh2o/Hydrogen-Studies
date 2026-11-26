@@ -1,0 +1,690 @@
+{
+ "review": "exercise-performance",
+ "minTrials": 5,
+ "analyses": [
+  {
+   "id": "endurance",
+   "label": "Endurance performance (time to exhaustion, distance, repetitions to failure)",
+   "primary": true,
+   "trials": 6,
+   "comparisons": 7,
+   "pooled": {
+    "k": 7,
+    "estimate": 0.12025023541089051,
+    "se": 0.13115013843249282,
+    "ciLow": -0.20066259259887925,
+    "ciHigh": 0.4411630634206603,
+    "p": 0.39456025923078597,
+    "tau2": 0.01015995056063055,
+    "q": 6.548265886459018,
+    "i2": 8.37268821952942,
+    "piLow": -0.30494847264643316,
+    "piHigh": 0.5454489434682142,
+    "weights": [
+     18.946584387520492,
+     17.44413069124005,
+     14.840401944458604,
+     13.75619588896183,
+     10.432554053464159,
+     12.652267042759165,
+     11.927865991595707
+    ],
+    "method": "DL+HKSJ"
+   },
+   "rows": [
+    {
+     "ref": "PMC9767360#0",
+     "trial": "PMC9767360",
+     "label": "Valenta 2022",
+     "note": "TTE at maximal aerobic speed",
+     "design": "crossover",
+     "measure": "Time to exhaustion at maximal aerobic speed",
+     "unit": "s",
+     "timepoint": "main test",
+     "valueType": "final",
+     "dispersionType": "SD",
+     "source": "Table 3, row 'TTE (s)'",
+     "h2": {
+      "mean": 217,
+      "dispersion": 49,
+      "n": 24
+     },
+     "control": {
+      "mean": 227,
+      "dispersion": 53,
+      "n": 24
+     },
+     "g": -0.1927159017804325,
+     "v": 0.08101035725541758,
+     "se": 0.28462318467654313,
+     "ciLow": -0.7505670973118087,
+     "ciHigh": 0.36513529375094367,
+     "weight": 18.946584387520492
+    },
+    {
+     "ref": "PMC12300684#0",
+     "trial": "PMC12300684",
+     "label": "Khlifi 2025",
+     "note": "Maximal aerobic speed, shuttle test (first-listed measure; repetitions from the same test not used)",
+     "design": "crossover",
+     "measure": "Maximal aerobic speed from shuttle run",
+     "unit": "km/h",
+     "timepoint": "main test",
+     "valueType": "final",
+     "dispersionType": "SD",
+     "source": "Table 2, row 'MAS'",
+     "h2": {
+      "mean": 12.83,
+      "dispersion": 1.78,
+      "n": 22
+     },
+     "control": {
+      "mean": 12.24,
+      "dispersion": 1.8,
+      "n": 22
+     },
+     "g": 0.3236827688587767,
+     "v": 0.08886280736564486,
+     "se": 0.29809865374678374,
+     "ciLow": -0.26057986093338453,
+     "ciHigh": 0.907945398650938,
+     "weight": 17.44413069124005
+    },
+    {
+     "ref": "PMC7911623#0",
+     "trial": "PMC7911623",
+     "label": "Alharbi 2021",
+     "note": "Exhaustion time, incremental cycling",
+     "design": "crossover",
+     "measure": "Exhausted exercise time, incremental cycling test",
+     "unit": "min",
+     "timepoint": "Peak / end of test",
+     "valueType": "final",
+     "dispersionType": "SD",
+     "source": "Table 2, row 'Exhausted Time'",
+     "h2": {
+      "mean": 26.8,
+      "dispersion": 4,
+      "n": 18
+     },
+     "control": {
+      "mean": 26.9,
+      "dispersion": 3.9,
+      "n": 18
+     },
+     "g": -0.024751884864951928,
+     "v": 0.10623621829906614,
+     "se": 0.32593897941035854,
+     "ciLow": -0.663580550705996,
+     "ciHigh": 0.6140767809760921,
+     "weight": 14.840401944458604
+    },
+    {
+     "ref": "PMC11491356#1",
+     "trial": "PMC11491356",
+     "label": "Zhou 2024",
+     "note": "Total repetitions to failure, 6 sets",
+     "design": "crossover",
+     "measure": "Total repetitions to failure across six sets (muscular endurance)",
+     "unit": "repetitions",
+     "timepoint": "During training session (sum of 6 sets)",
+     "valueType": "final",
+     "dispersionType": "SD",
+     "source": "Results 3.1.2 text and Figure 2D",
+     "h2": {
+      "mean": 78.2,
+      "dispersion": 9.5,
+      "n": 18
+     },
+     "control": {
+      "mean": 70.3,
+      "dispersion": 9.5,
+      "n": 18
+     },
+     "g": 0.8130994152046789,
+     "v": 0.11541007945464701,
+     "se": 0.33972059027183943,
+     "ciLow": 0.1472592882131234,
+     "ciHigh": 1.4789395421962344,
+     "weight": 13.75619588896183
+    },
+    {
+     "ref": "PMC8139351#4",
+     "trial": "PMC8139351",
+     "label": "Timón 2021 (trained)",
+     "note": "TTE, incremental test",
+     "design": "crossover",
+     "measure": "Trained cyclists: Time to exhaustion, incremental test",
+     "unit": "s",
+     "timepoint": "incremental test",
+     "valueType": "final",
+     "dispersionType": "SD",
+     "source": "Table 1, TTE Trained",
+     "h2": {
+      "mean": 890,
+      "dispersion": 212.1,
+      "n": 12
+     },
+     "control": {
+      "mean": 880,
+      "dispersion": 207.8,
+      "n": 12
+     },
+     "g": 0.04598554985358576,
+     "v": 0.1554146462083551,
+     "se": 0.3942266431995117,
+     "ciLow": -0.726684478658302,
+     "ciHigh": 0.8186555783654734,
+     "weight": 10.432554053464159
+    },
+    {
+     "ref": "PMC8139351#17",
+     "trial": "PMC8139351",
+     "label": "Timón 2021 (untrained)",
+     "note": "TTE, incremental test",
+     "design": "crossover",
+     "measure": "Untrained: Time to exhaustion, incremental test",
+     "unit": "s",
+     "timepoint": "incremental test",
+     "valueType": "final",
+     "dispersionType": "SD",
+     "source": "Table 1, TTE Untrained",
+     "h2": {
+      "mean": 567.6,
+      "dispersion": 163.6,
+      "n": 15
+     },
+     "control": {
+      "mean": 583.8,
+      "dispersion": 176.8,
+      "n": 15
+     },
+     "g": -0.09254009707992769,
+     "v": 0.12636624864424145,
+     "se": 0.35548030697106336,
+     "ciLow": -0.789268701452161,
+     "ciHigh": 0.6041885072923056,
+     "weight": 12.652267042759165
+    },
+    {
+     "ref": "id:2118#0",
+     "trial": "id:2118",
+     "label": "Ooi 2020",
+     "note": "TTE, maximal incremental treadmill run",
+     "design": "crossover",
+     "measure": "Time to exhaustion, maximal incremental treadmill run",
+     "unit": "s",
+     "timepoint": "maximal incremental test",
+     "valueType": "final",
+     "dispersionType": "SD",
+     "source": "Results para 3 (p.12 of manuscript) and Abstract; Figure 4",
+     "h2": {
+      "mean": 618,
+      "dispersion": 126,
+      "n": 14
+     },
+     "control": {
+      "mean": 619,
+      "dispersion": 113,
+      "n": 14
+     },
+     "g": -0.00811247478289285,
+     "v": 0.13465773366637745,
+     "se": 0.36695740034284285,
+     "ciLow": -0.7273357689884525,
+     "ciHigh": 0.7111108194226667,
+     "weight": 11.927865991595707
+    }
+   ]
+  },
+  {
+   "id": "lactate",
+   "label": "Blood lactate after exercise",
+   "primary": true,
+   "trials": 7,
+   "comparisons": 8,
+   "pooled": {
+    "k": 8,
+    "estimate": 0.25690995447965614,
+    "se": 0.11029473034827322,
+    "ciLow": -0.0038956397247571495,
+    "ciHigh": 0.5177155486840694,
+    "p": 0.05266785059457968,
+    "tau2": 0,
+    "q": 5.214793807539339,
+    "i2": 0,
+    "piLow": -0.012971528328372173,
+    "piHigh": 0.5267914372876845,
+    "weights": [
+     6.934828485595836,
+     20.231022589084695,
+     17.215244995089808,
+     13.747963065155178,
+     8.073824447478529,
+     10.386518517186296,
+     12.902494462873952,
+     10.508103437535715
+    ],
+    "method": "DL+HKSJ"
+   },
+   "rows": [
+    {
+     "ref": "PMC7871940#4",
+     "trial": "PMC7871940",
+     "label": "Dobashi 2020",
+     "note": "2 min after second sprint set, day 3; SE converted",
+     "design": "crossover",
+     "measure": "blood lactate",
+     "unit": "mmol/L",
+     "timepoint": "2 min after 2nd sprint set, Day 3",
+     "valueType": "final",
+     "dispersionType": "SE",
+     "source": "Table 1, blood lactate row, Day 3",
+     "h2": {
+      "mean": 14.5,
+      "dispersion": 0.7,
+      "n": 8
+     },
+     "control": {
+      "mean": 16.1,
+      "dispersion": 1,
+      "n": 8
+     },
+     "g": 0.6196372344289476,
+     "v": 0.23546952132675136,
+     "se": 0.4852520183644282,
+     "ciLow": -0.3314392524926706,
+     "ciHigh": 1.5707137213505658,
+     "weight": 6.934828485595836
+    },
+    {
+     "ref": "PMC9767360#1",
+     "trial": "PMC9767360",
+     "label": "Valenta 2022",
+     "note": "Immediately post-exercise",
+     "design": "crossover",
+     "measure": "Blood lactate",
+     "unit": "mmol/L",
+     "timepoint": "immediately post-exercise",
+     "valueType": "final",
+     "dispersionType": "SD",
+     "source": "Table 3, row 'La post'",
+     "h2": {
+      "mean": 9.9,
+      "dispersion": 2.2,
+      "n": 24
+     },
+     "control": {
+      "mean": 10.1,
+      "dispersion": 2,
+      "n": 24
+     },
+     "g": 0.09357078573530997,
+     "v": 0.08071469135066839,
+     "se": 0.2841033110519277,
+     "ciLow": -0.46326147620727043,
+     "ciHigh": 0.6504030476778904,
+     "weight": 20.231022589084695
+    },
+    {
+     "ref": "PMC12300684#2",
+     "trial": "PMC12300684",
+     "label": "Khlifi 2025",
+     "note": "3 min post-exercise",
+     "design": "crossover",
+     "measure": "Blood lactate",
+     "unit": "mmol/L",
+     "timepoint": "3 min post-exercise",
+     "valueType": "final",
+     "dispersionType": "SD",
+     "source": "Table 2, row 'Lac.post.test'",
+     "h2": {
+      "mean": 9.98,
+      "dispersion": 0.76,
+      "n": 22
+     },
+     "control": {
+      "mean": 10.62,
+      "dispersion": 0.82,
+      "n": 22
+     },
+     "g": 0.7950003909252035,
+     "v": 0.0948543424419533,
+     "se": 0.30798432174698975,
+     "ciLow": 0.19136220773668644,
+     "ciHigh": 1.3986385741137206,
+     "weight": 17.215244995089808
+    },
+    {
+     "ref": "PMC8838970#4",
+     "trial": "PMC8838970",
+     "label": "Botek 2022",
+     "note": "Immediately post repeated sprints",
+     "design": "crossover",
+     "measure": "Capillary blood lactate",
+     "unit": "mmol/L",
+     "timepoint": "Immediately post repeated-sprint test",
+     "valueType": "final",
+     "dispersionType": "SD",
+     "source": "Results text (section 3), last paragraph",
+     "h2": {
+      "mean": 10.4,
+      "dispersion": 3.2,
+      "n": 16
+     },
+     "control": {
+      "mean": 10.4,
+      "dispersion": 2.5,
+      "n": 16
+     },
+     "g": 0,
+     "v": 0.11877692253371937,
+     "se": 0.3446402799060484,
+     "ciLow": -0.6754825415657782,
+     "ciHigh": 0.6754825415657782,
+     "weight": 13.747963065155178
+    },
+    {
+     "ref": "PMC8092150#18",
+     "trial": "PMC8092150",
+     "label": "Hori 2020 (exp. 1)",
+     "note": "End of exercise, acute; SE converted",
+     "design": "parallel",
+     "measure": "Exp 1: blood lactate",
+     "unit": "mM",
+     "timepoint": "immediately post-exercise (Ex-end)",
+     "valueType": "final",
+     "dispersionType": "SE",
+     "source": "Table 3, Lactate Ex-end",
+     "h2": {
+      "mean": 10.8,
+      "dispersion": 0.7,
+      "n": 9
+     },
+     "control": {
+      "mean": 11.2,
+      "dispersion": 0.9,
+      "n": 9
+     },
+     "g": 0.1575044248751848,
+     "v": 0.20225120754221282,
+     "se": 0.44972347897592896,
+     "ciLow": -0.7239374038723928,
+     "ciHigh": 1.0389462536227625,
+     "weight": 8.073824447478529
+    },
+    {
+     "ref": "PMC8139351#5",
+     "trial": "PMC8139351",
+     "label": "Timón 2021 (trained)",
+     "note": "1 min after incremental test (first-listed test)",
+     "design": "crossover",
+     "measure": "Trained cyclists: Blood lactate 1 min after incremental test",
+     "unit": "mmol/L",
+     "timepoint": "1 min post-exercise",
+     "valueType": "final",
+     "dispersionType": "SD",
+     "source": "Table 1, Lactate Trained",
+     "h2": {
+      "mean": 11.1,
+      "dispersion": 3.9,
+      "n": 12
+     },
+     "control": {
+      "mean": 12.2,
+      "dispersion": 3.2,
+      "n": 12
+     },
+     "g": 0.29773084026149904,
+     "v": 0.15721733334267762,
+     "se": 0.3965064102163767,
+     "ciLow": -0.4794074495318316,
+     "ciHigh": 1.0748691300548296,
+     "weight": 10.386518517186296
+    },
+    {
+     "ref": "PMC8139351#18",
+     "trial": "PMC8139351",
+     "label": "Timón 2021 (untrained)",
+     "note": "1 min after incremental test (first-listed test)",
+     "design": "crossover",
+     "measure": "Untrained: Blood lactate 1 min after incremental test",
+     "unit": "mmol/L",
+     "timepoint": "1 min post-exercise",
+     "valueType": "final",
+     "dispersionType": "SD",
+     "source": "Table 1, Lactate Untrained",
+     "h2": {
+      "mean": 12.4,
+      "dispersion": 3.8,
+      "n": 15
+     },
+     "control": {
+      "mean": 12.9,
+      "dispersion": 3,
+      "n": 15
+     },
+     "g": 0.142104220014402,
+     "v": 0.12656008097388047,
+     "se": 0.35575283691613824,
+     "ciLow": -0.5551585332390999,
+     "ciHigh": 0.839366973267904,
+     "weight": 12.902494462873952
+    },
+    {
+     "ref": "id:2118#4",
+     "trial": "id:2118",
+     "label": "Ooi 2020",
+     "note": "Within 5 min of exhaustion",
+     "design": "crossover",
+     "measure": "Serum lactate after maximal test (YSI analyser)",
+     "unit": "mmol/L",
+     "timepoint": "post (within 5 min of exhaustion)",
+     "valueType": "final",
+     "dispersionType": "SD",
+     "source": "Table 1, row 'Serum Lactate' (footnote b, n=12)",
+     "h2": {
+      "mean": 16.6,
+      "dispersion": 2.7,
+      "n": 12
+     },
+     "control": {
+      "mean": 16.5,
+      "dispersion": 2.6,
+      "n": 12
+     },
+     "g": -0.036428129278150964,
+     "v": 0.15539823657934196,
+     "se": 0.3942058302198763,
+     "ciLow": -0.8090573650992207,
+     "ciHigh": 0.7362011065429187,
+     "weight": 10.508103437535715
+    }
+   ]
+  },
+  {
+   "id": "rpe",
+   "label": "Perceived exertion (RPE)",
+   "primary": true,
+   "trials": 4,
+   "comparisons": 6,
+   "pooled": null,
+   "rows": [
+    {
+     "ref": "PMC12300684#3",
+     "trial": "PMC12300684",
+     "label": "Khlifi 2025",
+     "note": "Borg 6–20 post-test; extractor flagged values as implausibly low for a test to exhaustion",
+     "design": "crossover",
+     "measure": "RPE post-test (Borg 6-20)",
+     "unit": "AU",
+     "timepoint": "post-exercise",
+     "valueType": "final",
+     "dispersionType": "SD",
+     "source": "Table 2, row 'RPEpost-test'",
+     "h2": {
+      "mean": 9.38,
+      "dispersion": 0.5,
+      "n": 22
+     },
+     "control": {
+      "mean": 9.67,
+      "dispersion": 0.48,
+      "n": 22
+     },
+     "g": 0.5810839409277938,
+     "v": 0.09150926204232773,
+     "se": 0.3025049785413915,
+     "ciLow": -0.011814926834106121,
+     "ciHigh": 1.1739828086896937,
+     "weight": null
+    },
+    {
+     "ref": "PMC8092150#15",
+     "trial": "PMC8092150",
+     "label": "Hori 2020 (exp. 1)",
+     "note": "Peak RPE, acute; SE converted",
+     "design": "parallel",
+     "measure": "Exp 1: peak RPE (Borg)",
+     "unit": "Borg units",
+     "timepoint": "acute, peak",
+     "valueType": "final",
+     "dispersionType": "SE",
+     "source": "Table 2, 'Rate of perceived exertion' Peak value (n=8)",
+     "h2": {
+      "mean": 18.8,
+      "dispersion": 0.6,
+      "n": 8
+     },
+     "control": {
+      "mean": 19.1,
+      "dispersion": 0.5,
+      "n": 8
+     },
+     "g": 0.18157957517756199,
+     "v": 0.2245014225714673,
+     "se": 0.47381581080781515,
+     "ciLow": -0.7470823566365666,
+     "ciHigh": 1.1102415069916907,
+     "weight": null
+    },
+    {
+     "ref": "PMC8092150#5",
+     "trial": "PMC8092150",
+     "label": "Hori 2020 (exp. 2)",
+     "note": "Peak RPE after 2 weeks; SE converted",
+     "design": "parallel",
+     "measure": "Exp 2: peak RPE (Borg scale, 6-20 implied)",
+     "unit": "Borg units",
+     "timepoint": "post 2 wk, peak",
+     "valueType": "final",
+     "dispersionType": "SE",
+     "source": "Table 4, 'Rate of perceived exertion' Post",
+     "h2": {
+      "mean": 19.2,
+      "dispersion": 0.4,
+      "n": 10
+     },
+     "control": {
+      "mean": 18.8,
+      "dispersion": 0.5,
+      "n": 10
+     },
+     "g": -0.2675676626046825,
+     "v": 0.18524547491061102,
+     "se": 0.4304015275421441,
+     "ciLow": -1.1111391621322935,
+     "ciHigh": 0.5760038369229286,
+     "weight": null
+    },
+    {
+     "ref": "PMC8139351#6",
+     "trial": "PMC8139351",
+     "label": "Timón 2021 (trained)",
+     "note": "Session RPE, incremental test",
+     "design": "crossover",
+     "measure": "Trained cyclists: Session RPE (1-10 scale, 30 min post) incremental test",
+     "unit": "1-10",
+     "timepoint": "30 min post-test",
+     "valueType": "final",
+     "dispersionType": "SD",
+     "source": "Table 1, RPE Trained",
+     "h2": {
+      "mean": 8.4,
+      "dispersion": 0.7,
+      "n": 12
+     },
+     "control": {
+      "mean": 8.2,
+      "dispersion": 0.9,
+      "n": 12
+     },
+     "g": -0.23951534955157625,
+     "v": 0.1565657489557609,
+     "se": 0.395683900298914,
+     "ciLow": -1.0150415495170368,
+     "ciHigh": 0.5360108504138844,
+     "weight": null
+    },
+    {
+     "ref": "PMC8139351#19",
+     "trial": "PMC8139351",
+     "label": "Timón 2021 (untrained)",
+     "note": "Session RPE, incremental test",
+     "design": "crossover",
+     "measure": "Untrained: Session RPE (1-10) incremental test",
+     "unit": "1-10",
+     "timepoint": "30 min post-test",
+     "valueType": "final",
+     "dispersionType": "SD",
+     "source": "Table 1, RPE Untrained",
+     "h2": {
+      "mean": 8,
+      "dispersion": 1,
+      "n": 15
+     },
+     "control": {
+      "mean": 8.3,
+      "dispersion": 0.6,
+      "n": 15
+     },
+     "g": 0.35397091221518956,
+     "v": 0.1283117775963563,
+     "se": 0.3582063338305959,
+     "ciLow": -0.34810060666476056,
+     "ciHigh": 1.0560424310951397,
+     "weight": null
+    },
+    {
+     "ref": "id:2118#3",
+     "trial": "id:2118",
+     "label": "Ooi 2020",
+     "note": "RPE at VO2max",
+     "design": "crossover",
+     "measure": "RPE at VO2max (Borg category scale, Borg 1982)",
+     "unit": "Borg 6-20",
+     "timepoint": "at VO2max",
+     "valueType": "final",
+     "dispersionType": "SD",
+     "source": "Table 1, row 'RPE at VO2max'",
+     "h2": {
+      "mean": 19,
+      "dispersion": 1,
+      "n": 14
+     },
+     "control": {
+      "mean": 19,
+      "dispersion": 1,
+      "n": 14
+     },
+     "g": 0,
+     "v": 0.13465655844767918,
+     "se": 0.3669557990380847,
+     "ciLow": -0.7192201557058806,
+     "ciHigh": 0.7192201557058806,
+     "weight": null
+    }
+   ]
+  }
+ ]
+}

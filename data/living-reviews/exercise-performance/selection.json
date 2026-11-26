@@ -1,0 +1,169 @@
+{
+ "_doc": "Which extracted outcome feeds each analysis (PROTOCOL.md §4 timepoint rules). One row per independent comparison; trials reporting separate participant groups (Timón 2021 trained/untrained) contribute one row per group. Records are excluded here, with the reason, when the extracted value breaks a protocol rule.",
+ "analyses": [
+  {
+   "id": "endurance",
+   "label": "Endurance performance (time to exhaustion, distance, repetitions to failure)",
+   "primary": true,
+   "comparisons": [
+    {
+     "ref": "PMC9767360#0",
+     "label": "Valenta 2022",
+     "note": "TTE at maximal aerobic speed"
+    },
+    {
+     "ref": "PMC12300684#0",
+     "label": "Khlifi 2025",
+     "note": "Maximal aerobic speed, shuttle test (first-listed measure; repetitions from the same test not used)"
+    },
+    {
+     "ref": "PMC7911623#0",
+     "label": "Alharbi 2021",
+     "note": "Exhaustion time, incremental cycling"
+    },
+    {
+     "ref": "PMC11491356#1",
+     "label": "Zhou 2024",
+     "note": "Total repetitions to failure, 6 sets"
+    },
+    {
+     "ref": "PMC8139351#4",
+     "label": "Timón 2021 (trained)",
+     "note": "TTE, incremental test"
+    },
+    {
+     "ref": "PMC8139351#17",
+     "label": "Timón 2021 (untrained)",
+     "note": "TTE, incremental test"
+    },
+    {
+     "ref": "id:2118#0",
+     "label": "Ooi 2020",
+     "note": "TTE, maximal incremental treadmill run"
+    }
+   ],
+   "excluded": [
+    {
+     "ref": "PMC10757640#3",
+     "reason": "figure only"
+    },
+    {
+     "ref": "PMC6945053#0",
+     "reason": "figure only (% change)"
+    }
+   ]
+  },
+  {
+   "id": "lactate",
+   "label": "Blood lactate after exercise",
+   "primary": true,
+   "comparisons": [
+    {
+     "ref": "PMC7871940#4",
+     "label": "Dobashi 2020",
+     "note": "2 min after second sprint set, day 3; SE converted"
+    },
+    {
+     "ref": "PMC9767360#1",
+     "label": "Valenta 2022",
+     "note": "Immediately post-exercise"
+    },
+    {
+     "ref": "PMC12300684#2",
+     "label": "Khlifi 2025",
+     "note": "3 min post-exercise"
+    },
+    {
+     "ref": "PMC8838970#4",
+     "label": "Botek 2022",
+     "note": "Immediately post repeated sprints"
+    },
+    {
+     "ref": "PMC8092150#18",
+     "label": "Hori 2020 (exp. 1)",
+     "note": "End of exercise, acute; SE converted"
+    },
+    {
+     "ref": "PMC8139351#5",
+     "label": "Timón 2021 (trained)",
+     "note": "1 min after incremental test (first-listed test)"
+    },
+    {
+     "ref": "PMC8139351#18",
+     "label": "Timón 2021 (untrained)",
+     "note": "1 min after incremental test (first-listed test)"
+    },
+    {
+     "ref": "id:2118#4",
+     "label": "Ooi 2020",
+     "note": "Within 5 min of exhaustion"
+    }
+   ],
+   "excluded": [
+    {
+     "ref": "PMC6945053#9",
+     "reason": "resting value, not post-exercise"
+    },
+    {
+     "ref": "PMC7911623#7",
+     "reason": "resting value, not post-exercise"
+    },
+    {
+     "ref": "PMC7911623#8",
+     "reason": "figure only"
+    },
+    {
+     "ref": "PMC8092150#8",
+     "reason": "figure only"
+    }
+   ]
+  },
+  {
+   "id": "rpe",
+   "label": "Perceived exertion (RPE)",
+   "primary": true,
+   "comparisons": [
+    {
+     "ref": "PMC12300684#3",
+     "label": "Khlifi 2025",
+     "note": "Borg 6–20 post-test; extractor flagged values as implausibly low for a test to exhaustion"
+    },
+    {
+     "ref": "PMC8092150#15",
+     "label": "Hori 2020 (exp. 1)",
+     "note": "Peak RPE, acute; SE converted"
+    },
+    {
+     "ref": "PMC8092150#5",
+     "label": "Hori 2020 (exp. 2)",
+     "note": "Peak RPE after 2 weeks; SE converted"
+    },
+    {
+     "ref": "PMC8139351#6",
+     "label": "Timón 2021 (trained)",
+     "note": "Session RPE, incremental test"
+    },
+    {
+     "ref": "PMC8139351#19",
+     "label": "Timón 2021 (untrained)",
+     "note": "Session RPE, incremental test"
+    },
+    {
+     "ref": "id:2118#3",
+     "label": "Ooi 2020",
+     "note": "RPE at VO2max"
+    }
+   ],
+   "excluded": [
+    {
+     "ref": "PMC10757640#5",
+     "reason": "figure only"
+    },
+    {
+     "ref": "PMC8838970#5",
+     "reason": "figure only"
+    }
+   ]
+  }
+ ]
+}
