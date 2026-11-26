@@ -20,7 +20,7 @@ export default function BodySilhouetteSvg({
     <svg
       viewBox="0 0 400 560"
       width="100%"
-      height="auto"
+      style={{ height: "auto" }}
       xmlns="http://www.w3.org/2000/svg"
     >
       {/* Anatomical body silhouette — genderless standing figure */}
