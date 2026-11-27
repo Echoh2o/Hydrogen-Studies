@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analyze, MIN_TRIALS } from "../../scripts/research/living-review-analyze";
+import { analyze, MIN_TRIALS, robOverall } from "../../scripts/research/living-review-analyze";
 
 const outcome = (h2: number, ctl: number, extra: Record<string, unknown> = {}) => ({
   domain: "lactate", measure: "lactate", unit: "mmol/L", timepoint: "post", higher_is_better: false,
@@ -33,5 +33,30 @@ describe("living-review analyze", () => {
     expect(() =>
       analyze([paper(1, [outcome(1, 2)]), paper(2, [outcome(1, 2, { value_type: "change" })])] as any, sel(["PMC1#0", "PMC2#0"])),
     ).toThrow(/mixes final and change/);
+  });
+  it("derives the RoB 2 overall judgement mechanically", () => {
+    const all = (v: string) => ({ randomization: v, deviations: v, missing_data: v, measurement: v, selective_reporting: v });
+    expect(robOverall(all("low"))).toBe("low");
+    expect(robOverall({ ...all("low"), measurement: "some" })).toBe("some");
+    expect(robOverall({ ...all("some"), selective_reporting: "high" })).toBe("high");
+    expect(robOverall({ ...all("some"), overall_override: "high" })).toBe("high");
+    expect(robOverall({ randomization: "low" })).toBe("not_assessed");
+    expect(robOverall(undefined)).toBe("not_assessed");
+  });
+  it("runs sensitivity analyses by whole trial", () => {
+    const papers = Array.from({ length: 6 }, (_, i) => ({
+      ...paper(i, [outcome(10, 11 + i * 0.1)]),
+      risk_of_bias: { randomization: i === 0 ? "high" : "low", deviations: "low", missing_data: "low", measurement: "low", selective_reporting: "low" },
+      industry_funded: i === 1 ? true : i === 2 ? null : false,
+    }));
+    const r = analyze(papers as any, sel(papers.map((p) => `${p.pmcid}#0`)))[0];
+    expect(r.sensitivity!.excludeHighRob.dropped).toEqual(["PMC0"]);
+    expect(r.sensitivity!.excludeHighRob.result!.trials).toBe(5);
+    expect(r.sensitivity!.excludeIndustry.dropped).toEqual(["PMC1"]);
+    expect(r.sensitivity!.excludeIndustry.notJudged).toEqual(["PMC2"]);
+    expect(r.sensitivity!.leaveOneOut).toHaveLength(6);
+    expect(r.sensitivity!.leaveOneOut.every((l) => l.result!.trials === 5)).toBe(true);
+    const four = analyze(papers as any, sel(papers.slice(0, 4).map((p) => `${p.pmcid}#0`)))[0];
+    expect(four.sensitivity).toBeNull();
   });
 });
