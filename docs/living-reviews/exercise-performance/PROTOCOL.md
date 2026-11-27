@@ -77,7 +77,10 @@ the first listed.
 - **Pre-specified subgroups**: route (drink vs inhaled); timing (single dose vs repeated ≥ 7 days);
   participants (trained vs untrained).
 - **Sensitivity**: excluding high risk-of-bias trials; excluding trials funded by or with authors
-  employed by H2 product companies; leave-one-out.
+  employed by H2 product companies; leave-one-out. A trial counts as industry-linked when its funding
+  came from an H2 company, or an author is affiliated with an H2 company or an industry-funded H2
+  body (e.g. Molecular Hydrogen Institute). A company only supplying the product does not count. A
+  trial whose funding is not stated is "not judged" and stays in.
 - **Small-study effects**: funnel plot and Egger's test only when k ≥ 10.
 
 ## 6. Risk of bias and certainty
@@ -110,3 +113,4 @@ including null and negative results. The page carries the standard funding discl
 |---|---|---|---|
 | 2026-11-25 | 1.0 | Protocol written | — |
 | 2026-11-25 | 1.1 | §1 Design: "never states random allocation → not randomized" written out | Two crossover trials (Todorovic 2020, Kawamura 2016) say only "crossover"; the rule is applied to both the same way. Clarifies the existing criterion; no outcome or method changed. |
+| 2026-11-27 | 1.2 | §5 Sensitivity: industry-linked trial defined (funding or author affiliation; product supply alone excluded; unstated → not judged) | Needed to apply the existing industry sensitivity analysis consistently. Set before running it; no outcome or method changed. |
