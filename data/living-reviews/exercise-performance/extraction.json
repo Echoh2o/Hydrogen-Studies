@@ -137,7 +137,9 @@
    "method": "ai-assisted, second-pass verified",
    "extracted_at": "2026-11-25",
    "verified_by_reviewer": null
-  }
+  },
+  "industry_funded": null,
+  "industry_funded_basis": "Funding/COI not stated in the retrieved text; product supply alone does not count (PROTOCOL §5)."
  },
  {
   "study_id": 2065,
@@ -392,7 +394,9 @@
    "method": "ai-assisted, second-pass verified",
    "extracted_at": "2026-11-25",
    "verified_by_reviewer": null
-  }
+  },
+  "industry_funded": null,
+  "industry_funded_basis": "Funding/COI not stated in the retrieved text; product supply alone does not count (PROTOCOL §5)."
  },
  {
   "study_id": 3180,
@@ -739,7 +743,9 @@
    "method": "ai-assisted, second-pass verified",
    "extracted_at": "2026-11-25",
    "verified_by_reviewer": null
-  }
+  },
+  "industry_funded": true,
+  "industry_funded_basis": "Two co-authors affiliated with Helix Japan Co., Ltd., maker of the H2 generator used."
  },
  {
   "study_id": 3171,
@@ -948,7 +954,9 @@
    "method": "ai-assisted, second-pass verified",
    "extracted_at": "2026-11-25",
    "verified_by_reviewer": null
-  }
+  },
+  "industry_funded": null,
+  "industry_funded_basis": "Funding/COI not stated in the retrieved text; product supply alone does not count (PROTOCOL §5)."
  },
  {
   "study_id": 3349,
@@ -1203,7 +1211,9 @@
    "method": "ai-assisted, second-pass verified",
    "extracted_at": "2026-11-25",
    "verified_by_reviewer": null
-  }
+  },
+  "industry_funded": null,
+  "industry_funded_basis": "Funding/COI not stated in the retrieved text; product supply alone does not count (PROTOCOL §5)."
  },
  {
   "study_id": 3358,
@@ -1644,7 +1654,9 @@
    "method": "ai-assisted, second-pass verified",
    "extracted_at": "2026-11-25",
    "verified_by_reviewer": null
-  }
+  },
+  "industry_funded": true,
+  "industry_funded_basis": "Co-author affiliated with Natural Wellness Now Health Products Inc.; co-author affiliated with Molecular Hydrogen Institute."
  },
  {
   "study_id": 2217,
@@ -1807,7 +1819,9 @@
    "method": "ai-assisted, second-pass verified",
    "extracted_at": "2026-11-25",
    "verified_by_reviewer": null
-  }
+  },
+  "industry_funded": true,
+  "industry_funded_basis": "First author affiliated with Molecular Hydrogen Institute; capsules donated by HRW Natural Health Products Inc."
  },
  {
   "study_id": 2137,
@@ -2202,7 +2216,9 @@
    "method": "ai-assisted, second-pass verified",
    "extracted_at": "2026-11-25",
    "verified_by_reviewer": null
-  }
+  },
+  "industry_funded": null,
+  "industry_funded_basis": "Funding/COI not stated in the retrieved text; product supply alone does not count (PROTOCOL §5)."
  },
  {
   "study_id": 3249,
@@ -2342,7 +2358,9 @@
    "method": "ai-assisted, second-pass verified",
    "extracted_at": "2026-11-25",
    "verified_by_reviewer": null
-  }
+  },
+  "industry_funded": null,
+  "industry_funded_basis": "Funding/COI not stated in the retrieved text; product supply alone does not count (PROTOCOL §5)."
  },
  {
   "study_id": 3366,
@@ -2459,7 +2477,9 @@
    "method": "ai-assisted, second-pass verified",
    "extracted_at": "2026-11-25",
    "verified_by_reviewer": null
-  }
+  },
+  "industry_funded": null,
+  "industry_funded_basis": "Funding/COI not stated in the retrieved text; product supply alone does not count (PROTOCOL §5)."
  },
  {
   "study_id": 3451,
@@ -2645,7 +2665,9 @@
    "method": "ai-assisted, second-pass verified",
    "extracted_at": "2026-11-25",
    "verified_by_reviewer": null
-  }
+  },
+  "industry_funded": null,
+  "industry_funded_basis": "Funding/COI not stated in the retrieved text; product supply alone does not count (PROTOCOL §5)."
  },
  {
   "study_id": 3560,
@@ -2877,7 +2899,9 @@
    "method": "ai-assisted, second-pass verified",
    "extracted_at": "2026-11-25",
    "verified_by_reviewer": null
-  }
+  },
+  "industry_funded": null,
+  "industry_funded_basis": "Funding/COI not stated in the retrieved text; product supply alone does not count (PROTOCOL §5)."
  },
  {
   "study_id": 2205,
@@ -3293,7 +3317,9 @@
    "method": "ai-assisted, second-pass verified",
    "extracted_at": "2026-11-25",
    "verified_by_reviewer": null
-  }
+  },
+  "industry_funded": false,
+  "industry_funded_basis": "Public funding (Serbian Ministry, Provincial Secretariat, faculty); authors declare no conflicts."
  },
  {
   "study_id": 2007,
@@ -3617,7 +3643,9 @@
    "method": "ai-assisted, second-pass verified",
    "extracted_at": "2026-11-25",
    "verified_by_reviewer": null
-  }
+  },
+  "industry_funded": null,
+  "industry_funded_basis": "Funding/COI not stated in the retrieved text; product supply alone does not count (PROTOCOL §5)."
  },
  {
   "study_id": 3148,
@@ -3803,7 +3831,9 @@
    "method": "ai-assisted, second-pass verified",
    "extracted_at": "2026-11-25",
    "verified_by_reviewer": null
-  }
+  },
+  "industry_funded": null,
+  "industry_funded_basis": "Funding/COI not stated in the retrieved text; product supply alone does not count (PROTOCOL §5)."
  },
  {
   "study_id": 3435,
@@ -4081,7 +4111,9 @@
    "method": "ai-assisted, second-pass verified",
    "extracted_at": "2026-11-25",
    "verified_by_reviewer": null
-  }
+  },
+  "industry_funded": null,
+  "industry_funded_basis": "Funding/COI not stated in the retrieved text; product supply alone does not count (PROTOCOL §5)."
  },
  {
   "study_id": 3234,
@@ -4753,7 +4785,9 @@
    "method": "ai-assisted, second-pass verified",
    "extracted_at": "2026-11-25",
    "verified_by_reviewer": null
-  }
+  },
+  "industry_funded": null,
+  "industry_funded_basis": "Funding/COI not stated in the retrieved text; product supply alone does not count (PROTOCOL §5)."
  },
  {
   "study_id": 2077,
@@ -5562,7 +5596,9 @@
    "method": "ai-assisted, second-pass verified",
    "extracted_at": "2026-11-25",
    "verified_by_reviewer": null
-  }
+  },
+  "industry_funded": null,
+  "industry_funded_basis": "Funding/COI not stated in the retrieved text; product supply alone does not count (PROTOCOL §5)."
  },
  {
   "study_id": 3199,
@@ -5725,7 +5761,9 @@
    "method": "ai-assisted, second-pass verified",
    "extracted_at": "2026-11-25",
    "verified_by_reviewer": null
-  }
+  },
+  "industry_funded": null,
+  "industry_funded_basis": "Funding/COI not stated in the retrieved text; product supply alone does not count (PROTOCOL §5)."
  },
  {
   "study_id": 3402,
@@ -5957,7 +5995,9 @@
    "method": "ai-assisted, second-pass verified",
    "extracted_at": "2026-11-25",
    "verified_by_reviewer": null
-  }
+  },
+  "industry_funded": null,
+  "industry_funded_basis": "Funding/COI not stated in the retrieved text; product supply alone does not count (PROTOCOL §5)."
  },
  {
   "study_id": 3581,
@@ -6537,7 +6577,9 @@
    "method": "ai-assisted, second-pass verified (open-access PDF)",
    "extracted_at": "2026-11-25",
    "verified_by_reviewer": null
-  }
+  },
+  "industry_funded": true,
+  "industry_funded_basis": "Industry-sponsored research grant (Sterling Circle Sdn Bhd)."
  },
  {
   "study_id": 2227,
@@ -6746,7 +6788,9 @@
    "method": "ai-assisted, second-pass verified (open-access PDF)",
    "extracted_at": "2026-11-25",
    "verified_by_reviewer": null
-  }
+  },
+  "industry_funded": true,
+  "industry_funded_basis": "Sponsored by a hydrogen-water company consortium; authors with H2 patent, consulting and industry affiliations."
  },
  {
   "study_id": 2341,
